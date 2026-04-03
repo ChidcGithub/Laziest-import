@@ -16,7 +16,7 @@ class TestBasicImport:
         """Test module version exists"""
         import laziest_import
         assert hasattr(laziest_import, '__version__')
-        assert laziest_import.__version__ == "0.0.2-pre5"
+        assert laziest_import.__version__ == "0.0.2-pre6"
     
     def test_import_with_alias(self):
         """Test import using alias prefix"""

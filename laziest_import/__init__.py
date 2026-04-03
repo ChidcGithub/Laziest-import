@@ -44,19 +44,23 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre5"
+__version__ = "0.0.2-pre6"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
 _INITIALIZING: bool = False
 _INITIALIZED: bool = False
 _INIT_LOCK: Optional["threading.RLock"] = None  # Will be set lazily
+_INIT_LOCK_CREATION_LOCK: "threading.Lock" = _threading_module.Lock()  # Protects _INIT_LOCK creation
 
 def _get_init_lock() -> "threading.RLock":
-    """Get or create the initialization lock (lazy initialization)."""
+    """Get or create the initialization lock (lazy initialization, thread-safe)."""
     global _INIT_LOCK
     if _INIT_LOCK is None:
-        _INIT_LOCK = _threading_module.RLock()
+        with _INIT_LOCK_CREATION_LOCK:
+            # Double-check after acquiring lock
+            if _INIT_LOCK is None:
+                _INIT_LOCK = _threading_module.RLock()
     return _INIT_LOCK
 
 # Auto-search feature enabled flag
@@ -75,6 +79,15 @@ _ALIAS_MAP: Dict[str, str] = {}
 
 # LazyModule proxy cache
 _LAZY_MODULES: Dict[str, "LazyModule"] = {}
+
+# Thread-local storage for recursion protection during import
+_IMPORT_CONTEXT = _threading_module.local()
+
+def _get_importing_modules() -> Set[str]:
+    """Get the set of modules currently being imported (thread-local)."""
+    if not hasattr(_IMPORT_CONTEXT, 'importing'):
+        _IMPORT_CONTEXT.importing = set()
+    return _IMPORT_CONTEXT.importing
 
 # ============== New Features ==============
 
@@ -938,7 +951,7 @@ def _load_file_cache(file_path: str) -> Optional[FileCache]:
         with open(cache_file, 'r', encoding='utf-8') as f:
             data = _json_module.load(f)
         return FileCache.from_dict(data)
-    except (json.JSONDecodeError, KeyError, OSError):
+    except (_json_module.JSONDecodeError, KeyError, OSError):
         return None
 
 
@@ -1146,7 +1159,7 @@ def _load_aliases_from_file(path: _Path_class) -> Dict[str, str]:
                 aliases[key] = value
         
         return aliases
-    except (json.JSONDecodeError, OSError) as e:
+    except (_json_module.JSONDecodeError, OSError) as e:
         _warnings_module.warn(f"Failed to load config from {path}: {e}")
         return {}
 
@@ -1679,99 +1692,132 @@ class LazyModule:
         module_name = object.__getattribute__(self, '_module_name')
         alias = object.__getattribute__(self, '_alias')
         
-        # Execute pre-import hooks
-        for hook in _PRE_IMPORT_HOOKS:
-            try:
-                hook(module_name)
-            except Exception as e:
-                if _DEBUG_MODE:
-                    _logging_module.warning(f"Pre-import hook failed for {module_name}: {e}")
+        # Recursion protection: check if we're already importing this module
+        importing_modules = _get_importing_modules()
+        if module_name in importing_modules:
+            # Direct import to avoid recursion
+            return _importlib_module.import_module(module_name)
         
-        # Import with optional retry
-        start_time = _time_module.perf_counter()
-        
-        def _do_import(name: str) -> Any:
-            """Internal import function with retry support"""
-            if not _RETRY_CONFIG["enabled"]:
-                return _importlib_module.import_module(name)
-            
-            max_retries = _RETRY_CONFIG["max_retries"]
-            retry_delay = _RETRY_CONFIG["retry_delay"]
-            retry_modules = _RETRY_CONFIG["retry_modules"]
-            
-            # Check if this module should be retried
-            if retry_modules and name.split('.')[0] not in retry_modules:
-                return _importlib_module.import_module(name)
-            
-            last_error = None
-            for attempt in range(max_retries + 1):
-                try:
-                    return _importlib_module.import_module(name)
-                except ImportError as e:
-                    last_error = e
-                    if attempt < max_retries:
-                        if _DEBUG_MODE:
-                            _logging_module.info(f"Retry {attempt + 1}/{max_retries} for {name}")
-                        _time_module.sleep(retry_delay)
-            raise last_error
+        # Mark this module as being imported
+        importing_modules.add(module_name)
         
         try:
-            module = _do_import(module_name)
-            
-            # Update statistics
-            elapsed = _time_module.perf_counter() - start_time
-            _IMPORT_STATS.total_imports += 1
-            _IMPORT_STATS.total_time += elapsed
-            _IMPORT_STATS.module_times[module_name] = elapsed
-            _IMPORT_STATS.module_access_counts[alias] = 1
-            
-            # Record for file cache
-            _record_module_load(module_name)
-            
-            object.__setattr__(self, '_cached_module', module)
-            
-            # Execute post-import hooks
-            for hook in _POST_IMPORT_HOOKS:
+            # Execute pre-import hooks
+            for hook in _PRE_IMPORT_HOOKS:
                 try:
-                    hook(module_name, module)
+                    hook(module_name)
                 except Exception as e:
                     if _DEBUG_MODE:
-                        _logging_module.warning(f"Post-import hook failed for {module_name}: {e}")
+                        _logging_module.warning(f"Pre-import hook failed for {module_name}: {e}")
             
-            if _DEBUG_MODE:
-                _logging_module.info(f"[laziest-import] Loaded module '{module_name}' in {elapsed*1000:.2f}ms")
+            # Import with optional retry
+            start_time = _time_module.perf_counter()
             
-            return module
-        except ImportError as e:
-            # If auto-search is enabled and not yet searched, try searching for the module
-            auto_searched = object.__getattribute__(self, '_auto_searched')
-            if _AUTO_SEARCH_ENABLED and not auto_searched:
-                found_name = _search_module(alias)
-                if found_name and found_name != module_name:
+            def _do_import(name: str) -> Any:
+                """Internal import function with retry support"""
+                if not _RETRY_CONFIG["enabled"]:
+                    return _importlib_module.import_module(name)
+                
+                max_retries = _RETRY_CONFIG["max_retries"]
+                retry_delay = _RETRY_CONFIG["retry_delay"]
+                retry_modules = _RETRY_CONFIG["retry_modules"]
+                
+                # Check if this module should be retried
+                if retry_modules and name.split('.')[0] not in retry_modules:
+                    return _importlib_module.import_module(name)
+                
+                # Check if we're in an async context (to avoid blocking the event loop)
+                in_async_context = False
+                try:
+                    loop = _asyncio_module.get_running_loop()
+                    in_async_context = loop is not None
+                except RuntimeError:
+                    pass  # No running loop
+                
+                last_error = None
+                for attempt in range(max_retries + 1):
                     try:
-                        module = _do_import(found_name)
-                        object.__setattr__(self, '_module_name', found_name)
-                        object.__setattr__(self, '_cached_module', module)
-                        object.__setattr__(self, '_auto_searched', True)
-                        # Update global mapping
-                        _ALIAS_MAP[alias] = found_name
-                        
-                        # Update statistics
-                        elapsed = _time_module.perf_counter() - start_time
-                        _IMPORT_STATS.total_imports += 1
-                        _IMPORT_STATS.total_time += elapsed
-                        _IMPORT_STATS.module_times[found_name] = elapsed
-                        
-                        return module
-                    except ImportError:
-                        pass
+                        return _importlib_module.import_module(name)
+                    except ImportError as e:
+                        last_error = e
+                        if attempt < max_retries:
+                            if _DEBUG_MODE:
+                                _logging_module.info(f"Retry {attempt + 1}/{max_retries} for {name}")
+                            # Skip sleep in async context to avoid blocking event loop
+                            if not in_async_context:
+                                _time_module.sleep(retry_delay)
+                            elif _DEBUG_MODE:
+                                _logging_module.debug(f"Skipping retry sleep in async context for {name}")
+                raise last_error
             
-            raise ImportError(
-                f"Cannot import module '{module_name}' (alias '{alias}'). "
-                f"Please ensure the module is installed: pip install {module_name.split('.')[0]}"
-            ) from e
+            try:
+                module = _do_import(module_name)
+                
+                # Update statistics
+                elapsed = _time_module.perf_counter() - start_time
+                _IMPORT_STATS.total_imports += 1
+                _IMPORT_STATS.total_time += elapsed
+                _IMPORT_STATS.module_times[module_name] = elapsed
+                _IMPORT_STATS.module_access_counts[alias] = 1
+                
+                # Record for file cache
+                _record_module_load(module_name)
+                
+                object.__setattr__(self, '_cached_module', module)
+                
+                # Execute post-import hooks
+                for hook in _POST_IMPORT_HOOKS:
+                    try:
+                        hook(module_name, module)
+                    except Exception as e:
+                        if _DEBUG_MODE:
+                            _logging_module.warning(f"Post-import hook failed for {module_name}: {e}")
+                
+                if _DEBUG_MODE:
+                    _logging_module.info(f"[laziest-import] Loaded module '{module_name}' in {elapsed*1000:.2f}ms")
+                
+                return module
+            except ImportError as e:
+                # If auto-search is enabled and not yet searched, try searching for the module
+                auto_searched = object.__getattribute__(self, '_auto_searched')
+                if _AUTO_SEARCH_ENABLED and not auto_searched:
+                    found_name = _search_module(alias)
+                    if found_name and found_name != module_name:
+                        try:
+                            module = _do_import(found_name)
+                            object.__setattr__(self, '_module_name', found_name)
+                            object.__setattr__(self, '_cached_module', module)
+                            object.__setattr__(self, '_auto_searched', True)
+                            # Update global mapping
+                            _ALIAS_MAP[alias] = found_name
+                            
+                            # Update statistics
+                            elapsed = _time_module.perf_counter() - start_time
+                            _IMPORT_STATS.total_imports += 1
+                            _IMPORT_STATS.total_time += elapsed
+                            _IMPORT_STATS.module_times[found_name] = elapsed
+                            
+                            return module
+                        except ImportError:
+                            pass
+                
+                raise ImportError(
+                    f"Cannot import module '{module_name}' (alias '{alias}'). "
+                    f"Please ensure the module is installed: pip install {module_name.split('.')[0]}"
+                ) from e
+        finally:
+            # Always clean up the importing mark
+            importing_modules.discard(module_name)
     
     def __getattr__(self, name: str) -> Any:
+        # Protect access to private attributes (prevents recursion issues)
+        # But allow common dunder attributes that modules typically have
+        if name.startswith('_'):
+            allowed_dunder = {'__name__', '__file__', '__path__', '__package__',
+                             '__loader__', '__spec__', '__doc__', '__version__'}
+            if name not in allowed_dunder:
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        
         module = self._get_module()
         attr = getattr(module, name)
         
@@ -1863,6 +1909,14 @@ class LazySubmodule:
             return attr
     
     def __getattr__(self, name: str) -> Any:
+        # Protect access to private attributes (prevents recursion issues)
+        # But allow common dunder attributes that modules typically have
+        if name.startswith('_'):
+            allowed_dunder = {'__name__', '__file__', '__path__', '__package__',
+                             '__loader__', '__spec__', '__doc__', '__version__'}
+            if name not in allowed_dunder:
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        
         module = self._get_module()
         attr = getattr(module, name)
         
@@ -2825,9 +2879,10 @@ def _do_initialize() -> None:
     lock = _get_init_lock()
     with lock:
         # Double-check pattern after acquiring lock
-        if _INITIALIZED:
-            return
+        # Check _INITIALIZING first, then _INITIALIZED (more logical order)
         if _INITIALIZING:
+            return
+        if _INITIALIZED:
             return
         
         _INITIALIZING = True
