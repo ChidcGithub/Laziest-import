@@ -1,0 +1,259 @@
+"""
+laziest_import Test Suite
+"""
+
+import sys
+import pytest
+
+# Ensure laziest_import can be imported
+sys.path.insert(0, '.')
+
+
+class TestBasicImport:
+    """Test basic import functionality"""
+    
+    def test_module_version(self):
+        """Test module version exists"""
+        import laziest_import
+        assert hasattr(laziest_import, '__version__')
+        assert laziest_import.__version__ == "0.0.1-pre"
+    
+    def test_import_with_alias(self):
+        """Test import using alias prefix"""
+        import laziest_import as lz
+        # Access standard library module
+        math = lz.math
+        import math as real_math
+        # Check attributes are correct
+        assert math.pi == real_math.pi
+    
+    def test_import_stdlib(self):
+        """Test standard library lazy import"""
+        import laziest_import as lz
+        
+        # os module
+        os_module = lz.os
+        import os as real_os
+        assert os_module.getcwd() == real_os.getcwd()
+        
+        # sys module
+        sys_module = lz.sys
+        assert sys_module.version == sys.version
+    
+    def test_caching(self):
+        """Test module caching"""
+        import laziest_import as lz
+        
+        # Multiple accesses should return same attribute values
+        pi1 = lz.math.pi
+        pi2 = lz.math.pi
+        assert pi1 == pi2
+
+
+class TestAliasMapping:
+    """Test alias mapping functionality"""
+    
+    def test_register_alias(self):
+        """Test registering custom alias"""
+        import laziest_import as lz
+        
+        lz.register_alias("test_os_alias", "os")
+        
+        # Verify alias is registered
+        available = lz.list_available()
+        assert "test_os_alias" in available
+    
+    def test_unregister_alias(self):
+        """Test unregistering alias"""
+        import laziest_import as lz
+        
+        lz.register_alias("temp_alias_for_test", "os")
+        assert lz.unregister_alias("temp_alias_for_test") is True
+        assert lz.unregister_alias("nonexistent_alias_xyz") is False
+    
+    def test_list_loaded(self):
+        """Test listing loaded modules"""
+        import laziest_import as lz
+        
+        # Clear cache
+        lz.clear_cache()
+        
+        # Load a module
+        _ = lz.math.pi
+        
+        loaded = lz.list_loaded()
+        assert "math" in loaded
+    
+    def test_list_available(self):
+        """Test listing available aliases"""
+        import laziest_import as lz
+        
+        available = lz.list_available()
+        # Check some built-in aliases
+        assert "np" in available
+        assert "pd" in available
+        assert "plt" in available
+        assert "os" in available
+
+
+class TestErrorHandling:
+    """Test error handling"""
+    
+    def test_import_nonexistent_module(self):
+        """Test importing non-existent module"""
+        import laziest_import as lz
+        
+        # Use an extremely unlikely module name
+        with pytest.raises(ImportError):
+            _ = lz.definitely_not_a_real_module_xyz123456.pi
+    
+    def test_clear_cache(self):
+        """Test clearing cache"""
+        import laziest_import as lz
+        
+        # Load a module
+        _ = lz.math.pi
+        assert "math" in lz.list_loaded()
+        
+        # Clear cache
+        lz.clear_cache()
+        assert "math" not in lz.list_loaded()
+
+
+class TestFromImport:
+    """Test from ... import * syntax"""
+    
+    def test_from_import_star(self):
+        """Test from laziest_import import *"""
+        # Create a new namespace
+        namespace = {}
+        exec("from laziest_import import *", namespace)
+        
+        # Check that common aliases are imported
+        assert "np" in namespace
+        assert "pd" in namespace
+        assert "plt" in namespace
+        assert "os" in namespace
+        assert "register_alias" in namespace
+    
+    def test_from_import_usage(self):
+        """Test actual usage after from import"""
+        namespace = {}
+        exec("from laziest_import import *", namespace)
+        
+        # Use math module
+        math = namespace['math']
+        assert math.pi > 3.14
+        
+        # Use os module
+        os_mod = namespace['os']
+        assert callable(os_mod.getcwd)
+
+
+class TestFunctions:
+    """Test utility functions"""
+    
+    def test_get_module(self):
+        """Test get_module function"""
+        import laziest_import as lz
+        
+        # Returns None when not loaded
+        lz.clear_cache()
+        assert lz.get_module("math") is None
+        
+        # Returns module after loading
+        _ = lz.math.pi
+        mod = lz.get_module("math")
+        assert mod is not None
+        assert hasattr(mod, 'pi')
+    
+    def test_dir_function(self):
+        """Test __dir__ function"""
+        import laziest_import as lz
+        
+        dir_result = dir(lz)
+        
+        # Check that public functions are in result
+        assert "register_alias" in dir_result
+        assert "list_loaded" in dir_result
+        assert "list_available" in dir_result
+        assert "clear_cache" in dir_result
+        assert "__version__" in dir_result
+    
+    def test_lazy_module_repr(self):
+        """Test LazyModule repr"""
+        import laziest_import as lz
+        
+        # When not loaded
+        lz.clear_cache()
+        repr_str = repr(lz.math)
+        assert "not loaded" in repr_str
+        
+        # After loading
+        _ = lz.math.pi
+        repr_str = repr(lz.math)
+        assert "loaded" in repr_str
+
+
+class TestAutoSearch:
+    """Test auto-search functionality"""
+    
+    def test_auto_search_enabled_by_default(self):
+        """Test auto-search is enabled by default"""
+        import laziest_import as lz
+        assert lz.is_auto_search_enabled() is True
+    
+    def test_enable_disable_auto_search(self):
+        """Test enabling/disabling auto-search"""
+        import laziest_import as lz
+        
+        lz.disable_auto_search()
+        assert lz.is_auto_search_enabled() is False
+        
+        lz.enable_auto_search()
+        assert lz.is_auto_search_enabled() is True
+    
+    def test_search_module_stdlib(self):
+        """Test searching for standard library modules"""
+        import laziest_import as lz
+        
+        # Search for standard library modules
+        result = lz.search_module("os")
+        assert result == "os"
+        
+        result = lz.search_module("json")
+        assert result == "json"
+    
+    def test_search_module_installed(self):
+        """Test searching for installed third-party libraries"""
+        import laziest_import as lz
+        
+        # Search for installed modules
+        result = lz.search_module("numpy")
+        assert result == "numpy"
+    
+    def test_auto_import_unregistered_module(self):
+        """Test auto-importing unregistered module"""
+        import laziest_import as lz
+        
+        # flask is not in predefined aliases
+        assert "flask" not in lz.list_available()
+        
+        # But can be used directly (auto-search)
+        try:
+            flask_mod = lz.flask
+            assert flask_mod.__name__ == "flask"
+        except ImportError:
+            # Skip test if flask is not installed
+            pytest.skip("flask not installed")
+    
+    def test_rebuild_module_cache(self):
+        """Test rebuilding module cache"""
+        import laziest_import as lz
+        
+        # This function should be callable
+        lz.rebuild_module_cache()
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
