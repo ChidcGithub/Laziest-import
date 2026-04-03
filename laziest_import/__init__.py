@@ -15,6 +15,14 @@ Usage:
 Or:
     import laziest_import as lz
     arr = lz.np.array([1, 2, 3])
+
+Configuration:
+    # Custom aliases can be defined in:
+    # 1. ~/.laziest_import/aliases.json (user global)
+    # 2. ./.laziest_import.json (project level)
+    
+    # Example config file:
+    # {"mylib": "my_awesome_library", "api": "my_api_client"}
 """
 
 from typing import Dict, List, Optional, Set, Any, Tuple
@@ -24,8 +32,10 @@ import importlib.util
 import importlib.machinery
 import pkgutil
 import warnings
+import json
+from pathlib import Path
 
-__version__ = "0.0.1-pre"
+__version__ = "0.0.1"
 
 # Auto-search feature enabled flag
 _AUTO_SEARCH_ENABLED: bool = True
@@ -35,6 +45,131 @@ _KNOWN_MODULES_CACHE: Optional[Set[str]] = None
 
 # Class name to module mapping cache (e.g., "DataFrame" -> "pandas")
 _CLASS_TO_MODULE_CACHE: Dict[str, str] = {}
+
+# Module alias mapping: alias -> actual module name
+_ALIAS_MAP: Dict[str, str] = {}
+
+# LazyModule proxy cache
+_LAZY_MODULES: Dict[str, "LazyModule"] = {}
+
+
+def _get_config_paths() -> List[Path]:
+    """
+    Get configuration file paths in priority order (lowest to highest).
+    
+    Priority:
+        1. Package default: laziest_import/aliases.json
+        2. User global: ~/.laziest_import/aliases.json
+        3. Project level: ./.laziest_import.json
+    
+    Returns:
+        List of configuration file paths
+    """
+    paths = [
+        Path(__file__).parent / "aliases.json",  # Package default
+        Path.home() / ".laziest_import" / "aliases.json",  # User global
+        Path.cwd() / ".laziest_import.json",  # Project level
+    ]
+    return paths
+
+
+def _load_aliases_from_file(path: Path) -> Dict[str, str]:
+    """
+    Load aliases from a JSON configuration file.
+    
+    Supports two formats:
+    1. Flat: {"alias": "module_name", ...}
+    2. Categorized: {"category": {"alias": "module_name", ...}, ...}
+    
+    Args:
+        path: Path to the configuration file
+        
+    Returns:
+        Dictionary of alias -> module_name mappings
+    """
+    if not path.exists():
+        return {}
+    
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Flatten categorized structure
+        aliases: Dict[str, str] = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                # Categorized format
+                aliases.update(value)
+            elif isinstance(value, str):
+                # Flat format
+                aliases[key] = value
+        
+        return aliases
+    except (json.JSONDecodeError, OSError) as e:
+        warnings.warn(f"Failed to load config from {path}: {e}")
+        return {}
+
+
+def _load_all_aliases() -> Dict[str, str]:
+    """
+    Load aliases from all configuration files.
+    
+    Later files override earlier ones (project > user > default).
+    
+    Returns:
+        Combined dictionary of all aliases
+    """
+    aliases: Dict[str, str] = {}
+    
+    for path in _get_config_paths():
+        file_aliases = _load_aliases_from_file(path)
+        if file_aliases:
+            aliases.update(file_aliases)
+    
+    return aliases
+
+
+def _validate_alias(alias: str, module_name: str) -> bool:
+    """
+    Validate an alias entry.
+    
+    Args:
+        alias: The alias name
+        module_name: The target module name
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    if not isinstance(alias, str) or not isinstance(module_name, str):
+        return False
+    if not alias or not module_name:
+        return False
+    if not alias.isidentifier():
+        warnings.warn(f"Alias '{alias}' is not a valid Python identifier")
+        return False
+    return True
+
+
+def _rebuild_global_namespace() -> None:
+    """
+    Rebuild the global namespace with current aliases.
+    
+    Creates LazyModule proxies for all aliases and injects into globals.
+    """
+    global _LAZY_MODULES
+    
+    # Clear old lazy modules that are no longer in alias map
+    for alias in list(_LAZY_MODULES.keys()):
+        if alias not in _ALIAS_MAP:
+            del _LAZY_MODULES[alias]
+            if alias in globals():
+                del globals()[alias]
+    
+    # Create LazyModule proxies for all current aliases
+    for alias, module_name in _ALIAS_MAP.items():
+        if alias not in _LAZY_MODULES:
+            _LAZY_MODULES[alias] = LazyModule(alias, module_name)
+        globals()[alias] = _LAZY_MODULES[alias]
 
 
 def _build_known_modules_cache() -> Set[str]:
@@ -279,104 +414,6 @@ class LazyModule:
         raise TypeError(f"'{type(module).__name__}' object is not callable")
 
 
-# Module alias mapping: alias -> actual module name
-_ALIAS_MAP: Dict[str, str] = {
-    # Data Science
-    "np": "numpy",
-    "pd": "pandas",
-    "plt": "matplotlib.pyplot",
-    "mpl": "matplotlib",
-    "sns": "seaborn",
-    
-    # Machine Learning
-    "sklearn": "sklearn",
-    "torch": "torch",
-    "tf": "tensorflow",
-    "keras": "keras",
-    
-    # Standard Library
-    "os": "os",
-    "sys": "sys",
-    "re": "re",
-    "json": "json",
-    "csv": "csv",
-    "datetime": "datetime",
-    "collections": "collections",
-    "itertools": "itertools",
-    "functools": "functools",
-    "pathlib": "pathlib",
-    "typing": "typing",
-    "math": "math",
-    "random": "random",
-    "time": "time",
-    "logging": "logging",
-    "argparse": "argparse",
-    "subprocess": "subprocess",
-    "threading": "threading",
-    "multiprocessing": "multiprocessing",
-    "pickle": "pickle",
-    "shutil": "shutil",
-    "glob": "glob",
-    "io": "io",
-    "copy": "copy",
-    
-    # HTTP Requests
-    "requests": "requests",
-    "httpx": "httpx",
-    "aiohttp": "aiohttp",
-    "urllib": "urllib",
-    
-    # Web Parsing
-    "bs4": "bs4",
-    "BeautifulSoup": "bs4",
-    "lxml": "lxml",
-    "html": "html",
-    
-    # Image Processing
-    "Image": "PIL.Image",
-    "PIL": "PIL",
-    "cv2": "cv2",
-    "cv": "cv2",
-    
-    # Database
-    "sqlite3": "sqlite3",
-    "sqlalchemy": "sqlalchemy",
-    
-    # Testing
-    "pytest": "pytest",
-    "unittest": "unittest",
-    
-    # Common Libraries
-    "tqdm": "tqdm",
-    "rich": "rich",
-    "click": "click",
-    "yaml": "yaml",
-    "toml": "toml",
-    "dotenv": "dotenv",
-    
-    # Async
-    "asyncio": "asyncio",
-    
-    # Cryptography
-    "hashlib": "hashlib",
-    "hmac": "hmac",
-    "secrets": "secrets",
-    
-    # Compression
-    "zipfile": "zipfile",
-    "tarfile": "tarfile",
-    "gzip": "gzip",
-    
-    # Data Formats
-    "pprint": "pprint",
-    "dataclasses": "dataclasses",
-    "enum": "enum",
-}
-
-# LazyModule proxy cache
-_LAZY_MODULES: Dict[str, LazyModule] = {}
-
-
 def _get_lazy_module(alias: str) -> LazyModule:
     """Get or create a LazyModule proxy"""
     if alias not in _LAZY_MODULES:
@@ -384,6 +421,120 @@ def _get_lazy_module(alias: str) -> LazyModule:
         _LAZY_MODULES[alias] = LazyModule(alias, module_name)
     return _LAZY_MODULES[alias]
 
+
+# ============== Configuration API ==============
+
+def get_config_paths() -> List[str]:
+    """
+    Get all configuration file paths in priority order.
+    
+    Returns:
+        List of configuration file paths as strings
+    """
+    return [str(p) for p in _get_config_paths()]
+
+
+def reload_aliases() -> None:
+    """
+    Reload aliases from all configuration files.
+    
+    This will:
+    1. Reload all config files
+    2. Rebuild the alias map
+    3. Update the global namespace
+    
+    Call this after modifying config files to apply changes.
+    """
+    global _ALIAS_MAP
+    
+    _ALIAS_MAP = _load_all_aliases()
+    _rebuild_global_namespace()
+
+
+def export_aliases(path: Optional[str] = None, include_categories: bool = True) -> str:
+    """
+    Export current aliases to a JSON file.
+    
+    Args:
+        path: Output file path. If None, returns JSON string.
+        include_categories: If True, organize aliases by category.
+        
+    Returns:
+        Path to exported file, or JSON string if path is None
+        
+    Example:
+        >>> export_aliases("my_aliases.json")
+        'my_aliases.json'
+        >>> export_aliases()
+        '{"data_science": {"np": "numpy", ...}}'
+    """
+    if include_categories:
+        # Load default config to get category structure
+        default_path = Path(__file__).parent / "aliases.json"
+        if default_path.exists():
+            with open(default_path, encoding="utf-8") as f:
+                data = json.load(f)
+            # Update with current aliases
+            for category in data:
+                for alias in list(data[category].keys()):
+                    if alias in _ALIAS_MAP:
+                        data[category][alias] = _ALIAS_MAP[alias]
+                    else:
+                        del data[category][alias]
+            # Add any new aliases to a "custom" category
+            known_aliases = set()
+            for cat in data.values():
+                known_aliases.update(cat.keys())
+            new_aliases = {k: v for k, v in _ALIAS_MAP.items() if k not in known_aliases}
+            if new_aliases:
+                data["custom"] = new_aliases
+        else:
+            data = {"aliases": dict(_ALIAS_MAP)}
+    else:
+        data = dict(_ALIAS_MAP)
+    
+    json_str = json.dumps(data, indent=2, ensure_ascii=False)
+    
+    if path:
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(json_str)
+        return str(output_path)
+    
+    return json_str
+
+
+def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
+    """
+    Validate alias entries.
+    
+    Args:
+        aliases: Aliases to validate. If None, validates current aliases.
+        
+    Returns:
+        Dictionary with 'valid' and 'invalid' lists of alias names
+        
+    Example:
+        >>> result = validate_aliases()
+        >>> print(result['invalid'])
+        ['bad-alias']  # Not a valid identifier
+    """
+    to_validate = aliases if aliases is not None else _ALIAS_MAP
+    
+    valid: List[str] = []
+    invalid: List[str] = []
+    
+    for alias, module_name in to_validate.items():
+        if _validate_alias(alias, module_name):
+            valid.append(alias)
+        else:
+            invalid.append(alias)
+    
+    return {"valid": valid, "invalid": invalid}
+
+
+# ============== Auto-search API ==============
 
 def enable_auto_search() -> None:
     """
@@ -445,6 +596,8 @@ def rebuild_module_cache() -> None:
     _build_known_modules_cache()
 
 
+# ============== Alias Management API ==============
+
 def register_alias(alias: str, module_name: str) -> None:
     """
     Register a custom module alias.
@@ -457,13 +610,13 @@ def register_alias(alias: str, module_name: str) -> None:
         register_alias("mylib", "my_awesome_library")
         # Now you can use mylib.xxx directly
     """
+    if not _validate_alias(alias, module_name):
+        raise ValueError(f"Invalid alias: '{alias}' -> '{module_name}'")
+    
     _ALIAS_MAP[alias] = module_name
     # Create new LazyModule proxy
     _LAZY_MODULES[alias] = LazyModule(alias, module_name)
     globals()[alias] = _LAZY_MODULES[alias]
-    # Update __all__
-    if alias not in __all__:
-        __all__.append(alias)
 
 
 def unregister_alias(alias: str) -> bool:
@@ -482,8 +635,6 @@ def unregister_alias(alias: str) -> bool:
             del _LAZY_MODULES[alias]
         if alias in globals():
             del globals()[alias]
-        if alias in __all__:
-            __all__.remove(alias)
         return True
     return False
 
@@ -570,16 +721,21 @@ def __dir__() -> List[str]:
         "is_auto_search_enabled",
         "search_module",
         "rebuild_module_cache",
+        "reload_aliases",
+        "export_aliases",
+        "validate_aliases",
+        "get_config_paths",
     ])
     return sorted(result)
 
 
-# Initialization: create LazyModule proxies for all aliases and inject into global namespace
-# This allows `from laziest_import import *` to get these proxy objects
-for _alias, _mod_name in _ALIAS_MAP.items():
-    _LAZY_MODULES[_alias] = LazyModule(_alias, _mod_name)
-    globals()[_alias] = _LAZY_MODULES[_alias]
+# ============== Initialization ==============
 
+# Load aliases from config files
+_ALIAS_MAP = _load_all_aliases()
+
+# Create LazyModule proxies for all aliases and inject into global namespace
+_rebuild_global_namespace()
 
 # Dynamically generate __all__, including all registered aliases and public API
 __all__: List[str] = list(_ALIAS_MAP.keys()) + [
@@ -595,4 +751,8 @@ __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "is_auto_search_enabled",
     "search_module",
     "rebuild_module_cache",
+    "reload_aliases",
+    "export_aliases",
+    "validate_aliases",
+    "get_config_paths",
 ]

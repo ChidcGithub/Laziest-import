@@ -1,0 +1,93 @@
+{
+  "data_science": {
+    "np": "numpy",
+    "pd": "pandas",
+    "plt": "matplotlib.pyplot",
+    "mpl": "matplotlib",
+    "sns": "seaborn"
+  },
+  "machine_learning": {
+    "sklearn": "sklearn",
+    "torch": "torch",
+    "tf": "tensorflow",
+    "keras": "keras"
+  },
+  "stdlib": {
+    "os": "os",
+    "sys": "sys",
+    "re": "re",
+    "json": "json",
+    "csv": "csv",
+    "datetime": "datetime",
+    "collections": "collections",
+    "itertools": "itertools",
+    "functools": "functools",
+    "pathlib": "pathlib",
+    "typing": "typing",
+    "math": "math",
+    "random": "random",
+    "time": "time",
+    "logging": "logging",
+    "argparse": "argparse",
+    "subprocess": "subprocess",
+    "threading": "threading",
+    "multiprocessing": "multiprocessing",
+    "pickle": "pickle",
+    "shutil": "shutil",
+    "glob": "glob",
+    "io": "io",
+    "copy": "copy"
+  },
+  "http": {
+    "requests": "requests",
+    "httpx": "httpx",
+    "aiohttp": "aiohttp",
+    "urllib": "urllib"
+  },
+  "web_parsing": {
+    "bs4": "bs4",
+    "BeautifulSoup": "bs4",
+    "lxml": "lxml",
+    "html": "html"
+  },
+  "image_processing": {
+    "Image": "PIL.Image",
+    "PIL": "PIL",
+    "cv2": "cv2",
+    "cv": "cv2"
+  },
+  "database": {
+    "sqlite3": "sqlite3",
+    "sqlalchemy": "sqlalchemy"
+  },
+  "testing": {
+    "pytest": "pytest",
+    "unittest": "unittest"
+  },
+  "common": {
+    "tqdm": "tqdm",
+    "rich": "rich",
+    "click": "click",
+    "yaml": "yaml",
+    "toml": "toml",
+    "dotenv": "dotenv"
+  },
+  "async": {
+    "asyncio": "asyncio"
+  },
+  "cryptography": {
+    "hashlib": "hashlib",
+    "hmac": "hmac",
+    "secrets": "secrets"
+  },
+  "compression": {
+    "zipfile": "zipfile",
+    "tarfile": "tarfile",
+    "gzip": "gzip"
+  },
+  "data_formats": {
+    "pprint": "pprint",
+    "dataclasses": "dataclasses",
+    "enum": "enum"
+  }
+}
