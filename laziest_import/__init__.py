@@ -44,19 +44,28 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre4"
+__version__ = "0.0.2-pre5"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
 _INITIALIZING: bool = False
 _INITIALIZED: bool = False
-_INIT_LOCK: "threading.RLock" = None  # Will be set after threading is imported
+_INIT_LOCK: Optional["threading.RLock"] = None  # Will be set lazily
+
+def _get_init_lock() -> "threading.RLock":
+    """Get or create the initialization lock (lazy initialization)."""
+    global _INIT_LOCK
+    if _INIT_LOCK is None:
+        _INIT_LOCK = _threading_module.RLock()
+    return _INIT_LOCK
 
 # Auto-search feature enabled flag
 _AUTO_SEARCH_ENABLED: bool = True
 
 # Known modules cache (avoids repeated searches)
 _KNOWN_MODULES_CACHE: Optional[Set[str]] = None
+_KNOWN_MODULES_CACHE_TIME: float = 0.0  # Timestamp when cache was built
+_KNOWN_MODULES_CACHE_TTL: float = 300.0  # Cache TTL in seconds (5 minutes)
 
 # Class name to module mapping cache (e.g., "DataFrame" -> "pandas")
 _CLASS_TO_MODULE_CACHE: Dict[str, str] = {}
@@ -347,13 +356,14 @@ def _scan_module_symbols(
     return symbols
 
 
-def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
+def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: float = 30.0) -> None:
     """
     Build the symbol index by scanning installed packages.
     
     Args:
         force: Force rebuild even if already built
         max_modules: Maximum number of modules to scan (to prevent timeout)
+        timeout: Maximum time in seconds for the entire scan (default: 30s)
     """
     global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE
     
@@ -369,6 +379,9 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
     
     _SYMBOL_CACHE.clear()
     depth = _SYMBOL_SEARCH_CONFIG["search_depth"]
+    
+    # Record start time for timeout protection
+    start_time = _time_module.perf_counter()
     
     # Scan all known modules
     known_modules = _build_known_modules_cache()
@@ -393,7 +406,15 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
     )
     
     scanned = 0
+    timed_out = False
     for module_name in sorted_modules:
+        # Check timeout
+        if _time_module.perf_counter() - start_time > timeout:
+            timed_out = True
+            if _DEBUG_MODE:
+                _logging_module.info(f"[laziest-import] Symbol index build timed out after {timeout}s, scanned {scanned} modules")
+            break
+        
         if scanned >= max_modules:
             break
             
@@ -414,7 +435,9 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
     _SYMBOL_INDEX_BUILT = True
     
     if _DEBUG_MODE:
-        _logging_module.info(f"[laziest-import] Symbol index built: {len(_SYMBOL_CACHE)} symbols from {scanned} modules")
+        elapsed = _time_module.perf_counter() - start_time
+        timeout_msg = " (timed out)" if timed_out else ""
+        _logging_module.info(f"[laziest-import] Symbol index built: {len(_SYMBOL_CACHE)} symbols from {scanned} modules in {elapsed:.2f}s{timeout_msg}")
 
 
 def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
@@ -846,7 +869,7 @@ def _calculate_file_sha(file_path: str) -> Optional[str]:
         return None
 
 
-def _get_caller_file__Path_class() -> Optional[str]:
+def _get_caller_file_path() -> Optional[str]:
     """
     Get the path of the file that imported laziest_import.
     
@@ -866,7 +889,7 @@ def _get_caller_file__Path_class() -> Optional[str]:
     return None
 
 
-def _get_cache_file__Path_class(file_path: str) -> _Path_class:
+def _get_cache_file_path(file_path: str) -> _Path_class:
     """
     Get cache file path for a given source file.
     
@@ -907,7 +930,7 @@ def _load_file_cache(file_path: str) -> Optional[FileCache]:
     Returns:
         FileCache object, or None if not found/invalid
     """
-    cache_file = _get_cache_file__Path_class(file_path)
+    cache_file = _get_cache_file_path(file_path)
     if not cache_file.exists():
         return None
     
@@ -939,7 +962,7 @@ def _save_file_cache(file_path: str, file_sha: str, modules: Set[str]) -> bool:
             timestamp=_time_module.time()
         )
         
-        cache_file = _get_cache_file__Path_class(file_path)
+        cache_file = _get_cache_file_path(file_path)
         with open(cache_file, 'w', encoding='utf-8') as f:
             _json_module.dump(cache.to_dict(), f, indent=2)
         
@@ -965,7 +988,7 @@ def _init_file_cache() -> None:
     if not _FILE_CACHE_ENABLED:
         return
     
-    caller_path = _get_caller_file__Path_class()
+    caller_path = _get_caller_file_path()
     if not caller_path:
         return
     
@@ -1190,16 +1213,23 @@ def _rebuild_global_namespace() -> None:
             _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 
-def _build_known_modules_cache() -> Set[str]:
+def _build_known_modules_cache(force: bool = False) -> Set[str]:
     """
     Build cache of all known importable modules.
     
+    Args:
+        force: Force rebuild even if cache is still valid
+        
     Returns:
         Set of installed module names
     """
-    global _KNOWN_MODULES_CACHE
-    if _KNOWN_MODULES_CACHE is not None:
-        return _KNOWN_MODULES_CACHE
+    global _KNOWN_MODULES_CACHE, _KNOWN_MODULES_CACHE_TIME
+    
+    # Check if cache is still valid (not expired)
+    current_time = _time_module.time()
+    if _KNOWN_MODULES_CACHE is not None and not force:
+        if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
+            return _KNOWN_MODULES_CACHE
     
     modules: Set[str] = set()
     
@@ -1262,6 +1292,7 @@ def _build_known_modules_cache() -> Set[str]:
         modules.update(stdlib)
     
     _KNOWN_MODULES_CACHE = modules
+    _KNOWN_MODULES_CACHE_TIME = current_time
     return modules
 
 
@@ -2060,9 +2091,10 @@ def rebuild_module_cache() -> None:
     
     Call this function after installing new packages to update the module list.
     """
-    global _KNOWN_MODULES_CACHE
+    global _KNOWN_MODULES_CACHE, _KNOWN_MODULES_CACHE_TIME
     _KNOWN_MODULES_CACHE = None
-    _build_known_modules_cache()
+    _KNOWN_MODULES_CACHE_TIME = 0.0
+    _build_known_modules_cache(force=True)
 
 
 # ============== Alias Management API ==============
@@ -2083,9 +2115,8 @@ def register_alias(alias: str, module_name: str) -> None:
         raise ValueError(f"Invalid alias: '{alias}' -> '{module_name}'")
     
     _ALIAS_MAP[alias] = module_name
-    # Create new LazyModule proxy
+    # Create new LazyModule proxy (access via __getattr__ instead of globals())
     _LAZY_MODULES[alias] = LazyModule(alias, module_name)
-    globals()[alias] = _LAZY_MODULES[alias]
 
 
 def register_aliases(aliases: Dict[str, str]) -> List[str]:
@@ -2126,8 +2157,6 @@ def unregister_alias(alias: str) -> bool:
         del _ALIAS_MAP[alias]
         if alias in _LAZY_MODULES:
             del _LAZY_MODULES[alias]
-        if alias in globals():
-            del globals()[alias]
         return True
     return False
 
@@ -2579,7 +2608,7 @@ def clear_file_cache(file_path: Optional[str] = None) -> int:
     removed = 0
     
     if file_path:
-        cache_file = _get_cache_file__Path_class(file_path)
+        cache_file = _get_cache_file_path(file_path)
         if cache_file.exists():
             cache_file.unlink()
             removed = 1
@@ -2790,37 +2819,35 @@ def _do_initialize() -> None:
     """
     Perform module initialization with protection against recursion.
     """
-    global _INITIALIZING, _INITIALIZED, _INIT_LOCK, _ALIAS_MAP
+    global _INITIALIZING, _INITIALIZED, _ALIAS_MAP
     
-    # Already initialized or currently initializing
-    if _INITIALIZED:
-        return
-    if _INITIALIZING:
-        # Recursive call during initialization - this should not happen
-        # but we protect against it anyway
-        return
-    
-    _INITIALIZING = True
-    
-    try:
-        # Initialize lock for thread safety
-        _INIT_LOCK = _threading_module.RLock()
+    # Use lock for thread safety
+    lock = _get_init_lock()
+    with lock:
+        # Double-check pattern after acquiring lock
+        if _INITIALIZED:
+            return
+        if _INITIALIZING:
+            return
         
-        # Load aliases from config files FIRST, before any other operation
-        _ALIAS_MAP.update(_load_all_aliases())
+        _INITIALIZING = True
         
-        # Create LazyModule proxies for all aliases
-        _rebuild_global_namespace()
-        
-        # Mark as initialized BEFORE file cache init
-        # (file cache init might trigger module access)
-        _INITIALIZED = True
-        
-        # Initialize file cache for the caller (safe now that we're initialized)
-        _init_file_cache()
-        
-    finally:
-        _INITIALIZING = False
+        try:
+            # Load aliases from config files FIRST, before any other operation
+            _ALIAS_MAP.update(_load_all_aliases())
+            
+            # Create LazyModule proxies for all aliases
+            _rebuild_global_namespace()
+            
+            # Mark as initialized BEFORE file cache init
+            # (file cache init might trigger module access)
+            _INITIALIZED = True
+            
+            # Initialize file cache for the caller (safe now that we're initialized)
+            _init_file_cache()
+            
+        finally:
+            _INITIALIZING = False
 
 
 # Initialize _ALIAS_MAP as empty dict first
