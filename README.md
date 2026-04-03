@@ -11,7 +11,7 @@ pip install laziest-import
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/laziest-import.git
+git clone https://github.com/ChidcGithub/Laziest-import.git
 cd laziest-import
 pip install -e .
 ```
