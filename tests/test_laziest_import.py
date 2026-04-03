@@ -16,7 +16,7 @@ class TestBasicImport:
         """Test module version exists"""
         import laziest_import
         assert hasattr(laziest_import, '__version__')
-        assert laziest_import.__version__ == "0.0.2-pre1"
+        assert laziest_import.__version__ == "0.0.2-pre2"
     
     def test_import_with_alias(self):
         """Test import using alias prefix"""
@@ -263,6 +263,105 @@ class TestAutoSearch:
         
         # This function should be callable
         lz.rebuild_module_cache()
+
+
+class TestSymbolSearch:
+    """Test symbol search functionality"""
+    
+    def test_symbol_search_enabled_by_default(self):
+        """Test symbol search is enabled by default"""
+        import laziest_import as lz
+        assert lz.is_symbol_search_enabled() is True
+    
+    def test_enable_disable_symbol_search(self):
+        """Test enabling/disabling symbol search"""
+        import laziest_import as lz
+        
+        lz.disable_symbol_search()
+        assert lz.is_symbol_search_enabled() is False
+        
+        lz.enable_symbol_search()
+        assert lz.is_symbol_search_enabled() is True
+    
+    def test_search_symbol_function(self):
+        """Test search_symbol function returns results"""
+        import laziest_import as lz
+        
+        # Search for a common function name that should exist
+        results = lz.search_symbol("sqrt", max_results=3)
+        
+        # sqrt should be found in math and/or numpy
+        assert isinstance(results, list)
+        if results:
+            assert all(hasattr(r, 'module_name') for r in results)
+            assert all(hasattr(r, 'symbol_name') for r in results)
+            assert all(hasattr(r, 'symbol_type') for r in results)
+    
+    def test_search_symbol_with_type_filter(self):
+        """Test search_symbol with type filter"""
+        import laziest_import as lz
+        
+        # Search for classes only
+        results = lz.search_symbol("defaultdict", symbol_type="class", max_results=5)
+        
+        if results:
+            # All results should be classes
+            for r in results:
+                assert r.symbol_type == "class"
+    
+    def test_get_symbol_search_config(self):
+        """Test getting symbol search configuration"""
+        import laziest_import as lz
+        
+        config = lz.get_symbol_search_config()
+        assert isinstance(config, dict)
+        assert "enabled" in config
+        assert "interactive" in config
+        assert "exact_params" in config
+        assert "max_results" in config
+    
+    def test_get_symbol_cache_info(self):
+        """Test getting symbol cache info"""
+        import laziest_import as lz
+        
+        info = lz.get_symbol_cache_info()
+        assert isinstance(info, dict)
+        assert "built" in info
+        assert "symbol_count" in info
+        assert "confirmed_mappings" in info
+    
+    def test_clear_symbol_cache(self):
+        """Test clearing symbol cache"""
+        import laziest_import as lz
+        
+        # This should not raise an error
+        lz.clear_symbol_cache()
+        
+        info = lz.get_symbol_cache_info()
+        assert info["built"] is False
+        assert info["symbol_count"] == 0
+    
+    def test_rebuild_symbol_index(self):
+        """Test rebuilding symbol index"""
+        import laziest_import as lz
+        
+        # Clear first
+        lz.clear_symbol_cache()
+        
+        # Rebuild
+        lz.rebuild_symbol_index()
+        
+        # Should have some symbols now
+        info = lz.get_symbol_cache_info()
+        assert info["built"] is True
+        assert info["symbol_count"] > 0
+    
+    def test_search_symbol_nonexistent(self):
+        """Test searching for nonexistent symbol"""
+        import laziest_import as lz
+        
+        results = lz.search_symbol("this_symbol_definitely_does_not_exist_xyz123")
+        assert results == []
 
 
 if __name__ == "__main__":

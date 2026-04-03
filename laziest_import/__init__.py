@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre1"
+__version__ = "0.0.2-pre2"
 
 # Auto-search feature enabled flag
 _AUTO_SEARCH_ENABLED: bool = True
@@ -91,6 +91,664 @@ _RETRY_CONFIG: Dict[str, Any] = {
     "retry_delay": 0.5,
     "retry_modules": set(),  # Empty set means retry all
 }
+
+# ============== Symbol Search System ==============
+
+import inspect as _inspect_module
+from functools import lru_cache as _lru_cache
+
+# Symbol search configuration
+_SYMBOL_SEARCH_CONFIG: Dict[str, Any] = {
+    "enabled": True,  # Enable symbol search when module not found
+    "interactive": True,  # Ask user for confirmation (set False for auto-register)
+    "exact_params": False,  # Require exact parameter match
+    "max_results": 5,  # Maximum search results to show
+    "search_depth": 1,  # How deep to scan submodules (0 = top level only)
+    "cache_enabled": True,  # Cache scanned symbols
+    "skip_private": True,  # Skip private symbols (starting with _)
+    "skip_stdlib": False,  # Skip standard library modules in search
+}
+
+# Symbol cache: name -> List of (module_name, symbol_type, signature_hint)
+_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+
+# Symbol index built flag
+_SYMBOL_INDEX_BUILT: bool = False
+
+# User confirmed mappings (persistent)
+_CONFIRMED_MAPPINGS: Dict[str, str] = {}
+
+
+@_dataclass
+class SearchResult:
+    """Search result for a symbol."""
+    module_name: str
+    symbol_name: str
+    symbol_type: str  # 'class', 'function', 'callable'
+    signature: Optional[str]
+    score: float  # Match score (0-1)
+    obj: Optional[Any] = None
+
+
+def _get_signature_hint(obj: Any) -> Optional[str]:
+    """
+    Get a signature hint string for a callable object.
+    
+    Args:
+        obj: The callable object
+        
+    Returns:
+        Signature string like "(a, b, c=None)" or None
+    """
+    try:
+        if callable(obj):
+            sig = _inspect_module.signature(obj)
+            return str(sig)
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
+def _is_stdlib_module(module_name: str) -> bool:
+    """
+    Check if a module is part of the standard library.
+    
+    Args:
+        module_name: Module name to check
+        
+    Returns:
+        True if it's a stdlib module
+    """
+    # Python 3.10+ has stdlib_module_names
+    if hasattr(_sys_module, 'stdlib_module_names'):
+        return module_name.split('.')[0] in _sys_module.stdlib_module_names
+    
+    # Fallback list for older Python
+    stdlib_prefixes = {
+        'abc', 'argparse', 'array', 'ast', 'asyncio', 'atexit', 'base64',
+        'bisect', 'builtins', 'bz2', 'calendar', 'cgi', 'cmath', 'cmd',
+        'code', 'codecs', 'collections', 'configparser', 'contextlib',
+        'copy', 'csv', 'ctypes', 'dataclasses', 'datetime', 'dbm', 'decimal',
+        'difflib', 'dis', 'email', 'enum', 'errno', 'fcntl', 'filecmp',
+        'fileinput', 'fnmatch', 'fractions', 'ftplib', 'functools', 'gc',
+        'getopt', 'getpass', 'gettext', 'glob', 'gzip', 'hashlib', 'heapq',
+        'hmac', 'html', 'http', 'imaplib', 'importlib', 'inspect', 'io',
+        'itertools', 'json', 'keyword', 'linecache', 'locale', 'logging',
+        'lzma', 'mailbox', 'marshal', 'math', 'mimetypes', 'mmap',
+        'multiprocessing', 'netrc', 'numbers', 'operator', 'optparse', 'os',
+        'pathlib', 'pickle', 'platform', 'plistlib', 'poplib', 'pprint',
+        'profile', 'queue', 'random', 're', 'reprlib', 'sched', 'secrets',
+        'select', 'shelve', 'shlex', 'shutil', 'signal', 'site', 'smtplib',
+        'socket', 'socketserver', 'sqlite3', 'ssl', 'stat', 'statistics',
+        'string', 'struct', 'subprocess', 'sys', 'sysconfig', 'tarfile',
+        'tempfile', 'termios', 'textwrap', 'threading', 'time', 'timeit',
+        'tkinter', 'token', 'tokenize', 'trace', 'traceback', 'types',
+        'typing', 'unicodedata', 'unittest', 'urllib', 'uuid', 'warnings',
+        'wave', 'weakref', 'webbrowser', 'wsgiref', 'xml', 'xmlrpc',
+        'zipfile', 'zipimport', 'zlib', 'zoneinfo',
+    }
+    return module_name.split('.')[0] in stdlib_prefixes
+
+
+def _scan_module_symbols(
+    module_name: str,
+    depth: int = 1,
+    _scanned: Optional[Set[str]] = None,
+    _current_depth: int = 0
+) -> Dict[str, List[Tuple[str, str, Optional[str]]]]:
+    """
+    Scan a module for exported symbols (classes, functions, callables).
+    
+    Args:
+        module_name: Name of the module to scan
+        depth: How deep to scan submodules (0 = top level only)
+        _scanned: Set of already scanned modules (internal, for cycle detection)
+        _current_depth: Current recursion depth (internal)
+        
+    Returns:
+        Dictionary mapping symbol name to list of (module_name, symbol_type, signature)
+    """
+    # Initialize scanned set for cycle detection
+    if _scanned is None:
+        _scanned = set()
+    
+    # Protect against deep recursion and cycles
+    MAX_DEPTH = 3
+    if _current_depth > MAX_DEPTH:
+        return {}
+    
+    if module_name in _scanned:
+        return {}
+    _scanned.add(module_name)
+    
+    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+    
+    if _SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
+        return symbols
+    
+    # Skip problematic modules that are known to cause issues
+    skip_modules = {
+        'test', 'tests', 'testing', 'conftest', 'setup', 'examples',
+        'docs', 'doc', 'scripts', 'tools', 'vendor', 'vendored',
+        '__pycache__', '.git', '.hg', '.svn',
+        # Skip packages that have side effects on import
+        'flask', 'fastapi', 'uvicorn', 'gunicorn', 'celery',
+        'django', 'pytest', 'py.test', 'sphinx', 'mkdocs',
+        'jupyter', 'ipython', 'notebook', 'streamlit', 'gradio',
+    }
+    if any(skip in module_name.lower() for skip in skip_modules):
+        return symbols
+    
+    # Skip internal/deprecated modules (e.g., numpy.core, numpy.linalg.linalg)
+    internal_patterns = ['._', '.core.', '.linalg.linalg', '.internal.']
+    if any(pattern in module_name for pattern in internal_patterns):
+        return symbols
+    
+    # Skip __main__ modules
+    if module_name.endswith('__main__'):
+        return symbols
+    
+    # Suppress deprecation warnings during scanning
+    with _warnings_module.catch_warnings():
+        _warnings_module.simplefilter("ignore", DeprecationWarning)
+        _warnings_module.simplefilter("ignore", FutureWarning)
+        
+        try:
+            module = _importlib_module.import_module(module_name)
+        except (ImportError, ModuleNotFoundError, SyntaxError, AttributeError, 
+                TypeError, ValueError, OSError, RecursionError, SystemExit):
+            return symbols
+        
+        skip_private = _SYMBOL_SEARCH_CONFIG["skip_private"]
+        
+        # Get module's __all__ if available, otherwise use dir()
+        try:
+            public_names = getattr(module, '__all__', None)
+            if public_names is None:
+                public_names = [name for name in dir(module) if not name.startswith('_')]
+            else:
+                # Filter out non-strings from __all__
+                public_names = [n for n in public_names if isinstance(n, str)]
+        except Exception:
+            public_names = []
+        
+        # Limit the number of symbols to scan per module
+        MAX_SYMBOLS_PER_MODULE = 100
+        if len(public_names) > MAX_SYMBOLS_PER_MODULE:
+            public_names = public_names[:MAX_SYMBOLS_PER_MODULE]
+        
+        for name in public_names:
+            if skip_private and name.startswith('_'):
+                continue
+            
+            try:
+                obj = getattr(module, name)
+            except (AttributeError, ImportError, TypeError, RecursionError):
+                continue
+            
+            symbol_type = None
+            signature = None
+            
+            try:
+                if _inspect_module.isclass(obj):
+                    symbol_type = 'class'
+                    # Get __init__ signature for classes
+                    try:
+                        init = getattr(obj, '__init__', None)
+                        if init and callable(init):
+                            signature = _get_signature_hint(init)
+                    except Exception:
+                        pass
+                elif _inspect_module.isfunction(obj):
+                    symbol_type = 'function'
+                    signature = _get_signature_hint(obj)
+                elif callable(obj):
+                    symbol_type = 'callable'
+                    signature = _get_signature_hint(obj)
+            except Exception:
+                continue
+        
+        if symbol_type:
+            if name not in symbols:
+                symbols[name] = []
+            symbols[name].append((module_name, symbol_type, signature))
+    
+    # Scan submodules if depth > 0
+    if depth > 0 and hasattr(module, '__path__'):
+        try:
+            submodule_count = 0
+            MAX_SUBMODULES = 20  # Limit number of submodules to scan
+            for finder, submod_name, ispkg in _pkgutil_module.iter_modules(module.__path__):
+                if submodule_count >= MAX_SUBMODULES:
+                    break
+                full_submod_name = f"{module_name}.{submod_name}"
+                try:
+                    submod_symbols = _scan_module_symbols(
+                        full_submod_name, depth - 1, _scanned, _current_depth + 1
+                    )
+                    for sym_name, locations in submod_symbols.items():
+                        if sym_name not in symbols:
+                            symbols[sym_name] = []
+                        symbols[sym_name].extend(locations)
+                    submodule_count += 1
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    
+    return symbols
+
+
+def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
+    """
+    Build the symbol index by scanning installed packages.
+    
+    Args:
+        force: Force rebuild even if already built
+        max_modules: Maximum number of modules to scan (to prevent timeout)
+    """
+    global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE
+    
+    if _SYMBOL_INDEX_BUILT and not force:
+        return
+    
+    if not _SYMBOL_SEARCH_CONFIG["cache_enabled"]:
+        return
+    
+    _SYMBOL_CACHE.clear()
+    depth = _SYMBOL_SEARCH_CONFIG["search_depth"]
+    
+    # Scan all known modules
+    known_modules = _build_known_modules_cache()
+    
+    if _DEBUG_MODE:
+        _logging_module.info(f"[laziest-import] Building symbol index for {len(known_modules)} modules...")
+    
+    # Prioritize commonly used packages
+    priority_packages = {
+        'pandas', 'numpy', 'matplotlib', 'seaborn', 'scipy', 'sklearn',
+        'torch', 'tensorflow', 'keras', 'xgboost', 'lightgbm',
+        'requests', 'flask', 'django', 'fastapi',
+        'PIL', 'cv2', 'plotly', 'bokeh',
+        'json', 'os', 'sys', 're', 'datetime', 'collections', 'itertools',
+        'pathlib', 'typing', 'functools', 'contextlib', 'dataclasses',
+    }
+    
+    # Sort modules: priority packages first, then alphabetically
+    sorted_modules = sorted(
+        known_modules,
+        key=lambda m: (0 if m.split('.')[0] in priority_packages else 1, m)
+    )
+    
+    scanned = 0
+    for module_name in sorted_modules:
+        if scanned >= max_modules:
+            break
+            
+        # Skip internal/test modules
+        if any(x in module_name.lower() for x in ['test', 'tests', '_test', '__pycache__', 'conftest', 'setup']):
+            continue
+        
+        try:
+            symbols = _scan_module_symbols(module_name, depth)
+            for sym_name, locations in symbols.items():
+                if sym_name not in _SYMBOL_CACHE:
+                    _SYMBOL_CACHE[sym_name] = []
+                _SYMBOL_CACHE[sym_name].extend(locations)
+            scanned += 1
+        except Exception:
+            continue
+    
+    _SYMBOL_INDEX_BUILT = True
+    
+    if _DEBUG_MODE:
+        _logging_module.info(f"[laziest-import] Symbol index built: {len(_SYMBOL_CACHE)} symbols from {scanned} modules")
+
+
+def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
+    """
+    Compare two signature strings and return a similarity score.
+    
+    Args:
+        sig1: First signature string
+        sig2: Second signature string
+        
+    Returns:
+        Similarity score between 0 and 1
+    """
+    if sig1 is None or sig2 is None:
+        return 0.5  # Unknown, neutral score
+    
+    # Extract parameter names
+    def extract_params(sig: str) -> Set[str]:
+        try:
+            # Remove parentheses and split by comma
+            inner = sig.strip('()')
+            if not inner:
+                return set()
+            params = set()
+            for part in inner.split(','):
+                part = part.strip()
+                if part:
+                    # Extract param name (before = or :)
+                    param_name = part.split('=')[0].split(':')[0].strip()
+                    if param_name and not param_name.startswith('*'):
+                        params.add(param_name)
+            return params
+        except Exception:
+            return set()
+    
+    params1 = extract_params(sig1)
+    params2 = extract_params(sig2)
+    
+    if not params1 or not params2:
+        return 0.5
+    
+    # Jaccard similarity
+    intersection = len(params1 & params2)
+    union = len(params1 | params2)
+    
+    return intersection / union if union > 0 else 0.0
+
+
+def search_symbol(
+    name: str,
+    symbol_type: Optional[str] = None,
+    signature: Optional[str] = None,
+    max_results: Optional[int] = None
+) -> List[SearchResult]:
+    """
+    Search for a symbol (class/function) by name across installed packages.
+    
+    Args:
+        name: Symbol name to search for
+        symbol_type: Filter by type ('class', 'function', 'callable'), or None for all
+        signature: Expected signature for matching (optional)
+        max_results: Maximum number of results (uses config if None)
+        
+    Returns:
+        List of SearchResult objects sorted by score
+        
+    Example:
+        >>> results = search_symbol("DataFrame")
+        >>> for r in results:
+        ...     print(f"{r.module_name}.{r.symbol_name} [{r.symbol_type}]")
+        pandas.DataFrame [class]
+        polars.DataFrame [class]
+    """
+    if not _SYMBOL_SEARCH_CONFIG["enabled"]:
+        return []
+    
+    # Build index if needed
+    if not _SYMBOL_INDEX_BUILT:
+        _build_symbol_index()
+    
+    if name not in _SYMBOL_CACHE:
+        # Try fuzzy match on symbol names
+        name_lower = name.lower()
+        matches = []
+        for cached_name in _SYMBOL_CACHE.keys():
+            if cached_name.lower() == name_lower:
+                matches.append(cached_name)
+            elif name_lower in cached_name.lower():
+                matches.append(cached_name)
+            elif _levenshtein_distance(name_lower, cached_name.lower()) <= 2:
+                matches.append(cached_name)
+        
+        if not matches:
+            return []
+        
+        # Collect results for all matches
+        all_results = []
+        for match_name in matches[:3]:  # Limit fuzzy matches
+            all_results.extend(_search_symbol_direct(match_name, symbol_type, signature))
+        
+        # Deduplicate and sort
+        seen = set()
+        results = []
+        for r in all_results:
+            key = (r.module_name, r.symbol_name)
+            if key not in seen:
+                seen.add(key)
+                results.append(r)
+        
+        max_res = max_results or _SYMBOL_SEARCH_CONFIG["max_results"]
+        return sorted(results, key=lambda x: -x.score)[:max_res]
+    
+    return _search_symbol_direct(name, symbol_type, signature, max_results)
+
+
+def _search_symbol_direct(
+    name: str,
+    symbol_type: Optional[str] = None,
+    signature: Optional[str] = None,
+    max_results: Optional[int] = None
+) -> List[SearchResult]:
+    """
+    Direct search for an exact symbol name in cache.
+    """
+    results = []
+    
+    if name not in _SYMBOL_CACHE:
+        return results
+    
+    for module_name, sym_type, cached_sig in _SYMBOL_CACHE[name]:
+        # Filter by type
+        if symbol_type and sym_type != symbol_type:
+            continue
+        
+        # Calculate score
+        score = 1.0
+        
+        # Penalize stdlib if configured
+        if _SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
+            score *= 0.5
+        
+        # Signature matching
+        if signature and cached_sig:
+            sig_score = _compare_signatures(signature, cached_sig)
+            if _SYMBOL_SEARCH_CONFIG["exact_params"] and sig_score < 0.9:
+                continue  # Skip if exact match required
+            score *= (0.5 + 0.5 * sig_score)
+        
+        results.append(SearchResult(
+            module_name=module_name,
+            symbol_name=name,
+            symbol_type=sym_type,
+            signature=cached_sig,
+            score=score,
+        ))
+    
+    # Sort by score
+    results.sort(key=lambda x: -x.score)
+    
+    max_res = max_results or _SYMBOL_SEARCH_CONFIG["max_results"]
+    return results[:max_res]
+
+
+def _interactive_confirm(results: List[SearchResult], symbol_name: str) -> Optional[str]:
+    """
+    Interactively ask user to confirm which module to use.
+    
+    Args:
+        results: List of search results
+        symbol_name: The symbol name being searched
+        
+    Returns:
+        Selected module name, or None if cancelled
+    """
+    if not results:
+        return None
+    
+    if not _SYMBOL_SEARCH_CONFIG["interactive"]:
+        # Auto-select best match
+        return results[0].module_name
+    
+    # Format results for display
+    print(f"\n[laziest-import] Found {len(results)} match(es) for '{symbol_name}':")
+    print("-" * 60)
+    
+    for i, r in enumerate(results, 1):
+        sig_str = f" {r.signature}" if r.signature else ""
+        type_str = f"[{r.symbol_type}]"
+        print(f"  {i}. {r.module_name}.{r.symbol_name} {type_str}{sig_str}")
+    
+    print(f"  0. Skip (do not register)")
+    print("-" * 60)
+    
+    try:
+        choice = input(f"Select [1-{len(results)}, 0 to skip] (default=1): ").strip()
+        
+        if not choice:
+            choice = "1"
+        
+        if choice == "0":
+            return None
+        
+        idx = int(choice) - 1
+        if 0 <= idx < len(results):
+            return results[idx].module_name
+        
+        print(f"Invalid choice: {choice}")
+        return None
+    except (ValueError, EOFError, KeyboardInterrupt):
+        print("\nCancelled.")
+        return None
+
+
+def _handle_symbol_not_found(name: str) -> Optional[str]:
+    """
+    Handle a symbol not found error by searching and prompting user.
+    
+    This is called when a name is not found in aliases or modules.
+    
+    Args:
+        name: The symbol name that was not found
+        
+    Returns:
+        Module name if found and confirmed, None otherwise
+    """
+    # Check if already confirmed before
+    if name in _CONFIRMED_MAPPINGS:
+        return _CONFIRMED_MAPPINGS[name]
+    
+    # Search for the symbol
+    results = search_symbol(name)
+    
+    if not results:
+        return None
+    
+    # Interactive confirmation
+    selected_module = _interactive_confirm(results, name)
+    
+    if selected_module:
+        # Save the mapping
+        _CONFIRMED_MAPPINGS[name] = selected_module
+        
+        # Register the alias
+        register_alias(name, selected_module)
+        
+        print(f"[laziest-import] Registered alias: {name} -> {selected_module}")
+        
+        return selected_module
+    
+    return None
+
+
+# ============== Symbol Search API ==============
+
+def enable_symbol_search(
+    interactive: bool = True,
+    exact_params: bool = False,
+    max_results: int = 5,
+    search_depth: int = 1,
+    skip_stdlib: bool = False
+) -> None:
+    """
+    Enable symbol search functionality.
+    
+    When enabled, accessing an unknown name will search for matching
+    classes/functions in installed packages.
+    
+    Args:
+        interactive: Ask user for confirmation (False = auto-select best match)
+        exact_params: Require exact parameter signature match
+        max_results: Maximum number of results to show
+        search_depth: How deep to scan submodules (0 = top level only)
+        skip_stdlib: Skip standard library modules in search
+        
+    Example:
+        >>> enable_symbol_search(interactive=True, max_results=3)
+    """
+    _SYMBOL_SEARCH_CONFIG["enabled"] = True
+    _SYMBOL_SEARCH_CONFIG["interactive"] = interactive
+    _SYMBOL_SEARCH_CONFIG["exact_params"] = exact_params
+    _SYMBOL_SEARCH_CONFIG["max_results"] = max_results
+    _SYMBOL_SEARCH_CONFIG["search_depth"] = search_depth
+    _SYMBOL_SEARCH_CONFIG["skip_stdlib"] = skip_stdlib
+
+
+def disable_symbol_search() -> None:
+    """
+    Disable symbol search functionality.
+    """
+    _SYMBOL_SEARCH_CONFIG["enabled"] = False
+
+
+def is_symbol_search_enabled() -> bool:
+    """
+    Check if symbol search is enabled.
+    
+    Returns:
+        True if symbol search is enabled
+    """
+    return _SYMBOL_SEARCH_CONFIG["enabled"]
+
+
+def rebuild_symbol_index() -> None:
+    """
+    Rebuild the symbol index.
+    
+    Call this after installing new packages to update the symbol cache.
+    """
+    global _SYMBOL_INDEX_BUILT
+    _SYMBOL_INDEX_BUILT = False
+    _build_symbol_index(force=True)
+
+
+def get_symbol_search_config() -> Dict[str, Any]:
+    """
+    Get current symbol search configuration.
+    
+    Returns:
+        Dictionary of configuration options
+    """
+    return dict(_SYMBOL_SEARCH_CONFIG)
+
+
+def get_symbol_cache_info() -> Dict[str, Any]:
+    """
+    Get information about the symbol cache.
+    
+    Returns:
+        Dictionary with cache statistics
+    """
+    return {
+        "built": _SYMBOL_INDEX_BUILT,
+        "symbol_count": len(_SYMBOL_CACHE),
+        "confirmed_mappings": len(_CONFIRMED_MAPPINGS),
+    }
+
+
+def clear_symbol_cache() -> None:
+    """
+    Clear the symbol cache.
+    """
+    global _SYMBOL_INDEX_BUILT
+    _SYMBOL_CACHE.clear()
+    _CONFIRMED_MAPPINGS.clear()
+    _SYMBOL_INDEX_BUILT = False
+
 
 # ============== File Cache System ==============
 
@@ -1973,6 +2631,10 @@ _RESERVED_NAMES: Set[str] = {
     "enable_file_cache", "disable_file_cache", "is_file_cache_enabled",
     "clear_file_cache", "get_file_cache_info", "force_save_cache",
     "set_cache_dir", "get_cache_dir", "reset_cache_dir",
+    # Symbol search
+    "enable_symbol_search", "disable_symbol_search", "is_symbol_search_enabled",
+    "search_symbol", "rebuild_symbol_index", "get_symbol_search_config",
+    "get_symbol_cache_info", "clear_symbol_cache",
 }
 
 
@@ -1999,9 +2661,21 @@ def __getattr__(name: str) -> LazyModule:
             _ALIAS_MAP[name] = found
             return _get_lazy_module(name)
     
-    # Not found, raise AttributeError
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'. "
-                        f"Available modules: {list(_ALIAS_MAP.keys())[:10]}... (use list_available() to see all)")
+    # Symbol search: try to find class/function in installed packages
+    if _SYMBOL_SEARCH_CONFIG["enabled"]:
+        found_module = _handle_symbol_not_found(name)
+        if found_module:
+            # _handle_symbol_not_found already registered the alias
+            return _get_lazy_module(name)
+    
+    # Not found, raise AttributeError with helpful message
+    available = list(_ALIAS_MAP.keys())[:10]
+    msg = f"module '{__name__}' has no attribute '{name}'."
+    if available:
+        msg += f" Available modules: {available}... (use list_available() to see all)"
+    if _SYMBOL_SEARCH_CONFIG["enabled"]:
+        msg += f"\nTip: Use search_symbol('{name}') to search for classes/functions in installed packages."
+    raise AttributeError(msg)
 
 
 def __dir__() -> List[str]:
@@ -2063,6 +2737,15 @@ def __dir__() -> List[str]:
         "set_cache_dir",
         "get_cache_dir",
         "reset_cache_dir",
+        # Symbol search
+        "enable_symbol_search",
+        "disable_symbol_search",
+        "is_symbol_search_enabled",
+        "search_symbol",
+        "rebuild_symbol_index",
+        "get_symbol_search_config",
+        "get_symbol_cache_info",
+        "clear_symbol_cache",
     ])
     return sorted(result)
 
@@ -2133,6 +2816,15 @@ __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "set_cache_dir",
     "get_cache_dir",
     "reset_cache_dir",
+    # Symbol search
+    "enable_symbol_search",
+    "disable_symbol_search",
+    "is_symbol_search_enabled",
+    "search_symbol",
+    "rebuild_symbol_index",
+    "get_symbol_search_config",
+    "get_symbol_cache_info",
+    "clear_symbol_cache",
 ]
 
 
