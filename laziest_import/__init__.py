@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.1"
+__version__ = "0.0.2-pre1"
 
 # Auto-search feature enabled flag
 _AUTO_SEARCH_ENABLED: bool = True
