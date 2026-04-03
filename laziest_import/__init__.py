@@ -44,7 +44,13 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre2"
+__version__ = "0.0.2-pre3"
+
+# ============== Initialization State Protection ==============
+# These flags prevent recursive calls during module initialization
+_INITIALIZING: bool = False
+_INITIALIZED: bool = False
+_INIT_LOCK: "threading.RLock" = None  # Will be set after threading is imported
 
 # Auto-search feature enabled flag
 _AUTO_SEARCH_ENABLED: bool = True
@@ -235,6 +241,8 @@ def _scan_module_symbols(
         'flask', 'fastapi', 'uvicorn', 'gunicorn', 'celery',
         'django', 'pytest', 'py.test', 'sphinx', 'mkdocs',
         'jupyter', 'ipython', 'notebook', 'streamlit', 'gradio',
+        # Skip ourselves to prevent recursion
+        'laziest_import', 'laziest-import',
     }
     if any(skip in module_name.lower() for skip in skip_modules):
         return symbols
@@ -348,6 +356,10 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100) -> None:
         max_modules: Maximum number of modules to scan (to prevent timeout)
     """
     global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE
+    
+    # Don't build during initialization to prevent recursion
+    if not _INITIALIZED:
+        return
     
     if _SYMBOL_INDEX_BUILT and not force:
         return
@@ -628,6 +640,10 @@ def _handle_symbol_not_found(name: str) -> Optional[str]:
     Returns:
         Module name if found and confirmed, None otherwise
     """
+    # Don't do symbol search during initialization
+    if not _INITIALIZED:
+        return None
+    
     # Check if already confirmed before
     if name in _CONFIRMED_MAPPINGS:
         return _CONFIRMED_MAPPINGS[name]
@@ -995,7 +1011,15 @@ def _start_background_preload(modules: List[str]) -> None:
     Args:
         modules: List of module names to preload
     """
+    # Don't start background preload during initialization
+    if not _INITIALIZED:
+        return
+    
     def _preload():
+        # Double-check initialization status in the thread
+        if not _INITIALIZED:
+            return
+            
         for module_name in modules:
             try:
                 # Only preload if module is in _sys_module.modules (already imported before)
@@ -1148,7 +1172,9 @@ def _rebuild_global_namespace() -> None:
     """
     Rebuild the global namespace with current aliases.
     
-    Creates LazyModule proxies for all aliases and injects into globals.
+    Creates LazyModule proxies for all aliases.
+    Note: We no longer inject into globals() to avoid recursion issues.
+    The __getattr__ hook handles attribute access instead.
     """
     global _LAZY_MODULES
     
@@ -1156,14 +1182,12 @@ def _rebuild_global_namespace() -> None:
     for alias in list(_LAZY_MODULES.keys()):
         if alias not in _ALIAS_MAP:
             del _LAZY_MODULES[alias]
-            if alias in globals():
-                del globals()[alias]
     
     # Create LazyModule proxies for all current aliases
+    # Don't inject into globals() - let __getattr__ handle it
     for alias, module_name in _ALIAS_MAP.items():
         if alias not in _LAZY_MODULES:
             _LAZY_MODULES[alias] = LazyModule(alias, module_name)
-        globals()[alias] = _LAZY_MODULES[alias]
 
 
 def _build_known_modules_cache() -> Set[str]:
@@ -1196,7 +1220,7 @@ def _build_known_modules_cache() -> Set[str]:
             continue
     
     # Add standard library modules (prefer _sys_module.stdlib_module_names for Python 3.10+)
-    if hasattr(sys, 'stdlib_module_names'):
+    if hasattr(_sys_module, 'stdlib_module_names'):
         modules.update(_sys_module.stdlib_module_names)
     else:
         # Fallback for Python 3.8-3.9: manually add common standard library modules
@@ -2645,6 +2669,15 @@ def __getattr__(name: str) -> LazyModule:
     Called when accessing laziest_import.xxx or from laziest_import import xxx
     where xxx is not defined.
     """
+    global _INITIALIZING, _INITIALIZED
+    
+    # Prevent recursion during initialization
+    if _INITIALIZING and not _INITIALIZED:
+        raise AttributeError(
+            f"module '{__name__}' is still initializing, cannot access '{name}' yet. "
+            f"This is likely caused by a circular import."
+        )
+    
     # If it's a reserved name, raise AttributeError (shouldn't happen if defined correctly)
     if name in _RESERVED_NAMES:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
@@ -2662,7 +2695,8 @@ def __getattr__(name: str) -> LazyModule:
             return _get_lazy_module(name)
     
     # Symbol search: try to find class/function in installed packages
-    if _SYMBOL_SEARCH_CONFIG["enabled"]:
+    # Skip symbol search during initialization to prevent recursion
+    if _SYMBOL_SEARCH_CONFIG["enabled"] and _INITIALIZED:
         found_module = _handle_symbol_not_found(name)
         if found_module:
             # _handle_symbol_not_found already registered the alias
@@ -2673,7 +2707,7 @@ def __getattr__(name: str) -> LazyModule:
     msg = f"module '{__name__}' has no attribute '{name}'."
     if available:
         msg += f" Available modules: {available}... (use list_available() to see all)"
-    if _SYMBOL_SEARCH_CONFIG["enabled"]:
+    if _SYMBOL_SEARCH_CONFIG["enabled"] and _INITIALIZED:
         msg += f"\nTip: Use search_symbol('{name}') to search for classes/functions in installed packages."
     raise AttributeError(msg)
 
@@ -2752,14 +2786,48 @@ def __dir__() -> List[str]:
 
 # ============== Initialization ==============
 
-# Load aliases from config files
-_ALIAS_MAP = _load_all_aliases()
+def _do_initialize() -> None:
+    """
+    Perform module initialization with protection against recursion.
+    """
+    global _INITIALIZING, _INITIALIZED, _INIT_LOCK, _ALIAS_MAP
+    
+    # Already initialized or currently initializing
+    if _INITIALIZED:
+        return
+    if _INITIALIZING:
+        # Recursive call during initialization - this should not happen
+        # but we protect against it anyway
+        return
+    
+    _INITIALIZING = True
+    
+    try:
+        # Initialize lock for thread safety
+        _INIT_LOCK = _threading_module.RLock()
+        
+        # Load aliases from config files FIRST, before any other operation
+        _ALIAS_MAP.update(_load_all_aliases())
+        
+        # Create LazyModule proxies for all aliases
+        _rebuild_global_namespace()
+        
+        # Mark as initialized BEFORE file cache init
+        # (file cache init might trigger module access)
+        _INITIALIZED = True
+        
+        # Initialize file cache for the caller (safe now that we're initialized)
+        _init_file_cache()
+        
+    finally:
+        _INITIALIZING = False
 
-# Create LazyModule proxies for all aliases and inject into global namespace
-_rebuild_global_namespace()
 
-# Initialize file cache for the caller
-_init_file_cache()
+# Initialize _ALIAS_MAP as empty dict first
+_ALIAS_MAP: Dict[str, str] = {}
+
+# Perform initialization
+_do_initialize()
 
 # Dynamically generate __all__, including all registered aliases and public API
 __all__: List[str] = list(_ALIAS_MAP.keys()) + [
