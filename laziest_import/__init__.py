@@ -1208,7 +1208,14 @@ def _validate_alias(alias: str, module_name: str) -> bool:
         return False
     if not alias or not module_name:
         return False
+    # Allow non-identifier aliases for pip package name mappings
+    # (e.g., "scikit-learn", "xml.etree") - these are used for installation lookup
+    # Only warn for truly invalid identifiers (like starting with digit)
     if not alias.isidentifier():
+        # Skip warning for pip package names (contain -) or module paths (contain .)
+        if '-' in alias or '.' in alias:
+            return True  # Valid for pip package mapping
+        # Warn for other invalid identifiers (e.g., "123invalid")
         _warnings_module.warn(f"Alias '{alias}' is not a valid Python identifier")
         return False
     return True

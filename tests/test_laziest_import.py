@@ -568,10 +568,10 @@ class TestValidateAliases:
         """Test validating aliases with invalid identifiers"""
         import laziest_import as lz
         
-        # Test with invalid alias names
-        result = lz.validate_aliases({"123invalid": "os", "with-dash": "sys"})
+        # Test with invalid alias names (starting with digit is truly invalid)
+        result = lz.validate_aliases({"123invalid": "os", "another_invalid": "sys"})
         assert "123invalid" in result["invalid"]
-        assert "with-dash" in result["invalid"]
+        # Note: aliases with '-' or '.' are now valid for pip package name mapping
     
     def test_validate_aliases_empty_module(self):
         """Test validating aliases with empty module name"""
