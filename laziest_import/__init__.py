@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2.3"
+__version__ = "0.0.3-pre1"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
@@ -1737,12 +1737,67 @@ def _save_current_cache() -> None:
 _atexit_module.register(_save_current_cache)
 
 
+def _get_alias_dir() -> _Path_class:
+    """
+    Get the package aliases directory.
+    
+    Returns:
+        Path to the aliases directory containing A-Z letter files
+    """
+    return _Path_class(__file__).parent / "aliases"
+
+
+def _lookup_alias_fast(alias: str) -> Optional[str]:
+    """
+    Fast lookup of a single alias by loading only the relevant letter file.
+    
+    This is more efficient than loading all aliases when looking up a single alias.
+    
+    Args:
+        alias: The alias to look up
+        
+    Returns:
+        The module name if found, None otherwise
+    """
+    if not alias:
+        return None
+    
+    # Determine the letter file
+    first_char = alias[0].upper()
+    if first_char.isalpha():
+        letter = first_char
+    else:
+        letter = '_'
+    
+    # Load only the relevant letter file from package
+    alias_dir = _get_alias_dir()
+    letter_aliases = _load_aliases_from_letter_file(alias_dir, letter)
+    
+    if alias in letter_aliases:
+        return letter_aliases[alias]
+    
+    # Check user/project config directories (A-Z files)
+    for dir_path in _get_config_dirs():
+        if dir_path.exists() and dir_path.is_dir():
+            dir_aliases = _load_aliases_from_letter_file(dir_path, letter)
+            if alias in dir_aliases:
+                return dir_aliases[alias]
+    
+    # Check user/project config files as fallback
+    for path in _get_config_paths():
+        file_aliases = _load_aliases_from_file(path)
+        if alias in file_aliases:
+            return file_aliases[alias]
+    
+    return None
+
+
 def _get_config_paths() -> List[_Path_class]:
     """
     Get configuration file paths in priority order (lowest to highest).
     
     Priority:
-        1. Package default: laziest_import/aliases.json
+        1. Package default: laziest_import/aliases/*.json (categorized)
         2. User global: ~/.laziest_import/aliases.json
         3. Project level: ./.laziest_import.json
     
@@ -1750,11 +1805,137 @@ def _get_config_paths() -> List[_Path_class]:
         List of configuration file paths
     """
     paths = [
-        _Path_class(__file__).parent / "aliases.json",  # Package default
         _Path_class.home() / ".laziest_import" / "aliases.json",  # User global
         _Path_class.cwd() / ".laziest_import.json",  # Project level
     ]
     return paths
+
+
+def _get_config_dirs() -> List[_Path_class]:
+    """
+    Get configuration directory paths for letter-based alias files.
+    
+    Users can organize their own aliases in A-Z.json files for faster loading.
+    
+    Priority:
+        1. User global: ~/.laziest_import/aliases/ (A-Z.json files)
+        2. Project level: ./.laziest_import/ (A-Z.json files)
+    
+    Returns:
+        List of configuration directory paths
+    """
+    dirs = [
+        _Path_class.home() / ".laziest_import" / "aliases",  # User global
+        _Path_class.cwd() / ".laziest_import",  # Project level
+    ]
+    return dirs
+
+
+def _load_aliases_from_letter_file(dir_path: _Path_class, letter: str) -> Dict[str, str]:
+    """
+    Load aliases from a specific letter file (e.g., A.json, B.json).
+    
+    Args:
+        dir_path: Path to the aliases directory
+        letter: The letter (A-Z) or '_' for non-alphabetic aliases
+        
+    Returns:
+        Dictionary of alias -> module_name mappings
+    """
+    aliases: Dict[str, str] = {}
+    
+    letter = letter.upper()
+    if letter not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_':
+        return aliases
+    
+    file_path = dir_path / f"{letter}.json"
+    if not file_path.exists():
+        return aliases
+    
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            data = _json_module.load(f)
+        
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, str):
+                    aliases[key] = value
+    except (_json_module.JSONDecodeError, OSError) as e:
+        if _DEBUG_MODE:
+            _logging_module.warning(f"Failed to load aliases from {file_path}: {e}")
+    
+    return aliases
+
+
+def _check_duplicates(aliases: Dict[str, str], source: str = "") -> List[Tuple[str, str, str]]:
+    """
+    Check for duplicate aliases with different module mappings.
+    
+    Args:
+        aliases: Dictionary of alias -> module_name mappings
+        source: Source description for error messages
+        
+    Returns:
+        List of (alias, module1, module2) tuples for conflicts
+    """
+    # Track all mappings for each alias
+    alias_sources: Dict[str, List[str]] = {}
+    for alias, module in aliases.items():
+        if alias not in alias_sources:
+            alias_sources[alias] = []
+        if module not in alias_sources[alias]:
+            alias_sources[alias].append(module)
+    
+    # Find duplicates with different modules
+    duplicates = []
+    for alias, modules in alias_sources.items():
+        if len(modules) > 1:
+            duplicates.append((alias, modules[0], modules[1]))
+    
+    return duplicates
+
+
+def _load_aliases_from_dir(dir_path: _Path_class, check_duplicates: bool = True) -> Dict[str, str]:
+    """
+    Load aliases from A-Z letter files in a directory.
+    
+    File naming convention:
+        - A.json: aliases starting with 'A' or 'a'
+        - B.json: aliases starting with 'B' or 'b'
+        - ...
+        - Z.json: aliases starting with 'Z' or 'z'
+        - _.json: non-alphabetic aliases
+    
+    Args:
+        dir_path: Path to the directory containing alias JSON files
+        check_duplicates: If True, raise error on duplicate aliases with different modules
+        
+    Returns:
+        Dictionary of alias -> module_name mappings
+        
+    Raises:
+        ValueError: If duplicates found with different module mappings
+    """
+    aliases: Dict[str, str] = {}
+    
+    if not dir_path.exists() or not dir_path.is_dir():
+        return aliases
+    
+    # Load from A-Z and _.json files
+    for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_':
+        letter_aliases = _load_aliases_from_letter_file(dir_path, letter)
+        if letter_aliases:
+            # Check for in-file duplicates
+            for alias, module in letter_aliases.items():
+                if alias in aliases and aliases[alias] != module:
+                    if check_duplicates:
+                        raise ValueError(
+                            f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                            f"'{aliases[alias]}' vs '{module}'"
+                        )
+                aliases[alias] = module
+    
+    return aliases
 
 
 def _load_aliases_from_file(path: _Path_class) -> Dict[str, str]:
@@ -1794,21 +1975,65 @@ def _load_aliases_from_file(path: _Path_class) -> Dict[str, str]:
         return {}
 
 
-def _load_all_aliases() -> Dict[str, str]:
+def _load_all_aliases(check_duplicates: bool = True) -> Dict[str, str]:
     """
-    Load aliases from all configuration files.
+    Load aliases from all sources.
     
-    Later files override earlier ones (project > user > default).
+    Loading order (later overrides earlier):
+        1. Package aliases directory (laziest_import/aliases/A-Z.json)
+        2. User global directory (~/.laziest_import/aliases/A-Z.json)
+        3. User global file (~/.laziest_import/aliases.json)
+        4. Project level directory (./.laziest_import/A-Z.json)
+        5. Project level file (./.laziest_import.json)
     
+    Args:
+        check_duplicates: If True, raise error on duplicate aliases with different modules
+        
     Returns:
         Combined dictionary of all aliases
+        
+    Raises:
+        ValueError: If duplicates found with different module mappings
     """
     aliases: Dict[str, str] = {}
+    sources: List[Tuple[str, Dict[str, str]]] = []  # Track sources for duplicate reporting
     
+    # 1. Load from package aliases directory (A-Z files)
+    alias_dir = _get_alias_dir()
+    dir_aliases = _load_aliases_from_dir(alias_dir, check_duplicates=False)
+    if dir_aliases:
+        aliases.update(dir_aliases)
+        sources.append(("package aliases", dir_aliases))
+    
+    # 2. Load from user/project config directories (A-Z files)
+    for dir_path in _get_config_dirs():
+        if dir_path.exists() and dir_path.is_dir():
+            dir_aliases = _load_aliases_from_dir(dir_path, check_duplicates=False)
+            if dir_aliases:
+                sources.append((str(dir_path), dir_aliases))
+                for alias, module in dir_aliases.items():
+                    if alias in aliases and aliases[alias] != module:
+                        if check_duplicates:
+                            raise ValueError(
+                                f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                                f"'{aliases[alias]}' vs '{module}' (from {dir_path})"
+                            )
+                    aliases[alias] = module
+    
+    # 3. Load from user/project config files
     for path in _get_config_paths():
         file_aliases = _load_aliases_from_file(path)
         if file_aliases:
-            aliases.update(file_aliases)
+            sources.append((str(path), file_aliases))
+            # Check for conflicts
+            for alias, module in file_aliases.items():
+                if alias in aliases and aliases[alias] != module:
+                    if check_duplicates:
+                        raise ValueError(
+                            f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                            f"'{aliases[alias]}' (from package) vs '{module}' (from {path})"
+                        )
+                aliases[alias] = module
     
     return aliases
 
@@ -1984,55 +2209,346 @@ def _get_module_abbreviations() -> Dict[str, str]:
         Dictionary mapping abbreviation to full module name
     """
     return {
-        # Data Science
+        # ========== Data Science ==========
         "np": "numpy", "numpy": "numpy",
         "pd": "pandas", "pandas": "pandas",
         "plt": "matplotlib.pyplot", "mpl": "matplotlib",
+        "matplotlib": "matplotlib",
         "sns": "seaborn", "seaborn": "seaborn",
         "sp": "scipy", "scipy": "scipy",
         "sk": "sklearn", "sklearn": "sklearn",
-        # Machine Learning
+        "stats": "scipy.stats",
+        "linalg": "scipy.linalg",
+        "optimize": "scipy.optimize",
+        "fft": "scipy.fft",
+        "sparse": "scipy.sparse",
+        
+        # ========== Machine Learning ==========
         "tf": "tensorflow", "tensorflow": "tensorflow",
         "torch": "torch", "pytorch": "torch",
         "keras": "keras",
         "xgb": "xgboost", "xgboost": "xgboost",
         "lgb": "lightgbm", "lightgbm": "lightgbm",
         "cat": "catboost", "catboost": "catboost",
-        # Web
+        "ensemble": "sklearn.ensemble",
+        "linear_model": "sklearn.linear_model",
+        "tree": "sklearn.tree",
+        "svm": "sklearn.svm",
+        "cluster": "sklearn.cluster",
+        "decomposition": "sklearn.decomposition",
+        "preprocessing": "sklearn.preprocessing",
+        "model_selection": "sklearn.model_selection",
+        "metrics": "sklearn.metrics",
+        "pipeline": "sklearn.pipeline",
+        "feature_extraction": "sklearn.feature_extraction",
+        
+        # ========== Deep Learning ==========
+        "nn": "torch.nn",
+        "F": "torch.nn.functional",
+        "func": "torch.nn.functional",
+        "optim": "torch.optim",
+        "data": "torch.utils.data",
+        "DataLoader": "torch.utils.data",
+        "autograd": "torch.autograd",
+        "distributions": "torch.distributions",
+        "jit": "torch.jit",
+        "onnx": "torch.onnx",
+        "vision": "torchvision",
+        "tv": "torchvision",
+        "transforms": "torchvision.transforms",
+        "models": "torchvision.models",
+        "audio": "torchaudio",
+        "text": "torchtext",
+        
+        # ========== TensorFlow/Keras ==========
+        "layers": "tensorflow.keras.layers",
+        "models_tf": "tensorflow.keras.models",
+        "callbacks": "tensorflow.keras.callbacks",
+        "losses": "tensorflow.keras.losses",
+        "optimizers": "tensorflow.keras.optimizers",
+        "backend": "tensorflow.keras.backend",
+        "regularizers": "tensorflow.keras.regularizers",
+        
+        # ========== Web Frameworks ==========
         "flask": "flask", "django": "django",
         "fastapi": "fastapi", "api": "fastapi",
+        "starlette": "starlette",
+        "tornado": "tornado",
+        "aiohttp": "aiohttp",
+        "sanic": "sanic",
+        "bottle": "bottle",
+        "cherrypy": "cherrypy",
+        "pyramid": "pyramid",
+        
+        # ========== Web Scraping & HTTP ==========
         "bs4": "bs4", "beautifulsoup": "bs4",
+        "BeautifulSoup": "bs4",
         "requests": "requests", "http": "httpx",
-        # Database
+        "httpx": "httpx",
+        "aiohttp_client": "aiohttp",
+        "scrapy": "scrapy",
+        "selenium": "selenium",
+        "webdriver": "selenium.webdriver",
+        "playwright": "playwright",
+        "lxml": "lxml",
+        "html5lib": "html5lib",
+        "pyquery": "pyquery",
+        
+        # ========== Database ==========
         "db": "sqlite3", "sql": "sqlalchemy",
         "sa": "sqlalchemy", "orm": "sqlalchemy.orm",
-        "mongo": "pymongo", "redis": "redis",
-        # Utils
-        "tqdm": "tqdm", "log": "logging",
-        "yaml": "yaml", "toml": "toml",
-        # Crypto
-        "web3": "web3", "eth": "web3",
-        # GUI
-        "qt": "PyQt6", "tk": "tkinter",
-        "gui": "tkinter",
-        # Cloud
+        "mongo": "pymongo", "pymongo": "pymongo",
+        "redis": "redis",
+        "mysql": "pymysql",
+        "pymysql": "pymysql",
+        "postgres": "psycopg2",
+        "psycopg": "psycopg2",
+        "sqlite": "sqlite3",
+        "peewee": "peewee",
+        "tortoise": "tortoise.orm",
+        "databases": "databases",
+        "alembic": "alembic",
+        
+        # ========== Cloud Services ==========
         "aws": "boto3", "s3": "boto3",
+        "boto": "boto3", "boto3": "boto3",
         "gcs": "google.cloud.storage",
-        # NLP
+        "gcp": "google.cloud",
+        "azure": "azure",
+        "azure_storage": "azure.storage.blob",
+        
+        # ========== NLP ==========
         "nlp": "spacy", "spacy": "spacy",
         "nltk": "nltk",
         "hf": "transformers",
-        # Visualization
+        "transformers": "transformers",
+        "tokenizers": "tokenizers",
+        "gensim": "gensim",
+        "textblob": "textblob",
+        "flair": "flair",
+        "allennlp": "allennlp",
+        "stanza": "stanza",
+        "polyglot": "polyglot",
+        
+        # ========== Visualization ==========
         "px": "plotly.express", "go": "plotly.graph_objects",
-        "alt": "altair",
-        # Async
-        "aio": "asyncio", "async": "asyncio",
-        # Others
+        "plotly": "plotly",
+        "alt": "altair", "altair": "altair",
+        "bokeh": "bokeh",
+        "holoviews": "holoviews",
+        "dash": "dash",
+        "st": "streamlit",
+        "streamlit": "streamlit",
+        "gradio": "gradio",
+        "vispy": "vispy",
+        "mayavi": "mayavi",
+        "pygal": "pygal",
+        
+        # ========== Image Processing ==========
         "cv": "cv2", "opencv": "cv2",
         "pil": "PIL", "pillow": "PIL",
+        "PIL": "PIL",
+        "Image": "PIL.Image",
         "image": "PIL.Image",
-        "crypto": "cryptography",
+        "imageio": "imageio",
+        "scikit_image": "skimage",
+        "skimage": "skimage",
+        "mahotas": "mahotas",
+        "simplecv": "SimpleCV",
+        "wand": "wand",
+        
+        # ========== GUI ==========
+        "qt": "PyQt6", "tk": "tkinter",
+        "gui": "tkinter",
+        "tkinter": "tkinter",
+        "PyQt5": "PyQt5",
+        "PyQt6": "PyQt6",
+        "PySide2": "PySide2",
+        "PySide6": "PySide6",
+        "kivy": "kivy",
+        "wx": "wx",
+        "wxpython": "wx",
+        "flet": "flet",
+        "dearpygui": "dearpygui",
+        "pygame": "pygame",
+        
+        # ========== Testing ==========
         "test": "pytest", "pytest": "pytest",
+        "unittest": "unittest",
+        "mock": "unittest.mock",
+        "hypothesis": "hypothesis",
+        "faker": "faker",
+        "factory": "factory_boy",
+        "coverage": "coverage",
+        "nose": "nose",
+        
+        # ========== Async & Concurrency ==========
+        "aio": "asyncio", "async": "asyncio",
+        "asyncio": "asyncio",
+        "concurrent": "concurrent.futures",
+        "threading": "threading",
+        "multiprocessing": "multiprocessing",
+        "celery": "celery",
+        "dramatiq": "dramatiq",
+        "huey": "huey",
+        "rq": "rq",
+        
+        # ========== Configuration & Serialization ==========
+        "yaml": "yaml", "pyyaml": "yaml",
+        "toml": "toml",
+        "json": "json",
+        "pickle": "pickle",
+        "configparser": "configparser",
+        "dotenv": "dotenv",
+        "hydra": "hydra",
+        "omegaconf": "omegaconf",
+        
+        # ========== Logging & Monitoring ==========
+        "log": "logging",
+        "logging": "logging",
+        "loguru": "loguru",
+        "structlog": "structlog",
+        "sentry": "sentry_sdk",
+        "prometheus": "prometheus_client",
+        "opentelemetry": "opentelemetry",
+        
+        # ========== CLI ==========
+        "click": "click",
+        "argparse": "argparse",
+        "typer": "typer",
+        "rich": "rich",
+        "prompt_toolkit": "prompt_toolkit",
+        "questionary": "questionary",
+        
+        # ========== Security & Crypto ==========
+        "crypto": "cryptography",
+        "cryptography": "cryptography",
+        "hashlib": "hashlib",
+        "hmac": "hmac",
+        "secrets": "secrets",
+        "jwt": "jwt",
+        "pyjwt": "jwt",
+        "passlib": "passlib",
+        "bcrypt": "bcrypt",
+        "cryptography_hazmat": "cryptography.hazmat",
+        
+        # ========== Web3 & Blockchain ==========
+        "web3": "web3", "eth": "web3",
+        "brownie": "brownie",
+        "solana": "solana",
+        "web3py": "web3",
+        
+        # ========== Date & Time ==========
+        "datetime": "datetime",
+        "dateutil": "dateutil",
+        "arrow": "arrow",
+        "pendulum": "pendulum",
+        "maya": "maya",
+        "moment": "moment",
+        "pytz": "pytz",
+        "zoneinfo": "zoneinfo",
+        
+        # ========== Data Validation ==========
+        "pydantic": "pydantic",
+        "marshmallow": "marshmallow",
+        "cerberus": "cerberus",
+        "voluptuous": "voluptuous",
+        "validators": "validators",
+        
+        # ========== APIs & Serialization ==========
+        "graphql": "graphql",
+        "graphene": "graphene",
+        "ariadne": "ariadne",
+        "strawberry": "strawberry",
+        "protobuf": "google.protobuf",
+        "thrift": "thrift",
+        "avro": "avro",
+        "msgpack": "msgpack",
+        "orjson": "orjson",
+        "ujson": "ujson",
+        
+        # ========== Environment & System ==========
+        "os": "os",
+        "sys": "sys",
+        "pathlib": "pathlib",
+        "shutil": "shutil",
+        "subprocess": "subprocess",
+        "platform": "platform",
+        "psutil": "psutil",
+        "socket": "socket",
+        "ssl": "ssl",
+        
+        # ========== Science & Engineering ==========
+        "sympy": "sympy",
+        "astropy": "astropy",
+        "astroquery": "astroquery",
+        "biopython": "Bio",
+        "Bio": "Bio",
+        "rdkit": "rdkit",
+        "openmm": "simtk.openmm",
+        "pymc": "pymc",
+        "arviz": "arviz",
+        
+        # ========== Office & Documents ==========
+        "openpyxl": "openpyxl",
+        "xlrd": "xlrd",
+        "xlwt": "xlwt",
+        "docx": "docx",
+        "python_docx": "docx",
+        "pptx": "pptx",
+        "python_pptx": "pptx",
+        "pypdf": "pypdf",
+        "PyPDF2": "PyPDF2",
+        "reportlab": "reportlab",
+        "weasyprint": "weasyprint",
+        "pdfkit": "pdfkit",
+        
+        # ========== Utilities ==========
+        "tqdm": "tqdm",
+        "rich_progress": "rich.progress",
+        "itertools": "itertools",
+        "functools": "functools",
+        "operator": "operator",
+        "copy": "copy",
+        "typing": "typing",
+        "typing_extensions": "typing_extensions",
+        "collections": "collections",
+        "dataclasses": "dataclasses",
+        "enum": "enum",
+        "abc": "abc",
+        "contextlib": "contextlib",
+        "warnings": "warnings",
+        
+        # ========== MLOps ==========
+        "wandb": "wandb",
+        "mlflow": "mlflow",
+        "dvc": "dvc",
+        "clearml": "clearml",
+        "neptune": "neptune",
+        "aim": "aim",
+        "dvclive": "dvclive",
+        "tensorboard": "tensorboard",
+        
+        # ========== Quant & Finance ==========
+        "quantlib": "QuantLib",
+        "zipline": "zipline",
+        "backtrader": "backtrader",
+        "yfinance": "yfinance",
+        "pandas_datareader": "pandas_datareader",
+        "ta": "ta",
+        "ccxt": "ccxt",
+        
+        # ========== Game Development ==========
+        "arcade": "arcade",
+        "panda3d": "panda3d",
+        "godot": "godot",
+        
+        # ========== Audio ==========
+        "pyaudio": "pyaudio",
+        "soundfile": "soundfile",
+        "librosa": "librosa",
+        "pydub": "pydub",
+        "mutagen": "mutagen",
     }
 
 
@@ -2080,6 +2596,333 @@ def _get_package_rename_map() -> Dict[str, str]:
     }
 
 
+def _get_common_submodules() -> Dict[str, Tuple[str, str]]:
+    """
+    Get common submodule mappings for intelligent import suggestions.
+    
+    When user types an abbreviation, suggest the correct parent module + submodule.
+    
+    Returns:
+        Dictionary mapping alias to (parent_module, submodule_path)
+    """
+    return {
+        # PyTorch submodules
+        "nn": ("torch", "torch.nn"),
+        "F": ("torch", "torch.nn.functional"),
+        "func": ("torch", "torch.nn.functional"),
+        "functional": ("torch", "torch.nn.functional"),
+        "optim": ("torch", "torch.optim"),
+        "autograd": ("torch", "torch.autograd"),
+        "DataLoader": ("torch", "torch.utils.data"),
+        "Dataset": ("torch", "torch.utils.data"),
+        "distributions": ("torch", "torch.distributions"),
+        "jit": ("torch", "torch.jit"),
+        "onnx": ("torch", "torch.onnx"),
+        
+        # TorchVision submodules
+        "transforms": ("torchvision", "torchvision.transforms"),
+        "models": ("torchvision", "torchvision.models"),
+        "datasets_tv": ("torchvision", "torchvision.datasets"),
+        
+        # TensorFlow/Keras submodules
+        "layers": ("tensorflow", "tensorflow.keras.layers"),
+        "Model": ("tensorflow", "tensorflow.keras.models"),
+        "callbacks": ("tensorflow", "tensorflow.keras.callbacks"),
+        "losses_tf": ("tensorflow", "tensorflow.keras.losses"),
+        "optimizers_tf": ("tensorflow", "tensorflow.keras.optimizers"),
+        "regularizers": ("tensorflow", "tensorflow.keras.regularizers"),
+        "backend": ("tensorflow", "tensorflow.keras.backend"),
+        
+        # sklearn submodules
+        "ensemble": ("sklearn", "sklearn.ensemble"),
+        "linear": ("sklearn", "sklearn.linear_model"),
+        "tree": ("sklearn", "sklearn.tree"),
+        "svm": ("sklearn", "sklearn.svm"),
+        "cluster": ("sklearn", "sklearn.cluster"),
+        "decomposition": ("sklearn", "sklearn.decomposition"),
+        "preprocess": ("sklearn", "sklearn.preprocessing"),
+        "model_selection": ("sklearn", "sklearn.model_selection"),
+        "metrics_sk": ("sklearn", "sklearn.metrics"),
+        "pipeline": ("sklearn", "sklearn.pipeline"),
+        "feature": ("sklearn", "sklearn.feature_extraction"),
+        "neighbors": ("sklearn", "sklearn.neighbors"),
+        "naive_bayes": ("sklearn", "sklearn.naive_bayes"),
+        
+        # scipy submodules
+        "stats": ("scipy", "scipy.stats"),
+        "linalg": ("scipy", "scipy.linalg"),
+        "optimize": ("scipy", "scipy.optimize"),
+        "integrate": ("scipy", "scipy.integrate"),
+        "interpolate": ("scipy", "scipy.interpolate"),
+        "signal": ("scipy", "scipy.signal"),
+        "ndimage": ("scipy", "scipy.ndimage"),
+        "spatial": ("scipy", "scipy.spatial"),
+        "special": ("scipy", "scipy.special"),
+        "io_sp": ("scipy", "scipy.io"),
+        "fft": ("scipy", "scipy.fft"),
+        "sparse": ("scipy", "scipy.sparse"),
+        
+        # numpy submodules
+        "random": ("numpy", "numpy.random"),
+        "linalg_np": ("numpy", "numpy.linalg"),
+        "fft_np": ("numpy", "numpy.fft"),
+        "polynomial": ("numpy", "numpy.polynomial"),
+        
+        # pandas submodules
+        "plotting": ("pandas", "pandas.plotting"),
+        "api": ("pandas", "pandas.api"),
+        
+        # matplotlib submodules
+        "pyplot": ("matplotlib", "matplotlib.pyplot"),
+        "animation": ("matplotlib", "matplotlib.animation"),
+        "cm": ("matplotlib", "matplotlib.cm"),
+        "colors": ("matplotlib", "matplotlib.colors"),
+        "gridspec": ("matplotlib", "matplotlib.gridspec"),
+        
+        # PIL submodules
+        "Image": ("PIL", "PIL.Image"),
+        "ImageDraw": ("PIL", "PIL.ImageDraw"),
+        "ImageFont": ("PIL", "PIL.ImageFont"),
+        "ImageFilter": ("PIL", "PIL.ImageFilter"),
+        "ImageEnhance": ("PIL", "PIL.ImageEnhance"),
+        
+        # cv2 submodules
+        "cv2_imgproc": ("cv2", "cv2.imgproc"),
+        "cv2_highgui": ("cv2", "cv2.highgui"),
+        "cv2_dnn": ("cv2", "cv2.dnn"),
+        
+        # asyncio submodules
+        "asyncio_subprocess": ("asyncio", "asyncio.subprocess"),
+        "asyncio_queues": ("asyncio", "asyncio.queues"),
+        
+        # logging submodules
+        "handlers": ("logging", "logging.handlers"),
+        "config_log": ("logging", "logging.config"),
+        
+        # http submodules
+        "client": ("http", "http.client"),
+        "server": ("http", "http.server"),
+        "cookies": ("http", "http.cookies"),
+        
+        # unittest submodules
+        "mock": ("unittest", "unittest.mock"),
+        "TestCase": ("unittest", "unittest"),
+        
+        # transformers submodules
+        "AutoTokenizer": ("transformers", "transformers"),
+        "AutoModel": ("transformers", "transformers"),
+        "AutoConfig": ("transformers", "transformers"),
+        "pipeline_hf": ("transformers", "transformers"),
+        "Trainer": ("transformers", "transformers"),
+        
+        # plotly submodules
+        "graph_objects": ("plotly", "plotly.graph_objects"),
+        "express": ("plotly", "plotly.express"),
+        "figure_factory": ("plotly", "plotly.figure_factory"),
+        "subplots": ("plotly", "plotly.subplots"),
+        
+        # sqlalchemy submodules
+        "Column": ("sqlalchemy", "sqlalchemy"),
+        "create_engine": ("sqlalchemy", "sqlalchemy"),
+        "sessionmaker": ("sqlalchemy", "sqlalchemy.orm"),
+        "declarative_base": ("sqlalchemy", "sqlalchemy.orm"),
+        
+        # flask submodules
+        "request": ("flask", "flask"),
+        "render_template": ("flask", "flask"),
+        "redirect": ("flask", "flask"),
+        "url_for": ("flask", "flask"),
+        "jsonify": ("flask", "flask"),
+        
+        # django submodules
+        "models_dj": ("django", "django.db.models"),
+        "forms": ("django", "django.forms"),
+        "views": ("django", "django.views"),
+        "urls": ("django", "django.urls"),
+        "admin": ("django", "django.contrib.admin"),
+        "auth": ("django", "django.contrib.auth"),
+        
+        # fastapi submodules
+        "FastAPI": ("fastapi", "fastapi"),
+        "APIRouter": ("fastapi", "fastapi"),
+        "Depends": ("fastapi", "fastapi"),
+        "HTTPException": ("fastapi", "fastapi"),
+        "Body": ("fastapi", "fastapi"),
+        
+        # nltk submodules
+        "tokenize": ("nltk", "nltk.tokenize"),
+        "stem": ("nltk", "nltk.stem"),
+        "corpus": ("nltk", "nltk.corpus"),
+        "tag": ("nltk", "nltk.tag"),
+        "chunk": ("nltk", "nltk.chunk"),
+        
+        # rich submodules
+        "print_rich": ("rich", "rich"),
+        "Console": ("rich", "rich.console"),
+        "Table": ("rich", "rich.table"),
+        "Progress": ("rich", "rich.progress"),
+        "Panel": ("rich", "rich.panel"),
+    }
+
+
+def _get_common_misspellings() -> Dict[str, str]:
+    """
+    Get common misspelling corrections for popular packages.
+    
+    Returns:
+        Dictionary mapping misspelling to correct name
+    """
+    return {
+        # Common typos for popular packages
+        "nump": "numpy",
+        "numpi": "numpy",
+        "nupy": "numpy",
+        "numby": "numpy",
+        "panda": "pandas",
+        "pand": "pandas",
+        "pandass": "pandas",
+        "matplot": "matplotlib",
+        "matplotlip": "matplotlib",
+        "matplolib": "matplotlib",
+        "matploblib": "matplotlib",
+        "seaborne": "seaborn",
+        "seabourn": "seaborn",
+        "sckit": "sklearn",
+        "scikit": "sklearn",
+        "scikitlearn": "sklearn",
+        "slearn": "sklearn",
+        "sklear": "sklearn",
+        
+        # ML frameworks
+        "tensorflo": "tensorflow",
+        "tensorflw": "tensorflow",
+        "tensrflow": "tensorflow",
+        "torchh": "torch",
+        "pytorc": "torch",
+        "pytorchh": "torch",
+        "kerass": "keras",
+        "xgbooost": "xgboost",
+        "xgboostt": "xgboost",
+        "lightgbmm": "lightgbm",
+        "lightgmb": "lightgbm",
+        
+        # Web frameworks
+        "flaskk": "flask",
+        "djangoo": "django",
+        "fastapii": "fastapi",
+        "fastepy": "fastapi",
+        
+        # Data tools
+        "requestss": "requests",
+        "requets": "requests",
+        "beatifulsoup": "bs4",
+        "beautifilsoup": "bs4",
+        "beautisoup": "bs4",
+        "beautifullsoup": "bs4",
+        "selenum": "selenium",
+        "selenim": "selenium",
+        "scrappy": "scrapy",
+        
+        # Database
+        "sqlalchemyy": "sqlalchemy",
+        "sqlalchmey": "sqlalchemy",
+        "sqlachemy": "sqlalchemy",
+        "pymongoo": "pymongo",
+        "rediss": "redis",
+        
+        # Visualization
+        "plotlyy": "plotly",
+        "plotle": "plotly",
+        "altairr": "altair",
+        "altrair": "altair",
+        "boleh": "bokeh",
+        "bookeh": "bokeh",
+        "streamlit": "streamlit",
+        "streamlit": "streamlit",
+        "gradiio": "gradio",
+        "gradoo": "gradio",
+        
+        # NLP
+        "nltkk": "nltk",
+        "spacyy": "spacy",
+        "spacey": "spacy",
+        "tranformers": "transformers",
+        "transformer": "transformers",
+        "transformres": "transformers",
+        "gensimm": "gensim",
+        "gensem": "gensim",
+        
+        # Image
+        "opencvv": "cv2",
+        "opncv": "cv2",
+        "pilllow": "PIL",
+        "pilow": "PIL",
+        "pilow": "PIL",
+        "skimmage": "skimage",
+        "scikitimage": "skimage",
+        
+        # Utils
+        "tqmdd": "tqdm",
+        "tqmd": "tqdm",
+        "pyyami": "yaml",
+        "pyyam": "yaml",
+        "yyaml": "yaml",
+        
+        # Testing
+        "pyttest": "pytest",
+        "pytes": "pytest",
+        "pythest": "pytest",
+        
+        # Async
+        "asynccio": "asyncio",
+        "asyncioo": "asyncio",
+        "asybcio": "asyncio",
+        
+        # Cloud
+        "botooo": "boto3",
+        "botto3": "boto3",
+        
+        # GUI
+        "pyqtt": "PyQt6",
+        "pyqt5": "PyQt6",
+        "tkintr": "tkinter",
+        "tkinterr": "tkinter",
+        "kivyy": "kivy",
+        "pygamee": "pygame",
+        
+        # Security
+        "crytography": "cryptography",
+        "cryptograph": "cryptography",
+        "cryptograpy": "cryptography",
+        "crypo": "cryptography",
+        
+        # Data validation
+        "pydanticc": "pydantic",
+        "pydantc": "pydantic",
+        
+        # CLI
+        "clic": "click",
+        "clickk": "click",
+        "typper": "typer",
+        "typeer": "typer",
+        "richh": "rich",
+        
+        # Logging
+        "loging": "logging",
+        "loggging": "logging",
+        "loguruu": "loguru",
+        
+        # Config
+        "dottenv": "dotenv",
+        "dtenv": "dotenv",
+        
+        # Time
+        "datatime": "datetime",
+        "datatime": "datetime",
+        "dattime": "datetime",
+    }
+
+
 def _search_module(name: str) -> Optional[str]:
     """
     Search for a matching module name with enhanced fuzzy matching.
@@ -2088,12 +2931,13 @@ def _search_module(name: str) -> Optional[str]:
     1. Exact match in known modules
     2. Direct import test
     3. Abbreviation expansion
-    4. Package rename mapping
-    5. Case-insensitive match
-    6. Underscore/hyphen variants
-    7. Prefix/suffix match
-    8. Levenshtein distance fuzzy match
-    9. Phonetic/common misspelling match
+    4. Submodule mapping (e.g., nn -> torch.nn)
+    5. Common misspelling correction
+    6. Package rename mapping
+    7. Case-insensitive match
+    8. Underscore/hyphen variants
+    9. Prefix/suffix match
+    10. Levenshtein distance fuzzy match
     
     Args:
         name: Name to search for
@@ -2134,7 +2978,39 @@ def _search_module(name: str) -> Optional[str]:
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
     
-    # 4. Check package rename map (e.g., sklearn -> scikit-learn)
+    # 4. Check submodule mappings (e.g., nn -> torch.nn, F -> torch.nn.functional)
+    submodule_map = _get_common_submodules()
+    if name in submodule_map:
+        parent_module, submodule_path = submodule_map[name]
+        # Check if parent module is available
+        if parent_module in known_modules:
+            return submodule_path
+        try:
+            spec = _importlib_module.util.find_spec(parent_module)
+            if spec is not None:
+                return submodule_path
+        except (ImportError, ModuleNotFoundError, ValueError):
+            pass
+    
+    # 5. Check common misspellings
+    misspellings = _get_common_misspellings()
+    if name_lower in misspellings:
+        corrected = misspellings[name_lower]
+        if corrected in known_modules:
+            if _DEBUG_MODE:
+                _logging_module.debug(
+                    f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'"
+                )
+            return corrected
+        # Try importing the corrected name
+        try:
+            spec = _importlib_module.util.find_spec(corrected)
+            if spec is not None:
+                return corrected
+        except (ImportError, ModuleNotFoundError, ValueError):
+            pass
+    
+    # 6. Check package rename map (e.g., sklearn -> scikit-learn)
     rename_map = _get_package_rename_map()
     if name in rename_map:
         pip_name = rename_map[name]
@@ -2648,7 +3524,12 @@ class LazySubmodule:
 def _get_lazy_module(alias: str) -> LazyModule:
     """Get or create a LazyModule proxy"""
     if alias not in _LAZY_MODULES:
-        module_name = _ALIAS_MAP.get(alias, alias)
+        # Use _ALIAS_MAP if already loaded, otherwise fast lookup
+        if _ALIAS_MAP:
+            module_name = _ALIAS_MAP.get(alias, alias)
+        else:
+            # Fast lookup: only load the relevant letter file
+            module_name = _lookup_alias_fast(alias) or alias
         _LAZY_MODULES[alias] = LazyModule(alias, module_name)
     return _LAZY_MODULES[alias]
 
@@ -2663,6 +3544,23 @@ def get_config_paths() -> List[str]:
         List of configuration file paths as strings
     """
     return [str(p) for p in _get_config_paths()]
+
+
+def get_config_dirs() -> List[str]:
+    """
+    Get all configuration directory paths for letter-based alias files.
+    
+    Users can organize their own aliases in A-Z.json files in these directories
+    for faster loading (only relevant letter file is loaded on demand).
+    
+    Directory structure:
+        ~/.laziest_import/aliases/   - User global (A.json, B.json, ...)
+        ./.laziest_import/            - Project level (A.json, B.json, ...)
+    
+    Returns:
+        List of configuration directory paths as strings
+    """
+    return [str(p) for p in _get_config_dirs()]
 
 
 def reload_aliases() -> None:
@@ -3710,7 +4608,7 @@ _RESERVED_NAMES: Set[str] = {
     "enable_auto_search", "disable_auto_search", "is_auto_search_enabled",
     "search_module", "search_class", "rebuild_module_cache",
     "reload_aliases", "export_aliases", "validate_aliases", "validate_aliases_importable",
-    "get_config_paths",
+    "get_config_paths", "get_config_dirs",
     "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
     "get_import_stats", "reset_import_stats",
     "add_pre_import_hook", "add_post_import_hook",
@@ -3814,6 +4712,7 @@ def __dir__() -> List[str]:
         "validate_aliases",
         "validate_aliases_importable",
         "get_config_paths",
+        "get_config_dirs",
         # Debug & statistics
         "enable_debug_mode",
         "disable_debug_mode",
@@ -3941,6 +4840,7 @@ __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "validate_aliases",
     "validate_aliases_importable",
     "get_config_paths",
+    "get_config_dirs",
     # Debug & statistics
     "enable_debug_mode",
     "disable_debug_mode",

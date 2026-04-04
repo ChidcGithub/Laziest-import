@@ -1,0 +1,20 @@
+{
+  "yagmail": "yagmail",
+  "yaml": "pyyaml",
+  "yamllint": "yamllint",
+  "yapf": "yapf",
+  "yara": "yara-python",
+  "yarl": "yarl",
+  "yattag": "yattag",
+  "yfinance": "yfinance",
+  "yolk": "yolk",
+  "youtube_dl": "youtube-dl",
+  "youtube_transcript_api": "youtube-transcript-api",
+  "youtubesearchpython": "youtubesearchpython",
+  "yoyo": "yoyo",
+  "yoyo_migrations": "yoyo-migrations",
+  "yq": "yq",
+  "yt_dlp": "yt-dlp",
+  "ytmusicapi": "ytmusicapi",
+  "yubikey": "yubikey-manager"
+}

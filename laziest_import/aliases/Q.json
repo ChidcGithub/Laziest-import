@@ -1,0 +1,17 @@
+{
+  "qcloud": "tencentcloud",
+  "qdrant": "qdrant",
+  "qt": "PyQt6",
+  "quart": "quart",
+  "questionary": "questionary",
+  "queue": "queue",
+  "quopri": "quopri",
+  "qdarkstyle": "qdarkstyle",
+  "qrcode": "qrcode",
+  "qtawesome": "qtawesome",
+  "qtconsole": "qtconsole",
+  "qtpy": "qtpy",
+  "quantecon": "quantecon",
+  "queuelib": "queuelib",
+  "quickjs": "quickjs"
+}
