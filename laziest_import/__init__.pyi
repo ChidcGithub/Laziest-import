@@ -273,6 +273,47 @@ def reset_cache_dir() -> None:
     """Reset cache directory to default location."""
     ...
 
+# ============== Auto Install ==============
+
+def enable_auto_install(
+    interactive: bool = True,
+    index: Optional[str] = None,
+    extra_args: Optional[List[str]] = None,
+    prefer_uv: bool = False,
+    silent: bool = False
+) -> None:
+    """Enable automatic installation of missing packages."""
+    ...
+
+def disable_auto_install() -> None:
+    """Disable automatic installation of missing packages."""
+    ...
+
+def is_auto_install_enabled() -> bool:
+    """Check if automatic installation is enabled."""
+    ...
+
+def install_package(
+    package_name: str,
+    index: Optional[str] = None,
+    extra_args: Optional[List[str]] = None,
+    interactive: Optional[bool] = None
+) -> bool:
+    """Install a package manually."""
+    ...
+
+def get_auto_install_config() -> Dict[str, Any]:
+    """Get current auto-install configuration."""
+    ...
+
+def set_pip_index(url: Optional[str]) -> None:
+    """Set custom PyPI mirror index URL."""
+    ...
+
+def set_pip_extra_args(args: List[str]) -> None:
+    """Set extra arguments for pip install."""
+    ...
+
 # ============== Module-level attributes ==============
 
 __all__: List[str]

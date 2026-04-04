@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre12"
+__version__ = "0.0.2"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
@@ -118,6 +118,16 @@ _RETRY_CONFIG: Dict[str, Any] = {
     "max_retries": 3,
     "retry_delay": 0.5,
     "retry_modules": set(),  # Empty set means retry all
+}
+
+# Auto-install configuration
+_AUTO_INSTALL_CONFIG: Dict[str, Any] = {
+    "enabled": False,  # Auto-install disabled by default (safety)
+    "interactive": True,  # Ask user for confirmation before installing
+    "index": None,  # Custom PyPI mirror URL (None = default)
+    "extra_args": [],  # Extra pip install arguments
+    "prefer_uv": False,  # Prefer uv over pip if available
+    "silent": False,  # Suppress pip output
 }
 
 # ============== Symbol Search System ==============
@@ -1801,6 +1811,57 @@ class LazyModule:
                         except ImportError:
                             pass
                 
+                # Try auto-install if enabled
+                if _AUTO_INSTALL_CONFIG["enabled"]:
+                    pip_package = _get_pip_package_name(module_name)
+                    
+                    # Confirm installation if interactive
+                    should_install = True
+                    if _AUTO_INSTALL_CONFIG["interactive"]:
+                        should_install = _interactive_install_confirm(module_name, pip_package)
+                    
+                    if should_install:
+                        success, message = _install_package_sync(
+                            pip_package,
+                            index=_AUTO_INSTALL_CONFIG["index"],
+                            extra_args=_AUTO_INSTALL_CONFIG["extra_args"],
+                            prefer_uv=_AUTO_INSTALL_CONFIG["prefer_uv"],
+                            silent=_AUTO_INSTALL_CONFIG["silent"]
+                        )
+                        
+                        if success:
+                            if _DEBUG_MODE:
+                                _logging_module.info(f"[laziest-import] {message}")
+                            
+                            # Rebuild module cache
+                            rebuild_module_cache()
+                            
+                            # Try importing again
+                            try:
+                                module = _do_import(module_name)
+                                
+                                # Update statistics
+                                elapsed = _time_module.perf_counter() - start_time
+                                _IMPORT_STATS.total_imports += 1
+                                _IMPORT_STATS.total_time += elapsed
+                                _IMPORT_STATS.module_times[module_name] = elapsed
+                                _IMPORT_STATS.module_access_counts[alias] = 1
+                                
+                                # Record for file cache
+                                _record_module_load(module_name)
+                                
+                                object.__setattr__(self, '_cached_module', module)
+                                
+                                return module
+                            except ImportError as import_error:
+                                raise ImportError(
+                                    f"Module '{module_name}' was installed but still cannot be imported. "
+                                    f"Error: {import_error}"
+                                ) from import_error
+                        else:
+                            if _DEBUG_MODE:
+                                _logging_module.warning(f"[laziest-import] Auto-install failed: {message}")
+                
                 raise ImportError(
                     f"Cannot import module '{module_name}' (alias '{alias}'). "
                     f"Please ensure the module is installed: pip install {module_name.split('.')[0]}"
@@ -2578,6 +2639,279 @@ def is_retry_enabled() -> bool:
     return _RETRY_CONFIG["enabled"]
 
 
+# ============== Auto Install API ==============
+
+def _get_pip_package_name(module_name: str) -> str:
+    """
+    Get the pip package name for a module name.
+    
+    Many Python packages have different import names vs pip names.
+    This function maps common cases.
+    
+    Args:
+        module_name: The import module name
+        
+    Returns:
+        The pip package name
+    """
+    # Common mappings: import name -> pip package name
+    rename_map = _get_package_rename_map()
+    
+    # Check direct mapping
+    if module_name in rename_map:
+        return rename_map[module_name]
+    
+    # Check without submodule path
+    base_module = module_name.split('.')[0]
+    if base_module in rename_map:
+        return rename_map[base_module]
+    
+    # Default: assume module name = package name
+    return base_module
+
+
+def _check_uv_available() -> bool:
+    """
+    Check if uv is available in the system.
+    
+    Returns:
+        True if uv is installed and available
+    """
+    import shutil as _shutil
+    return _shutil.which('uv') is not None
+
+
+def _install_package_sync(package_name: str, index: Optional[str] = None, 
+                          extra_args: Optional[List[str]] = None,
+                          prefer_uv: bool = False, silent: bool = False) -> Tuple[bool, str]:
+    """
+    Install a package using pip or uv.
+    
+    Args:
+        package_name: Name of the package to install
+        index: Optional custom PyPI mirror URL
+        extra_args: Additional arguments for pip/uv
+        prefer_uv: Prefer uv over pip if available
+        silent: Suppress output
+        
+    Returns:
+        Tuple of (success, message)
+    """
+    import subprocess as _subprocess_module
+    import shutil as _shutil_module
+    
+    # Build command
+    use_uv = prefer_uv and _check_uv_available()
+    
+    if use_uv:
+        cmd = [_shutil_module.which('uv'), 'pip', 'install', package_name]
+    else:
+        cmd = [_sys_module.executable, '-m', 'pip', 'install', package_name]
+    
+    # Add index URL if specified
+    if index:
+        cmd.extend(['--index-url', index])
+    
+    # Add extra arguments
+    if extra_args:
+        cmd.extend(extra_args)
+    
+    # Add quiet flag if silent
+    if silent:
+        cmd.append('-q')
+    
+    try:
+        result = _subprocess_module.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            return True, result.stdout or f"Successfully installed {package_name}"
+        else:
+            return False, result.stderr or f"Failed to install {package_name}"
+            
+    except _subprocess_module.TimeoutExpired:
+        return False, f"Installation of {package_name} timed out"
+    except FileNotFoundError as e:
+        return False, f"Package manager not found: {e}"
+    except Exception as e:
+        return False, f"Installation failed: {e}"
+
+
+def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
+    """
+    Ask user for confirmation before installing a package.
+    
+    Args:
+        module_name: The module name that was requested
+        package_name: The package that will be installed
+        
+    Returns:
+        True if user confirms, False otherwise
+    """
+    if not _AUTO_INSTALL_CONFIG["interactive"]:
+        return True
+    
+    print(f"\n[laziest-import] Module '{module_name}' is not installed.")
+    print(f"  Package to install: {package_name}")
+    print("-" * 50)
+    
+    try:
+        response = input("Install now? [Y/n]: ").strip().lower()
+        return response in ('', 'y', 'yes')
+    except (EOFError, KeyboardInterrupt):
+        print("\nInstallation cancelled.")
+        return False
+
+
+def install_package(package_name: str, index: Optional[str] = None,
+                    extra_args: Optional[List[str]] = None,
+                    interactive: Optional[bool] = None) -> bool:
+    """
+    Install a package manually.
+    
+    Args:
+        package_name: Name of the package to install (pip name)
+        index: Optional custom PyPI mirror URL
+        extra_args: Additional arguments for pip
+        interactive: Override interactive setting. None = use config.
+        
+    Returns:
+        True if installation succeeded
+        
+    Example:
+        >>> install_package("pandas")
+        >>> install_package("torch", index="https://download.pytorch.org/whl/cpu")
+    """
+    # Use config values for unspecified parameters
+    if index is None:
+        index = _AUTO_INSTALL_CONFIG["index"]
+    if extra_args is None:
+        extra_args = _AUTO_INSTALL_CONFIG["extra_args"]
+    if interactive is None:
+        interactive = _AUTO_INSTALL_CONFIG["interactive"]
+    
+    # Confirm if interactive
+    if interactive:
+        if not _interactive_install_confirm(package_name, package_name):
+            return False
+    
+    # Install
+    success, message = _install_package_sync(
+        package_name,
+        index=index,
+        extra_args=extra_args,
+        prefer_uv=_AUTO_INSTALL_CONFIG["prefer_uv"],
+        silent=_AUTO_INSTALL_CONFIG["silent"]
+    )
+    
+    if success:
+        if _DEBUG_MODE:
+            _logging_module.info(f"[laziest-import] {message}")
+        # Rebuild module cache to include newly installed package
+        rebuild_module_cache()
+        return True
+    else:
+        _logging_module.warning(f"[laziest-import] {message}")
+        return False
+
+
+def enable_auto_install(
+    interactive: bool = True,
+    index: Optional[str] = None,
+    extra_args: Optional[List[str]] = None,
+    prefer_uv: bool = False,
+    silent: bool = False
+) -> None:
+    """
+    Enable automatic installation of missing packages.
+    
+    When enabled, attempting to use a module that is not installed
+    will automatically install it (with optional confirmation).
+    
+    WARNING: This feature installs packages automatically. Use with caution
+    in production environments.
+    
+    Args:
+        interactive: Ask for confirmation before installing (default: True)
+        index: Custom PyPI mirror URL (e.g., Tsinghua mirror for China)
+        extra_args: Additional arguments for pip install
+        prefer_uv: Prefer uv over pip if available (faster)
+        silent: Suppress pip output
+        
+    Example:
+        >>> enable_auto_install()  # Interactive mode (asks before installing)
+        >>> enable_auto_install(interactive=False)  # Auto-install without asking
+        >>> enable_auto_install(index="https://pypi.tuna.tsinghua.edu.cn/simple")  # China mirror
+    """
+    global _AUTO_INSTALL_CONFIG
+    
+    _AUTO_INSTALL_CONFIG["enabled"] = True
+    _AUTO_INSTALL_CONFIG["interactive"] = interactive
+    _AUTO_INSTALL_CONFIG["index"] = index
+    _AUTO_INSTALL_CONFIG["extra_args"] = extra_args or []
+    _AUTO_INSTALL_CONFIG["prefer_uv"] = prefer_uv
+    _AUTO_INSTALL_CONFIG["silent"] = silent
+
+
+def disable_auto_install() -> None:
+    """
+    Disable automatic installation of missing packages.
+    """
+    _AUTO_INSTALL_CONFIG["enabled"] = False
+
+
+def is_auto_install_enabled() -> bool:
+    """
+    Check if automatic installation is enabled.
+    
+    Returns:
+        True if auto-install is enabled
+    """
+    return _AUTO_INSTALL_CONFIG["enabled"]
+
+
+def get_auto_install_config() -> Dict[str, Any]:
+    """
+    Get current auto-install configuration.
+    
+    Returns:
+        Dictionary of configuration options
+    """
+    return dict(_AUTO_INSTALL_CONFIG)
+
+
+def set_pip_index(url: Optional[str]) -> None:
+    """
+    Set custom PyPI mirror index URL.
+    
+    Args:
+        url: PyPI mirror URL, or None to use default
+        
+    Example:
+        >>> set_pip_index("https://pypi.tuna.tsinghua.edu.cn/simple")  # Tsinghua (China)
+        >>> set_pip_index("https://mirrors.aliyun.com/pypi/simple")  # Aliyun (China)
+        >>> set_pip_index(None)  # Reset to default
+    """
+    _AUTO_INSTALL_CONFIG["index"] = url
+
+
+def set_pip_extra_args(args: List[str]) -> None:
+    """
+    Set extra arguments for pip install.
+    
+    Args:
+        args: List of extra arguments
+        
+    Example:
+        >>> set_pip_extra_args(["--no-cache-dir", "--force-reinstall"])
+    """
+    _AUTO_INSTALL_CONFIG["extra_args"] = args
+
+
 # ============== Enhanced Validation API ==============
 
 def validate_aliases_importable(aliases: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, Any]]:
@@ -2743,6 +3077,10 @@ _RESERVED_NAMES: Set[str] = {
     "enable_symbol_search", "disable_symbol_search", "is_symbol_search_enabled",
     "search_symbol", "rebuild_symbol_index", "get_symbol_search_config",
     "get_symbol_cache_info", "clear_symbol_cache",
+    # Auto install
+    "enable_auto_install", "disable_auto_install", "is_auto_install_enabled",
+    "install_package", "get_auto_install_config",
+    "set_pip_index", "set_pip_extra_args",
 }
 
 
@@ -2864,6 +3202,14 @@ def __dir__() -> List[str]:
         "get_symbol_search_config",
         "get_symbol_cache_info",
         "clear_symbol_cache",
+        # Auto install
+        "enable_auto_install",
+        "disable_auto_install",
+        "is_auto_install_enabled",
+        "install_package",
+        "get_auto_install_config",
+        "set_pip_index",
+        "set_pip_extra_args",
     ])
     return sorted(result)
 
