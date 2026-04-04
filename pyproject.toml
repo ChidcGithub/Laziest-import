@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "laziest-import"
-version = "0.0.2-pre6"
+version = "0.0.2-pre12"
 description = "Automatic lazy import library - use common libraries without explicit import statements"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 authors = [
-    {name = "Chidc", email = "chidc@example.com"}
+    {name = "Chidc", email = "ChidcGithub@users.noreply.github.com"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -32,6 +32,7 @@ keywords = ["import", "lazy", "auto-import", "convenience", "development"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
 ]
 
 [project.urls]
@@ -51,3 +52,5 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

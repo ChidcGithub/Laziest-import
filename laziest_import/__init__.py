@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2-pre6"
+__version__ = "0.0.2-pre12"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
@@ -337,11 +337,11 @@ def _scan_module_symbols(
                     signature = _get_signature_hint(obj)
             except Exception:
                 continue
-        
-        if symbol_type:
-            if name not in symbols:
-                symbols[name] = []
-            symbols[name].append((module_name, symbol_type, signature))
+
+            if symbol_type:
+                if name not in symbols:
+                    symbols[name] = []
+                symbols[name].append((module_name, symbol_type, signature))
     
     # Scan submodules if depth > 0
     if depth > 0 and hasattr(module, '__path__'):
@@ -1847,7 +1847,8 @@ class LazyModule:
         module = self._get_module()
         if callable(module):
             return module(*args, **kwargs)
-        raise TypeError(f"'{type(module).__name__}' object is not callable")
+        module_name = object.__getattribute__(self, '_module_name')
+        raise TypeError(f"Module '{module_name}' ({type(module).__name__}) is not callable")
 
 
 class LazySubmodule:

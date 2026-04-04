@@ -1,4 +1,4 @@
-# laziest-import
+# Laziest-import
 
 A Python library for automatic lazy importing. Import the library once, then use any installed module without explicit import statements.
 
@@ -83,6 +83,8 @@ import laziest_import as lz
 # flask is not pre-registered, but auto-discovered
 app = lz.flask.Flask(__name__)
 ```
+
+> **Note:** Auto-discovery only works for packages that are already installed in your environment. You still need to `pip install` the packages you want to use.
 
 Auto-discovery matching rules:
 - Exact match (case-insensitive)

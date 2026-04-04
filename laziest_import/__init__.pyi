@@ -90,6 +90,60 @@ def rebuild_module_cache() -> None:
     """Rebuild the module cache."""
     ...
 
+# ============== Symbol Search ==============
+
+class SearchResult:
+    """Search result for a symbol."""
+    module_name: str
+    symbol_name: str
+    symbol_type: str
+    signature: Optional[str]
+    score: float
+    obj: Optional[Any]
+
+def enable_symbol_search(
+    interactive: bool = True,
+    exact_params: bool = False,
+    max_results: int = 5,
+    search_depth: int = 1,
+    skip_stdlib: bool = False
+) -> None:
+    """Enable symbol search functionality."""
+    ...
+
+def disable_symbol_search() -> None:
+    """Disable symbol search functionality."""
+    ...
+
+def is_symbol_search_enabled() -> bool:
+    """Check if symbol search is enabled."""
+    ...
+
+def search_symbol(
+    name: str,
+    symbol_type: Optional[str] = None,
+    signature: Optional[str] = None,
+    max_results: Optional[int] = None
+) -> List[SearchResult]:
+    """Search for a symbol (class/function) by name across installed packages."""
+    ...
+
+def rebuild_symbol_index() -> None:
+    """Rebuild the symbol index."""
+    ...
+
+def get_symbol_search_config() -> Dict[str, Any]:
+    """Get current symbol search configuration."""
+    ...
+
+def get_symbol_cache_info() -> Dict[str, Any]:
+    """Get information about the symbol cache."""
+    ...
+
+def clear_symbol_cache() -> None:
+    """Clear the symbol cache."""
+    ...
+
 # ============== Configuration ==============
 
 def reload_aliases() -> None:
