@@ -65,6 +65,9 @@ df = lz.pd.DataFrame({'a': [1, 2]})
 | **Auto-discovery** | Unregistered names search installed modules automatically |
 | **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
 | **Auto-install** | Optional: missing modules can be pip-installed automatically |
+| **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
+| **Cache persistence** | Symbol index saved to disk with configurable TTL |
+| **Cache statistics** | Track hits/misses and optimize performance |
 | **1000+ aliases** | Predefined aliases for common packages |
 
 ## Auto-Install
@@ -131,12 +134,46 @@ import laziest_import as lz
 
 # View cache status
 info = lz.get_file_cache_info()
+# {'cache_size_bytes': 12345, 'cache_size_mb': 0.01, 'max_cache_size_mb': 100, ...}
 
 # Set custom cache directory
 lz.set_cache_dir('./my_cache')
 
 # Clear cache
 lz.clear_file_cache()
+```
+
+</details>
+
+<details>
+<summary>Cache configuration</summary>
+
+```python
+import laziest_import as lz
+
+# Get cache version
+version = lz.get_cache_version()  # '0.0.2.3'
+
+# Configure cache settings
+lz.set_cache_config(
+    symbol_index_ttl=3600,       # Symbol index TTL: 1 hour
+    stdlib_cache_ttl=2592000,    # Stdlib cache TTL: 30 days
+    max_cache_size_mb=200        # Max cache size: 200 MB
+)
+
+# Get cache statistics
+stats = lz.get_cache_stats()
+# {'symbol_hits': 10, 'symbol_misses': 2, 'module_hits': 5, 
+#  'module_misses': 1, 'hit_rate': 0.875, ...}
+
+# Reset statistics
+lz.reset_cache_stats()
+
+# Invalidate cache for a specific package (after upgrade)
+lz.invalidate_package_cache('numpy')
+
+# Rebuild symbol index
+lz.rebuild_symbol_index()
 ```
 
 </details>
@@ -266,6 +303,20 @@ register_aliases({
 | `enable_retry()` | Enable retry mechanism |
 | `enable_file_cache()` | Enable file cache |
 
+### Cache Management
+
+| Function | Description |
+|----------|-------------|
+| `get_cache_version()` | Get cache version |
+| `set_cache_config(...)` | Configure cache settings |
+| `get_cache_config()` | Get cache configuration |
+| `get_cache_stats()` | Get cache statistics |
+| `reset_cache_stats()` | Reset cache statistics |
+| `invalidate_package_cache(pkg)` | Invalidate package cache |
+| `get_file_cache_info()` | Get file cache info |
+| `clear_file_cache()` | Clear file cache |
+| `set_cache_dir(path)` | Set cache directory |
+
 </details>
 
 ## Configuration
@@ -289,6 +340,21 @@ Custom aliases can be configured in:
 3. **Caching**: Imported modules cache within the proxy object
 4. **Chain proxies**: `LazySubmodule` handles recursive lazy loading
 5. **Fuzzy search**: Levenshtein distance algorithm for fault-tolerant matching
+
+### Multi-Level Cache Architecture
+
+The library uses a three-tier caching system for optimal performance:
+
+| Cache Level | Description | Default TTL |
+|-------------|-------------|-------------|
+| **Stdlib cache** | Standard library symbols | 7 days |
+| **Third-party cache** | Installed package symbols | 24 hours |
+| **Memory cache** | Hot cache for current session | Session |
+
+Cache files are stored in `~/.laziest_import/cache/` and automatically:
+- Expire based on TTL settings
+- Clean up when exceeding size limit (default: 100 MB)
+- Invalidate on Python version changes
 
 ## Requirements
 
