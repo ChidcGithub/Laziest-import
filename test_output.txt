@@ -1,0 +1,51 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\chidc\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\My things\Learn\高一\python\Laziest-import
+configfile: pyproject.toml
+plugins: anyio-4.12.1, jaxtyping-0.3.3, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 30 items
+
+tests/test_laziest_import.py::TestBasicImport::test_module_version PASSED [  3%]
+tests/test_laziest_import.py::TestBasicImport::test_import_with_alias PASSED [  6%]
+tests/test_laziest_import.py::TestBasicImport::test_import_stdlib PASSED [ 10%]
+tests/test_laziest_import.py::TestBasicImport::test_caching PASSED       [ 13%]
+tests/test_laziest_import.py::TestAliasMapping::test_register_alias PASSED [ 16%]
+tests/test_laziest_import.py::TestAliasMapping::test_unregister_alias PASSED [ 20%]
+tests/test_laziest_import.py::TestAliasMapping::test_list_loaded PASSED  [ 23%]
+tests/test_laziest_import.py::TestAliasMapping::test_list_available PASSED [ 26%]
+tests/test_laziest_import.py::TestErrorHandling::test_import_nonexistent_module PASSED [ 30%]
+tests/test_laziest_import.py::TestErrorHandling::test_clear_cache PASSED [ 33%]
+tests/test_laziest_import.py::TestFromImport::test_from_import_star PASSED [ 36%]
+tests/test_laziest_import.py::TestFromImport::test_from_import_usage PASSED [ 40%]
+tests/test_laziest_import.py::TestFunctions::test_get_module PASSED      [ 43%]
+tests/test_laziest_import.py::TestFunctions::test_dir_function PASSED    [ 46%]
+tests/test_laziest_import.py::TestFunctions::test_lazy_module_repr PASSED [ 50%]
+tests/test_laziest_import.py::TestAutoSearch::test_auto_search_enabled_by_default PASSED [ 53%]
+tests/test_laziest_import.py::TestAutoSearch::test_enable_disable_auto_search PASSED [ 56%]
+tests/test_laziest_import.py::TestAutoSearch::test_search_module_stdlib PASSED [ 60%]
+tests/test_laziest_import.py::TestAutoSearch::test_search_module_installed PASSED [ 63%]
+tests/test_laziest_import.py::TestAutoSearch::test_auto_import_unregistered_module FAILED [ 66%]
+tests/test_laziest_import.py::TestAutoSearch::test_rebuild_module_cache PASSED [ 70%]
+tests/test_laziest_import.py::TestSymbolSearch::test_symbol_search_enabled_by_default PASSED [ 73%]
+tests/test_laziest_import.py::TestSymbolSearch::test_enable_disable_symbol_search PASSED [ 76%]
+tests/test_laziest_import.py::TestSymbolSearch::test_search_symbol_function PASSED [ 80%]
+tests/test_laziest_import.py::TestSymbolSearch::test_search_symbol_with_type_filter PASSED [ 83%]
+tests/test_laziest_import.py::TestSymbolSearch::test_get_symbol_search_config PASSED [ 86%]
+tests/test_laziest_import.py::TestSymbolSearch::test_get_symbol_cache_info PASSED [ 90%]
+tests/test_laziest_import.py::TestSymbolSearch::test_clear_symbol_cache PASSED [ 93%]
+tests/test_laziest_import.py::TestSymbolSearch::test_rebuild_symbol_index PASSED [ 96%]
+tests/test_laziest_import.py::TestSymbolSearch::test_search_symbol_nonexistent PASSED [100%]
+
+================================== FAILURES ===================================
+_____________ TestAutoSearch.test_auto_import_unregistered_module _____________
+tests\test_laziest_import.py:255: in test_auto_import_unregistered_module
+    assert flask_mod.__name__ == "flask"
+           ^^^^^^^^^^^^^^^^^^
+laziest_import\__init__.py:1793: in __getattr__
+    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+E   AttributeError: 'LazyModule' object has no attribute '__name__'. Did you mean: '__file__'?
+=========================== short test summary info ===========================
+FAILED tests/test_laziest_import.py::TestAutoSearch::test_auto_import_unregistered_module - AttributeError: 'LazyModule' object has no attribute '__name__'. Did you mean: '__file__'?
+======================== 1 failed, 29 passed in 0.49s =========================

@@ -19,7 +19,7 @@ class TestBasicImport:
         """Test module version exists"""
         import laziest_import
         assert hasattr(laziest_import, '__version__')
-        assert laziest_import.__version__ == "0.0.2.1"
+        assert laziest_import.__version__ == "0.0.2.2"
     
     def test_import_with_alias(self):
         """Test import using alias prefix"""
@@ -1021,6 +1021,109 @@ class TestAsyncImportAdvanced:
         
         result = await lz.import_multiple_async([])
         assert result == {}
+
+
+class TestEnhancedCache:
+    """Test enhanced cache functionality"""
+    
+    def test_get_cache_version(self):
+        """Test cache version exists"""
+        import laziest_import as lz
+        assert hasattr(lz, 'get_cache_version')
+        version = lz.get_cache_version()
+        assert isinstance(version, str)
+        assert len(version) > 0
+    
+    def test_set_cache_config(self):
+        """Test setting cache configuration"""
+        import laziest_import as lz
+        
+        # Set custom TTL
+        lz.set_cache_config(symbol_index_ttl=7200, stdlib_cache_ttl=86400)
+        
+        config = lz.get_cache_config()
+        assert config["symbol_index_ttl"] == 7200
+        assert config["stdlib_cache_ttl"] == 86400
+        
+        # Reset to defaults
+        lz.set_cache_config(
+            symbol_index_ttl=86400,
+            stdlib_cache_ttl=604800,
+            third_party_cache_ttl=86400
+        )
+    
+    def test_get_cache_config(self):
+        """Test getting cache configuration"""
+        import laziest_import as lz
+        
+        config = lz.get_cache_config()
+        assert "symbol_index_ttl" in config
+        assert "stdlib_cache_ttl" in config
+        assert "third_party_cache_ttl" in config
+        assert "enable_compression" in config
+        assert "max_cache_size_mb" in config
+    
+    def test_get_cache_stats(self):
+        """Test getting cache statistics"""
+        import laziest_import as lz
+        
+        # Reset stats first
+        lz.reset_cache_stats()
+        
+        stats = lz.get_cache_stats()
+        assert "symbol_hits" in stats
+        assert "symbol_misses" in stats
+        assert "last_build_time" in stats
+        assert "build_count" in stats
+        assert "hit_rate" in stats
+    
+    def test_reset_cache_stats(self):
+        """Test resetting cache statistics"""
+        import laziest_import as lz
+        
+        # Reset stats
+        lz.reset_cache_stats()
+        
+        stats = lz.get_cache_stats()
+        assert stats["symbol_hits"] == 0
+        assert stats["symbol_misses"] == 0
+        assert stats["module_hits"] == 0
+        assert stats["module_misses"] == 0
+    
+    def test_enhanced_symbol_cache_info(self):
+        """Test enhanced symbol cache info"""
+        import laziest_import as lz
+        
+        info = lz.get_symbol_cache_info()
+        assert "built" in info
+        assert "symbol_count" in info
+        assert "stdlib_symbols" in info
+        assert "third_party_symbols" in info
+        assert "tracked_packages" in info
+        assert "cache_stats" in info
+        assert "cache_config" in info
+    
+    def test_invalidate_package_cache(self):
+        """Test invalidating package cache"""
+        import laziest_import as lz
+        
+        # Try to invalidate a non-tracked package
+        result = lz.invalidate_package_cache("nonexistent_package_xyz")
+        assert result is False
+    
+    def test_rebuild_symbol_index(self):
+        """Test rebuilding symbol index"""
+        import laziest_import as lz
+        
+        # Clear cache first
+        lz.clear_symbol_cache()
+        
+        # Rebuild
+        lz.rebuild_symbol_index()
+        
+        # Check that index is built
+        info = lz.get_symbol_cache_info()
+        assert info["built"] is True
 
 
 if __name__ == "__main__":

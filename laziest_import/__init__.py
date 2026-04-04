@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2.1"
+__version__ = "0.0.2.2"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
@@ -155,6 +155,39 @@ _SYMBOL_INDEX_BUILT: bool = False
 
 # User confirmed mappings (persistent)
 _CONFIRMED_MAPPINGS: Dict[str, str] = {}
+
+# ============== Enhanced Cache System ==============
+
+# Cache version for compatibility checking
+_CACHE_VERSION: str = "0.0.2.2"
+
+# Multi-level symbol caches
+_STDLIB_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+_THIRD_PARTY_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+_STDLIB_CACHE_BUILT: bool = False
+_THIRD_PARTY_CACHE_BUILT: bool = False
+
+# Cache configuration
+_CACHE_CONFIG: Dict[str, Any] = {
+    "symbol_index_ttl": 86400,  # Symbol index TTL in seconds (24 hours)
+    "stdlib_cache_ttl": 604800,  # Stdlib cache TTL (7 days - rarely changes)
+    "third_party_cache_ttl": 86400,  # Third-party cache TTL (24 hours)
+    "enable_compression": False,  # Enable cache compression for large files
+    "max_cache_size_mb": 100,  # Maximum cache size in MB
+}
+
+# Cache statistics
+_CACHE_STATS: Dict[str, Any] = {
+    "symbol_hits": 0,
+    "symbol_misses": 0,
+    "module_hits": 0,
+    "module_misses": 0,
+    "last_build_time": 0.0,
+    "build_count": 0,
+}
+
+# Tracked packages for incremental updates
+_TRACKED_PACKAGES: Dict[str, Dict[str, Any]] = {}  # package_name -> {version, mtime, module_count}
 
 
 @_dataclass
@@ -381,12 +414,18 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
     """
     Build the symbol index by scanning installed packages.
     
+    Uses multi-level caching:
+    - Level 1: stdlib symbols (long-lived cache)
+    - Level 2: third-party symbols (configurable TTL)
+    - Level 3: in-memory hot cache
+    
     Args:
         force: Force rebuild even if already built
         max_modules: Maximum number of modules to scan (to prevent timeout)
         timeout: Maximum time in seconds for the entire scan (default: 30s)
     """
-    global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE
+    global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE, _STDLIB_SYMBOL_CACHE, _THIRD_PARTY_SYMBOL_CACHE
+    global _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT, _CACHE_STATS, _TRACKED_PACKAGES
     
     # Don't build during initialization to prevent recursion
     if not _INITIALIZED:
@@ -398,11 +437,68 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
     if not _SYMBOL_SEARCH_CONFIG["cache_enabled"]:
         return
     
-    _SYMBOL_CACHE.clear()
-    depth = _SYMBOL_SEARCH_CONFIG["search_depth"]
-    
-    # Record start time for timeout protection
+    # Record start time for stats
     start_time = _time_module.perf_counter()
+    
+    # Try to load from persistent cache first
+    if not force:
+        # Load tracked packages for incremental updates
+        _TRACKED_PACKAGES = _load_tracked_packages()
+        
+        # Try to load stdlib cache
+        stdlib_cache = _load_symbol_index("stdlib")
+        if stdlib_cache:
+            _STDLIB_SYMBOL_CACHE = {
+                k: [tuple(loc) for loc in v] 
+                for k, v in stdlib_cache.symbols.items()
+            }
+            _STDLIB_CACHE_BUILT = True
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] Loaded stdlib symbol index: "
+                    f"{len(_STDLIB_SYMBOL_CACHE)} symbols"
+                )
+        
+        # Try to load third-party cache
+        third_party_cache = _load_symbol_index("third_party")
+        if third_party_cache:
+            _THIRD_PARTY_SYMBOL_CACHE = {
+                k: [tuple(loc) for loc in v] 
+                for k, v in third_party_cache.symbols.items()
+            }
+            _THIRD_PARTY_CACHE_BUILT = True
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] Loaded third-party symbol index: "
+                    f"{len(_THIRD_PARTY_SYMBOL_CACHE)} symbols"
+                )
+        
+        # Merge caches
+        if _STDLIB_CACHE_BUILT or _THIRD_PARTY_CACHE_BUILT:
+            _SYMBOL_CACHE.clear()
+            _SYMBOL_CACHE.update(_STDLIB_SYMBOL_CACHE)
+            _SYMBOL_CACHE.update(_THIRD_PARTY_SYMBOL_CACHE)
+            _SYMBOL_INDEX_BUILT = True
+            
+            # Update stats
+            _CACHE_STATS["symbol_hits"] += 1
+            elapsed = _time_module.perf_counter() - start_time
+            _CACHE_STATS["last_build_time"] = elapsed
+            
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] Symbol index loaded from cache: "
+                    f"{len(_SYMBOL_CACHE)} symbols in {elapsed:.3f}s"
+                )
+            return
+    
+    _CACHE_STATS["symbol_misses"] += 1
+    
+    # Need to rebuild - clear caches
+    _SYMBOL_CACHE.clear()
+    _STDLIB_SYMBOL_CACHE.clear()
+    _THIRD_PARTY_SYMBOL_CACHE.clear()
+    depth = _SYMBOL_SEARCH_CONFIG["search_depth"]
     
     # Scan all known modules
     known_modules = _build_known_modules_cache()
@@ -426,17 +522,19 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
         key=lambda m: (0 if m.split('.')[0] in priority_packages else 1, m)
     )
     
-    scanned = 0
+    scanned_stdlib = 0
+    scanned_third_party = 0
     timed_out = False
+    
     for module_name in sorted_modules:
         # Check timeout
         if _time_module.perf_counter() - start_time > timeout:
             timed_out = True
             if _DEBUG_MODE:
-                _logging_module.info(f"[laziest-import] Symbol index build timed out after {timeout}s, scanned {scanned} modules")
+                _logging_module.info(f"[laziest-import] Symbol index build timed out after {timeout}s")
             break
         
-        if scanned >= max_modules:
+        if scanned_stdlib + scanned_third_party >= max_modules:
             break
             
         # Skip internal/test modules
@@ -445,20 +543,53 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
         
         try:
             symbols = _scan_module_symbols(module_name, depth)
+            
+            # Determine if stdlib or third-party
+            is_stdlib = _is_stdlib_module(module_name)
+            target_cache = _STDLIB_SYMBOL_CACHE if is_stdlib else _THIRD_PARTY_SYMBOL_CACHE
+            
             for sym_name, locations in symbols.items():
                 if sym_name not in _SYMBOL_CACHE:
                     _SYMBOL_CACHE[sym_name] = []
                 _SYMBOL_CACHE[sym_name].extend(locations)
-            scanned += 1
+                
+                if sym_name not in target_cache:
+                    target_cache[sym_name] = []
+                target_cache[sym_name].extend(locations)
+            
+            if is_stdlib:
+                scanned_stdlib += 1
+            else:
+                scanned_third_party += 1
+                # Track third-party package for incremental updates
+                top_level = module_name.split('.')[0]
+                if top_level not in _TRACKED_PACKAGES:
+                    _track_package(top_level)
+                    
         except Exception:
             continue
     
     _SYMBOL_INDEX_BUILT = True
+    _STDLIB_CACHE_BUILT = True
+    _THIRD_PARTY_CACHE_BUILT = True
+    
+    # Save to persistent cache
+    _save_symbol_index(_STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
+    _save_symbol_index(_THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party)
+    _save_tracked_packages()
+    
+    # Update stats
+    elapsed = _time_module.perf_counter() - start_time
+    _CACHE_STATS["last_build_time"] = elapsed
+    _CACHE_STATS["build_count"] += 1
     
     if _DEBUG_MODE:
-        elapsed = _time_module.perf_counter() - start_time
         timeout_msg = " (timed out)" if timed_out else ""
-        _logging_module.info(f"[laziest-import] Symbol index built: {len(_SYMBOL_CACHE)} symbols from {scanned} modules in {elapsed:.2f}s{timeout_msg}")
+        _logging_module.info(
+            f"[laziest-import] Symbol index built: {len(_SYMBOL_CACHE)} symbols "
+            f"(stdlib: {scanned_stdlib}, third-party: {scanned_third_party}) "
+            f"in {elapsed:.2f}s{timeout_msg}"
+        )
 
 
 def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
@@ -770,9 +901,25 @@ def rebuild_symbol_index() -> None:
     Rebuild the symbol index.
     
     Call this after installing new packages to update the symbol cache.
+    Clears both memory and persistent cache, then rebuilds from scratch.
     """
-    global _SYMBOL_INDEX_BUILT
+    global _SYMBOL_INDEX_BUILT, _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT
+    
+    # Clear memory cache
+    _SYMBOL_CACHE.clear()
+    _STDLIB_SYMBOL_CACHE.clear()
+    _THIRD_PARTY_SYMBOL_CACHE.clear()
     _SYMBOL_INDEX_BUILT = False
+    _STDLIB_CACHE_BUILT = False
+    _THIRD_PARTY_CACHE_BUILT = False
+    
+    # Clear persistent cache
+    for cache_type in ["stdlib", "third_party", "all"]:
+        cache_path = _get_symbol_index_path(cache_type)
+        if cache_path.exists():
+            cache_path.unlink()
+    
+    # Rebuild
     _build_symbol_index(force=True)
 
 
@@ -791,23 +938,157 @@ def get_symbol_cache_info() -> Dict[str, Any]:
     Get information about the symbol cache.
     
     Returns:
-        Dictionary with cache statistics
+        Dictionary with cache statistics including:
+        - built: Whether index is built
+        - symbol_count: Total symbols in cache
+        - stdlib_symbols: Number of stdlib symbols
+        - third_party_symbols: Number of third-party symbols
+        - cache_stats: Hit/miss statistics
+        - cache_config: Current cache configuration
     """
     return {
         "built": _SYMBOL_INDEX_BUILT,
         "symbol_count": len(_SYMBOL_CACHE),
+        "stdlib_symbols": len(_STDLIB_SYMBOL_CACHE),
+        "third_party_symbols": len(_THIRD_PARTY_SYMBOL_CACHE),
         "confirmed_mappings": len(_CONFIRMED_MAPPINGS),
+        "tracked_packages": len(_TRACKED_PACKAGES),
+        "cache_stats": dict(_CACHE_STATS),
+        "cache_config": dict(_CACHE_CONFIG),
     }
 
 
 def clear_symbol_cache() -> None:
     """
-    Clear the symbol cache.
+    Clear the symbol cache (memory only).
+    
+    For full reset including persistent cache, use rebuild_symbol_index().
     """
-    global _SYMBOL_INDEX_BUILT
+    global _SYMBOL_INDEX_BUILT, _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT
     _SYMBOL_CACHE.clear()
+    _STDLIB_SYMBOL_CACHE.clear()
+    _THIRD_PARTY_SYMBOL_CACHE.clear()
     _CONFIRMED_MAPPINGS.clear()
+    _TRACKED_PACKAGES.clear()
     _SYMBOL_INDEX_BUILT = False
+    _STDLIB_CACHE_BUILT = False
+    _THIRD_PARTY_CACHE_BUILT = False
+
+
+# ============== Cache Configuration API ==============
+
+def set_cache_config(
+    symbol_index_ttl: Optional[int] = None,
+    stdlib_cache_ttl: Optional[int] = None,
+    third_party_cache_ttl: Optional[int] = None,
+    enable_compression: Optional[bool] = None,
+    max_cache_size_mb: Optional[int] = None,
+) -> None:
+    """
+    Configure cache settings.
+    
+    Args:
+        symbol_index_ttl: TTL for symbol index in seconds (default: 86400 = 24h)
+        stdlib_cache_ttl: TTL for stdlib cache in seconds (default: 604800 = 7 days)
+        third_party_cache_ttl: TTL for third-party cache in seconds (default: 86400 = 24h)
+        enable_compression: Enable cache compression for large files (default: False)
+        max_cache_size_mb: Maximum cache size in MB (default: 100)
+        
+    Example:
+        set_cache_config(symbol_index_ttl=3600)  # 1 hour TTL
+        set_cache_config(stdlib_cache_ttl=2592000)  # 30 days for stdlib
+    """
+    if symbol_index_ttl is not None:
+        _CACHE_CONFIG["symbol_index_ttl"] = symbol_index_ttl
+    if stdlib_cache_ttl is not None:
+        _CACHE_CONFIG["stdlib_cache_ttl"] = stdlib_cache_ttl
+    if third_party_cache_ttl is not None:
+        _CACHE_CONFIG["third_party_cache_ttl"] = third_party_cache_ttl
+    if enable_compression is not None:
+        _CACHE_CONFIG["enable_compression"] = enable_compression
+    if max_cache_size_mb is not None:
+        _CACHE_CONFIG["max_cache_size_mb"] = max_cache_size_mb
+
+
+def get_cache_config() -> Dict[str, Any]:
+    """
+    Get current cache configuration.
+    
+    Returns:
+        Dictionary with cache configuration options
+    """
+    return dict(_CACHE_CONFIG)
+
+
+def get_cache_stats() -> Dict[str, Any]:
+    """
+    Get cache statistics.
+    
+    Returns:
+        Dictionary with:
+        - symbol_hits: Number of cache hits for symbol lookups
+        - symbol_misses: Number of cache misses
+        - module_hits: Module cache hits
+        - module_misses: Module cache misses
+        - last_build_time: Time taken for last index build
+        - build_count: Number of times index was built
+        - hit_rate: Overall cache hit rate
+    """
+    total_hits = _CACHE_STATS["symbol_hits"] + _CACHE_STATS["module_hits"]
+    total_misses = _CACHE_STATS["symbol_misses"] + _CACHE_STATS["module_misses"]
+    total_requests = total_hits + total_misses
+    hit_rate = total_hits / total_requests if total_requests > 0 else 0.0
+    
+    return {
+        **_CACHE_STATS,
+        "hit_rate": hit_rate,
+        "total_requests": total_requests,
+    }
+
+
+def reset_cache_stats() -> None:
+    """Reset cache statistics."""
+    global _CACHE_STATS
+    _CACHE_STATS = {
+        "symbol_hits": 0,
+        "symbol_misses": 0,
+        "module_hits": 0,
+        "module_misses": 0,
+        "last_build_time": 0.0,
+        "build_count": 0,
+    }
+
+
+def invalidate_package_cache(package_name: str) -> bool:
+    """
+    Invalidate cache for a specific package.
+    
+    Useful after upgrading a package to force re-scanning.
+    
+    Args:
+        package_name: Name of the package to invalidate
+        
+    Returns:
+        True if package was in cache and invalidated
+    """
+    global _TRACKED_PACKAGES, _THIRD_PARTY_CACHE_BUILT
+    
+    if package_name in _TRACKED_PACKAGES:
+        del _TRACKED_PACKAGES[package_name]
+        _THIRD_PARTY_CACHE_BUILT = False
+        _save_tracked_packages()
+        return True
+    return False
+
+
+def get_cache_version() -> str:
+    """
+    Get current cache version.
+    
+    Returns:
+        Cache version string
+    """
+    return _CACHE_VERSION
 
 
 # ============== File Cache System ==============
@@ -864,6 +1145,250 @@ def reset_cache_dir() -> None:
     """
     global _CACHE_DIR
     _CACHE_DIR = None
+
+
+# ============== Symbol Index Persistence ==============
+
+def _get_symbol_index_path(cache_type: str = "all") -> _Path_class:
+    """
+    Get symbol index cache file path.
+    
+    Args:
+        cache_type: 'all', 'stdlib', or 'third_party'
+        
+    Returns:
+        Path to the symbol index cache file
+    """
+    cache_dir = _get_cache_dir()
+    if cache_type == "stdlib":
+        return cache_dir / "symbol_index_stdlib.json"
+    elif cache_type == "third_party":
+        return cache_dir / "symbol_index_third_party.json"
+    else:
+        return cache_dir / "symbol_index.json"
+
+
+def _get_tracked_packages_path() -> _Path_class:
+    """Get tracked packages file path."""
+    return _get_cache_dir() / "tracked_packages.json"
+
+
+@_dataclass
+class SymbolIndexCache:
+    """Symbol index cache with metadata."""
+    version: str
+    cache_type: str  # 'all', 'stdlib', 'third_party'
+    timestamp: float
+    symbol_count: int
+    module_count: int
+    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]]
+    python_version: str
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "version": self.version,
+            "cache_type": self.cache_type,
+            "timestamp": self.timestamp,
+            "symbol_count": self.symbol_count,
+            "module_count": self.module_count,
+            "python_version": self.python_version,
+            "symbols": self.symbols,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SymbolIndexCache":
+        return cls(
+            version=data.get("version", "0.0"),
+            cache_type=data.get("cache_type", "all"),
+            timestamp=data.get("timestamp", 0.0),
+            symbol_count=data.get("symbol_count", 0),
+            module_count=data.get("module_count", 0),
+            symbols=data.get("symbols", {}),
+            python_version=data.get("python_version", ""),
+        )
+
+
+def _save_symbol_index(
+    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]],
+    cache_type: str = "all",
+    module_count: int = 0
+) -> bool:
+    """
+    Save symbol index to cache file.
+    
+    Args:
+        symbols: Symbol cache dictionary
+        cache_type: 'all', 'stdlib', or 'third_party'
+        module_count: Number of modules scanned
+        
+    Returns:
+        True if saved successfully
+    """
+    try:
+        # Convert tuples to lists for JSON serialization
+        serializable_symbols = {}
+        for name, locations in symbols.items():
+            serializable_symbols[name] = [list(loc) for loc in locations]
+        
+        cache = SymbolIndexCache(
+            version=_CACHE_VERSION,
+            cache_type=cache_type,
+            timestamp=_time_module.time(),
+            symbol_count=len(symbols),
+            module_count=module_count,
+            symbols=serializable_symbols,
+            python_version=f"{_sys_module.version_info.major}.{_sys_module.version_info.minor}.{_sys_module.version_info.micro}",
+        )
+        
+        cache_path = _get_symbol_index_path(cache_type)
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            _json_module.dump(cache.to_dict(), f, indent=2)
+        
+        if _DEBUG_MODE:
+            _logging_module.info(
+                f"[laziest-import] Saved {cache_type} symbol index: "
+                f"{len(symbols)} symbols from {module_count} modules"
+            )
+        return True
+    except Exception as e:
+        if _DEBUG_MODE:
+            _logging_module.warning(f"[laziest-import] Failed to save symbol index: {e}")
+        return False
+
+
+def _load_symbol_index(cache_type: str = "all") -> Optional[SymbolIndexCache]:
+    """
+    Load symbol index from cache file.
+    
+    Args:
+        cache_type: 'all', 'stdlib', or 'third_party'
+        
+    Returns:
+        SymbolIndexCache object, or None if not found/invalid
+    """
+    try:
+        cache_path = _get_symbol_index_path(cache_type)
+        if not cache_path.exists():
+            return None
+        
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            data = _json_module.load(f)
+        
+        cache = SymbolIndexCache.from_dict(data)
+        
+        # Check version compatibility
+        if cache.version != _CACHE_VERSION:
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] Symbol index version mismatch: "
+                    f"{cache.version} != {_CACHE_VERSION}, will rebuild"
+                )
+            return None
+        
+        # Check Python version compatibility (major.minor should match)
+        current_py = f"{_sys_module.version_info.major}.{_sys_module.version_info.minor}"
+        if cache.python_version and not cache.python_version.startswith(current_py):
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] Python version changed: "
+                    f"{cache.python_version} -> {current_py}, will rebuild"
+                )
+            return None
+        
+        # Check TTL
+        ttl = _CACHE_CONFIG.get("symbol_index_ttl", 86400)
+        if cache_type == "stdlib":
+            ttl = _CACHE_CONFIG.get("stdlib_cache_ttl", 604800)
+        elif cache_type == "third_party":
+            ttl = _CACHE_CONFIG.get("third_party_cache_ttl", 86400)
+        
+        if _time_module.time() - cache.timestamp > ttl:
+            if _DEBUG_MODE:
+                _logging_module.info(
+                    f"[laziest-import] {cache_type} symbol index expired (TTL: {ttl}s)"
+                )
+            return None
+        
+        return cache
+    except Exception as e:
+        if _DEBUG_MODE:
+            _logging_module.warning(f"[laziest-import] Failed to load symbol index: {e}")
+        return None
+
+
+def _save_tracked_packages() -> bool:
+    """Save tracked packages information."""
+    try:
+        path = _get_tracked_packages_path()
+        with open(path, 'w', encoding='utf-8') as f:
+            _json_module.dump(_TRACKED_PACKAGES, f, indent=2)
+        return True
+    except Exception as e:
+        if _DEBUG_MODE:
+            _logging_module.warning(f"[laziest-import] Failed to save tracked packages: {e}")
+        return False
+
+
+def _load_tracked_packages() -> Dict[str, Dict[str, Any]]:
+    """Load tracked packages information."""
+    try:
+        path = _get_tracked_packages_path()
+        if path.exists():
+            with open(path, 'r', encoding='utf-8') as f:
+                return _json_module.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _get_package_version(package_name: str) -> Optional[str]:
+    """Get installed version of a package."""
+    try:
+        # Try importlib.metadata first (Python 3.8+)
+        from importlib.metadata import version as get_version
+        return get_version(package_name)
+    except Exception:
+        return None
+
+
+def _track_package(package_name: str, module_count: int = 0) -> None:
+    """
+    Track a package for incremental updates.
+    
+    Args:
+        package_name: Name of the package
+        module_count: Number of modules in the package
+    """
+    global _TRACKED_PACKAGES
+    version = _get_package_version(package_name)
+    _TRACKED_PACKAGES[package_name] = {
+        "version": version,
+        "mtime": _time_module.time(),
+        "module_count": module_count,
+    }
+
+
+def _check_package_changed(package_name: str) -> bool:
+    """
+    Check if a package has changed since last scan.
+    
+    Args:
+        package_name: Name of the package
+        
+    Returns:
+        True if package changed or not tracked
+    """
+    if package_name not in _TRACKED_PACKAGES:
+        return True
+    
+    tracked = _TRACKED_PACKAGES[package_name]
+    current_version = _get_package_version(package_name)
+    
+    # Version changed
+    if current_version and tracked.get("version") != current_version:
+        return True
+    
+    return False
 
 
 def _calculate_file_sha(file_path: str) -> Optional[str]:
@@ -1050,7 +1575,9 @@ def _init_file_cache() -> None:
 
 def _start_background_preload(modules: List[str]) -> None:
     """
-    Start background thread to preload modules.
+    Start background thread to preload modules in parallel.
+    
+    Uses ThreadPoolExecutor for parallel loading to improve speed.
     
     Args:
         modules: List of module names to preload
@@ -1059,31 +1586,50 @@ def _start_background_preload(modules: List[str]) -> None:
     if not _INITIALIZED:
         return
     
-    def _preload():
-        # Double-check initialization status in the thread
+    # Skip if no modules to preload
+    if not modules:
+        return
+    
+    # Filter out already loaded modules
+    modules_to_load = [m for m in modules if m not in _sys_module.modules]
+    if not modules_to_load:
+        return
+    
+    def _preload_single(module_name: str) -> bool:
+        """Preload a single module."""
+        try:
+            spec = _importlib_module.util.find_spec(module_name)
+            if spec:
+                _importlib_module.import_module(module_name)
+                if _DEBUG_MODE:
+                    _logging_module.debug(f"[laziest-import] Preloaded {module_name}")
+                return True
+        except Exception as e:
+            if _DEBUG_MODE:
+                _logging_module.debug(f"[laziest-import] Failed to preload {module_name}: {e}")
+        return False
+    
+    def _preload_parallel():
+        """Parallel preload worker."""
         if not _INITIALIZED:
             return
+        
+        # Use ThreadPoolExecutor for parallel loading
+        # Limit workers to avoid overwhelming the system
+        max_workers = min(4, len(modules_to_load))
+        
+        try:
+            from concurrent.futures import ThreadPoolExecutor
             
-        for module_name in modules:
-            try:
-                # Only preload if module is in _sys_module.modules (already imported before)
-                # or if it's a standard library module
-                if module_name in _sys_module.modules:
-                    continue
-                
-                # Check if module is available
-                spec = _importlib_module.util.find_spec(module_name)
-                if spec:
-                    # Import in background
-                    _importlib_module.import_module(module_name)
-                    if _DEBUG_MODE:
-                        _logging_module.debug(f"[laziest-import] Preloaded {module_name}")
-            except Exception as e:
-                if _DEBUG_MODE:
-                    _logging_module.debug(f"[laziest-import] Failed to preload {module_name}: {e}")
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                list(executor.map(_preload_single, modules_to_load))
+        except ImportError:
+            # Fallback to sequential loading if ThreadPoolExecutor not available
+            for module_name in modules_to_load:
+                _preload_single(module_name)
     
     # Start preload in daemon thread
-    thread = _threading_module.Thread(target=_preload, daemon=True)
+    thread = _threading_module.Thread(target=_preload_parallel, daemon=True)
     thread.start()
 
 
@@ -3092,6 +3638,9 @@ _RESERVED_NAMES: Set[str] = {
     "enable_auto_install", "disable_auto_install", "is_auto_install_enabled",
     "install_package", "get_auto_install_config",
     "set_pip_index", "set_pip_extra_args",
+    # Enhanced cache API
+    "set_cache_config", "get_cache_config", "get_cache_stats", "reset_cache_stats",
+    "invalidate_package_cache", "get_cache_version",
 }
 
 
@@ -3341,6 +3890,13 @@ __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "get_auto_install_config",
     "set_pip_index",
     "set_pip_extra_args",
+    # Enhanced cache API
+    "set_cache_config",
+    "get_cache_config",
+    "get_cache_stats",
+    "reset_cache_stats",
+    "invalidate_package_cache",
+    "get_cache_version",
 ]
 
 
