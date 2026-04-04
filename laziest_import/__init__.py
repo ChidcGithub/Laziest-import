@@ -264,15 +264,13 @@ def _scan_module_symbols(
     if _SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
         return symbols
     
-    # Skip problematic modules that are known to cause issues
+    # Skip modules that are known to cause issues or are not useful for symbol search
     skip_modules = {
         'test', 'tests', 'testing', 'conftest', 'setup', 'examples',
         'docs', 'doc', 'scripts', 'tools', 'vendor', 'vendored',
         '__pycache__', '.git', '.hg', '.svn',
-        # Skip packages that have side effects on import
-        'flask', 'fastapi', 'uvicorn', 'gunicorn', 'celery',
-        'django', 'pytest', 'py.test', 'sphinx', 'mkdocs',
-        'jupyter', 'ipython', 'notebook', 'streamlit', 'gradio',
+        # Skip testing/build tools that definitely have side effects
+        'pytest', 'py.test', 'sphinx', 'mkdocs',
         # Skip ourselves to prevent recursion
         'laziest_import', 'laziest-import',
     }
@@ -2711,7 +2709,13 @@ def _install_package_sync(package_name: str, index: Optional[str] = None,
     use_uv = prefer_uv and _check_uv_available()
     
     if use_uv:
-        cmd = [_shutil_module.which('uv'), 'pip', 'install', package_name]
+        uv_path = _shutil_module.which('uv')
+        if uv_path is None:
+            # Fallback to pip if uv not found (shouldn't happen if _check_uv_available returned True)
+            use_uv = False
+            cmd = [_sys_module.executable, '-m', 'pip', 'install', package_name]
+        else:
+            cmd = [uv_path, 'pip', 'install', package_name]
     else:
         cmd = [_sys_module.executable, '-m', 'pip', 'install', package_name]
     
@@ -3329,6 +3333,14 @@ __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "get_symbol_search_config",
     "get_symbol_cache_info",
     "clear_symbol_cache",
+    # Auto install
+    "enable_auto_install",
+    "disable_auto_install",
+    "is_auto_install_enabled",
+    "install_package",
+    "get_auto_install_config",
+    "set_pip_index",
+    "set_pip_extra_args",
 ]
 
 
