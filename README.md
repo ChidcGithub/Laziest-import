@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![License](https://img.shields.io/github/license/ChidcGithub/Laziest-import.svg)](LICENSE)
 
-**零配置懒加载导入库** — 一行导入，直接使用任意已安装模块。
+A zero-configuration lazy import library. Import and use any installed module with a single line.
 
 ```python
 from laziest_import import *
@@ -14,38 +14,38 @@ df = pd.DataFrame({'a': [1]})  # pandas
 plt.plot([1, 2, 3])            # matplotlib
 ```
 
-无需 `import numpy as np`，无需 `import pandas as pd`。
+No `import numpy as np`, no `import pandas as pd` required.
 
-## 安装
+## Installation
 
 ```bash
 pip install laziest-import
 ```
 
-## 快速开始
+## Quick Start
 
 <details>
-<summary>点击展开示例</summary>
+<summary>Show examples</summary>
 
-**方式一：通配符导入（推荐）**
+**Method 1: Wildcard import (recommended)**
 
 ```python
 from laziest_import import *
 
-# 常用库直接使用
+# Common libraries work immediately
 arr = np.array([1, 2, 3])           # numpy
 df = pd.DataFrame({'a': [1, 2]})    # pandas
 plt.plot([1, 2, 3]); plt.show()     # matplotlib
 
-# 标准库
+# Standard library
 print(os.getcwd())                  # os
 data = json.dumps({'key': 'value'}) # json
 
-# 子模块自动加载
+# Submodules load automatically
 result = np.linalg.svd(matrix)      # numpy.linalg
 ```
 
-**方式二：命名空间前缀**
+**Method 2: Namespace prefix**
 
 ```python
 import laziest_import as lz
@@ -56,121 +56,121 @@ df = lz.pd.DataFrame({'a': [1, 2]})
 
 </details>
 
-## 核心特性
+## Key Features
 
-| 特性 | 说明 |
-|------|------|
-| **懒加载** | 首次访问时才导入，减少启动开销 |
-| **子模块支持** | `np.linalg.svd()` 自动链式加载 |
-| **自动发现** | 未注册名称自动搜索已安装模块 |
-| **模糊匹配** | 拼写错误自动纠正（Levenshtein 算法） |
-| **自动安装** | 可选：缺失模块自动 pip install |
-| **1000+ 别名** | 预定义常用包别名 |
+| Feature | Description |
+|---------|-------------|
+| **Lazy loading** | Modules import only on first access, reducing startup overhead |
+| **Submodule support** | `np.linalg.svd()` chains submodules automatically |
+| **Auto-discovery** | Unregistered names search installed modules automatically |
+| **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
+| **Auto-install** | Optional: missing modules can be pip-installed automatically |
+| **1000+ aliases** | Predefined aliases for common packages |
 
-## 自动安装（新功能）
+## Auto-Install
 
-启用后，访问未安装的模块会自动安装：
+When enabled, accessing an uninstalled module triggers automatic installation:
 
 ```python
 from laziest_import import *
 
-# 启用自动安装（交互式确认）
+# Enable auto-install with interactive confirmation
 enable_auto_install()
 
-# 使用国内镜像加速
-enable_auto_install(index="https://pypi.tuna.tsinghua.edu.cn/simple")
+# Use a mirror for faster downloads
+enable_auto_install(index="https://pypi.org/simple")
 
-# 现在访问未安装的模块会提示安装
-arr = np.array([1, 2, 3])  # 若 numpy 未安装，自动提示安装
+# Now accessing uninstalled modules prompts for installation
+arr = np.array([1, 2, 3])  # If numpy is missing, prompts to install
 ```
 
 <details>
-<summary>自动安装 API</summary>
+<summary>Auto-install API</summary>
 
-| 函数 | 说明 |
-|------|------|
-| `enable_auto_install(interactive=True, index=None)` | 启用自动安装 |
-| `disable_auto_install()` | 禁用自动安装 |
-| `is_auto_install_enabled()` | 检查状态 |
-| `install_package(name)` | 手动安装包 |
-| `set_pip_index(url)` | 设置镜像源 |
+| Function | Description |
+|----------|-------------|
+| `enable_auto_install(interactive=True, index=None)` | Enable auto-install |
+| `disable_auto_install()` | Disable auto-install |
+| `is_auto_install_enabled()` | Check status |
+| `install_package(name)` | Manually install a package |
+| `set_pip_index(url)` | Set mirror URL |
 
 </details>
 
-## 预定义别名
+## Predefined Aliases
 
 <details>
-<summary>点击展开完整列表</summary>
+<summary>Show full list</summary>
 
-| 分类 | 别名 |
-|------|------|
-| 数据科学 | `np`, `pd`, `plt`, `sns`, `scipy` |
-| 机器学习 | `torch`, `tf`, `keras`, `sklearn`, `xgboost`, `lightgbm` |
-| 深度学习 | `transformers`, `langchain`, `llama_index` |
-| Web 框架 | `flask`, `django`, `fastapi`, `starlette` |
-| HTTP 客户端 | `requests`, `httpx`, `aiohttp` |
-| 数据库 | `sqlalchemy`, `pymongo`, `redis`, `duckdb` |
-| 云服务 | `boto3` (AWS), `google.cloud`, `azure` |
-| 图像处理 | `cv2`, `PIL.Image`, `skimage` |
+| Category | Aliases |
+|----------|---------|
+| Data Science | `np`, `pd`, `plt`, `sns`, `scipy` |
+| Machine Learning | `torch`, `tf`, `keras`, `sklearn`, `xgboost`, `lightgbm` |
+| Deep Learning | `transformers`, `langchain`, `llama_index` |
+| Web Frameworks | `flask`, `django`, `fastapi`, `starlette` |
+| HTTP Clients | `requests`, `httpx`, `aiohttp` |
+| Databases | `sqlalchemy`, `pymongo`, `redis`, `duckdb` |
+| Cloud Services | `boto3` (AWS), `google.cloud`, `azure` |
+| Image Processing | `cv2`, `PIL.Image`, `skimage` |
 | GUI | `PyQt6`, `tkinter`, `flet`, `nicegui` |
 | DevOps | `docker`, `kubernetes`, `ansible` |
 | NLP | `spacy`, `nltk`, `transformers` |
-| 可视化 | `plotly`, `bokeh`, `streamlit`, `gradio` |
+| Visualization | `plotly`, `bokeh`, `streamlit`, `gradio` |
 
 </details>
 
-## 更多功能
+## Advanced Features
 
 <details>
-<summary>文件级缓存</summary>
+<summary>File-based cache</summary>
 
-缓存已导入模块，加速后续运行：
+Cache imported modules for faster subsequent runs:
 
 ```python
 import laziest_import as lz
 
-# 查看缓存状态
+# View cache status
 info = lz.get_file_cache_info()
 
-# 自定义缓存目录
+# Set custom cache directory
 lz.set_cache_dir('./my_cache')
 
-# 清除缓存
+# Clear cache
 lz.clear_file_cache()
 ```
 
 </details>
 
 <details>
-<summary>调试与统计</summary>
+<summary>Debug and statistics</summary>
 
 ```python
 import laziest_import as lz
 
-# 启用调试模式
+# Enable debug mode
 lz.enable_debug_mode()
 
-# 获取导入统计
+# Get import statistics
 stats = lz.get_import_stats()
 # {'total_imports': 3, 'total_time': 0.15, 'module_times': {...}}
 
-# 重置统计
+# Reset statistics
 lz.reset_import_stats()
 ```
 
 </details>
 
 <details>
-<summary>导入钩子</summary>
+<summary>Import hooks</summary>
 
 ```python
 import laziest_import as lz
 
 def before_import(module_name):
-    print(f"准备导入: {module_name}")
+    print(f"About to import: {module_name}")
 
 def after_import(module_name, module):
-    print(f"已导入: {module_name}")
+    print(f"Imported: {module_name}")
 
 lz.add_pre_import_hook(before_import)
 lz.add_post_import_hook(after_import)
@@ -179,14 +179,14 @@ lz.add_post_import_hook(after_import)
 </details>
 
 <details>
-<summary>异步导入</summary>
+<summary>Async import</summary>
 
 ```python
 import laziest_import as lz
 import asyncio
 
 async def main():
-    # 并行导入多个模块
+    # Import multiple modules in parallel
     modules = await lz.import_multiple_async(['numpy', 'pandas', 'torch'])
     np, pd = modules['numpy'], modules['pandas']
 
@@ -196,15 +196,15 @@ asyncio.run(main())
 </details>
 
 <details>
-<summary>自定义别名</summary>
+<summary>Custom aliases</summary>
 
 ```python
 from laziest_import import *
 
-# 注册单个别名
+# Register a single alias
 register_alias("mylib", "my_awesome_library")
 
-# 批量注册
+# Register multiple aliases
 register_aliases({
     "api": "my_api_client",
     "db": "my_database_lib",
@@ -213,67 +213,67 @@ register_aliases({
 
 </details>
 
-## 完整 API 参考
+## API Reference
 
 <details>
-<summary>点击展开</summary>
+<summary>Show full API</summary>
 
-### 别名管理
+### Alias Management
 
-| 函数 | 说明 |
-|------|------|
-| `register_alias(alias, module_name)` | 注册别名 |
-| `register_aliases(dict)` | 批量注册 |
-| `unregister_alias(alias)` | 移除别名 |
-| `list_loaded()` | 已加载模块列表 |
-| `list_available()` | 所有可用别名 |
-| `get_module(alias)` | 获取模块对象 |
-| `clear_cache()` | 清除缓存 |
+| Function | Description |
+|----------|-------------|
+| `register_alias(alias, module_name)` | Register an alias |
+| `register_aliases(dict)` | Register multiple aliases |
+| `unregister_alias(alias)` | Remove an alias |
+| `list_loaded()` | List loaded modules |
+| `list_available()` | List all available aliases |
+| `get_module(alias)` | Get module object |
+| `clear_cache()` | Clear cache |
 
-### 自动搜索
+### Auto-Search
 
-| 函数 | 说明 |
-|------|------|
-| `enable_auto_search()` | 启用自动发现 |
-| `disable_auto_search()` | 禁用自动发现 |
-| `search_module(name)` | 搜索模块 |
-| `search_class(class_name)` | 按类名搜索 |
-| `rebuild_module_cache()` | 重建缓存 |
+| Function | Description |
+|----------|-------------|
+| `enable_auto_search()` | Enable auto-discovery |
+| `disable_auto_search()` | Disable auto-discovery |
+| `search_module(name)` | Search for a module |
+| `search_class(class_name)` | Search by class name |
+| `rebuild_module_cache()` | Rebuild cache |
 
-### 符号搜索
+### Symbol Search
 
-| 函数 | 说明 |
-|------|------|
-| `enable_symbol_search()` | 启用符号搜索 |
-| `search_symbol(name)` | 搜索类/函数 |
-| `rebuild_symbol_index()` | 重建索引 |
+| Function | Description |
+|----------|-------------|
+| `enable_symbol_search()` | Enable symbol search |
+| `search_symbol(name)` | Search for classes/functions |
+| `rebuild_symbol_index()` | Rebuild index |
 
-### 自动安装
+### Auto-Install
 
-| 函数 | 说明 |
-|------|------|
-| `enable_auto_install()` | 启用自动安装 |
-| `disable_auto_install()` | 禁用自动安装 |
-| `install_package(name)` | 手动安装 |
-| `set_pip_index(url)` | 设置镜像源 |
+| Function | Description |
+|----------|-------------|
+| `enable_auto_install()` | Enable auto-install |
+| `disable_auto_install()` | Disable auto-install |
+| `install_package(name)` | Install manually |
+| `set_pip_index(url)` | Set mirror URL |
 
-### 其他
+### Other
 
-| 函数 | 说明 |
-|------|------|
-| `get_version(alias)` | 获取模块版本 |
-| `reload_module(alias)` | 重载模块 |
-| `enable_retry()` | 启用重试机制 |
-| `enable_file_cache()` | 启用文件缓存 |
+| Function | Description |
+|----------|-------------|
+| `get_version(alias)` | Get module version |
+| `reload_module(alias)` | Reload a module |
+| `enable_retry()` | Enable retry mechanism |
+| `enable_file_cache()` | Enable file cache |
 
 </details>
 
-## 配置文件
+## Configuration
 
-自定义别名可配置于：
+Custom aliases can be configured in:
 
-1. `~/.laziest_import/aliases.json` （用户全局）
-2. `./.laziest_import.json` （项目级别）
+1. `~/.laziest_import/aliases.json` (user global)
+2. `./.laziest_import.json` (project level)
 
 ```json
 {
@@ -282,15 +282,15 @@ register_aliases({
 }
 ```
 
-## 工作原理
+## How It Works
 
-1. **代理对象**：每个别名映射到 `LazyModule` 代理
-2. **按需导入**：首次属性访问时通过 `__getattr__` 触发真实导入
-3. **缓存机制**：已导入模块缓存于代理对象中
-4. **链式代理**：`LazySubmodule` 处理子模块递归懒加载
-5. **模糊搜索**：Levenshtein 距离算法容错匹配
+1. **Proxy objects**: Each alias maps to a `LazyModule` proxy
+2. **On-demand import**: Real import triggers on first attribute access via `__getattr__`
+3. **Caching**: Imported modules cache within the proxy object
+4. **Chain proxies**: `LazySubmodule` handles recursive lazy loading
+5. **Fuzzy search**: Levenshtein distance algorithm for fault-tolerant matching
 
-## 要求
+## Requirements
 
 - Python 3.8+
 
