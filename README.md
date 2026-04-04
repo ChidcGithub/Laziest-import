@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![License](https://img.shields.io/github/license/ChidcGithub/Laziest-import.svg)](LICENSE)
+[![License](https://img.shields.io/pypi/l/laziest-import.svg)](https://opensource.org/licenses/MIT)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
