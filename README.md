@@ -3,6 +3,10 @@
 [![PyPI version](https://img.shields.io/pypi/v/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![License](https://img.shields.io/pypi/l/laziest-import.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/pypi/dm/laziest-import.svg)](https://pypi.org/project/laziest-import/)
+[![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/issues)
+[![GitHub Actions](https://github.com/ChidcGithub/Laziest-import/workflows/Build%20and%20Publish/badge.svg)](https://github.com/ChidcGithub/Laziest-import/actions)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
