@@ -58,6 +58,19 @@ arr = lz.np.array([1, 2, 3])
 df = lz.pd.DataFrame({'a': [1, 2]})
 ```
 
+**Method 3: Lazy proxy (with auto-correction)**
+
+```python
+from laziest_import import lazy
+
+# Automatic typo correction
+arr = lazy.nump.array([1, 2, 3])    # nump -> numpy ✅
+df = lazy.pnda.DataFrame()          # pnda -> pandas ✅
+
+# Submodule shortcuts
+layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
+```
+
 </details>
 
 ## Key Features
@@ -67,12 +80,22 @@ df = lz.pd.DataFrame({'a': [1, 2]})
 | **Lazy loading** | Modules import only on first access, reducing startup overhead |
 | **Submodule support** | `np.linalg.svd()` chains submodules automatically |
 | **Auto-discovery** | Unregistered names search installed modules automatically |
+| **Typo correction** | Misspelling auto-correction (`nump` → `numpy`, `matplotlip` → `matplotlib`) |
+| **Abbreviation expansion** | 200+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
 | **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
 | **Auto-install** | Optional: missing modules can be pip-installed automatically |
 | **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
 | **Cache persistence** | Symbol index saved to disk with configurable TTL |
 | **Cache statistics** | Track hits/misses and optimize performance |
 | **1000+ aliases** | Predefined aliases for common packages |
+
+## What's New in v0.0.3
+
+- **LazyProxy**: New `lazy` object for automatic typo correction
+- **200+ abbreviations**: Expanded library shortcuts
+- **Submodule mappings**: `nn` → `torch.nn`, `optim` → `torch.optim`, etc.
+- **Misspelling correction**: 100+ common typos auto-corrected
+- **Folder-based config**: Organize aliases in `~/.laziest_import/aliases/A.json`, `B.json`, etc.
 
 ## Auto-Install
 
@@ -327,15 +350,18 @@ register_aliases({
 
 Custom aliases can be configured in:
 
-1. `~/.laziest_import/aliases.json` (user global)
-2. `./.laziest_import.json` (project level)
+1. `~/.laziest_import/aliases/A.json`, `B.json`, ... (user global, letter-based)
+2. `./.laziest_import/A.json`, `B.json`, ... (project level)
 
 ```json
+// ~/.laziest_import/aliases/M.json
 {
     "mylib": "my_awesome_library",
-    "api": "my_api_client"
+    "mpl": "matplotlib"
 }
 ```
+
+Letter-based files load faster - only the relevant file is loaded on demand.
 
 ## How It Works
 

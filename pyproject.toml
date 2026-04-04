@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "laziest-import"
-version = "0.0.3-pre1"
+version = "0.0.3-pre2"
 description = "Automatic lazy import library - use common libraries without explicit import statements"
 readme = "README.md"
 license = {text = "MIT"}
