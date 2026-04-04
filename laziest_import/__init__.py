@@ -3521,6 +3521,57 @@ class LazySubmodule:
         raise TypeError(f"'{type(module).__name__}' object is not callable")
 
 
+class LazyProxy:
+    """
+    A proxy object that intercepts all attribute access and applies
+    intelligent module recognition including:
+    - Abbreviation expansion
+    - Submodule mapping
+    - Misspelling correction
+    - Fuzzy matching
+    
+    Usage:
+        from laziest_import import lazy
+        
+        # These all work with auto-correction:
+        arr = lazy.nump.array([1, 2, 3])  # nump -> numpy
+        df = lazy.pnda.DataFrame()         # pnda -> pandas
+        net = lazy.nn.Linear(10, 5)        # nn -> torch.nn
+    """
+    __slots__ = ()
+    
+    def __getattr__(self, name: str) -> LazyModule:
+        """Intercept attribute access and return a LazyModule with auto-correction."""
+        # First check if it's in the alias map
+        if name in _ALIAS_MAP:
+            return _get_lazy_module(name)
+        
+        # Try auto-search (includes abbreviation, submodule, and misspelling correction)
+        if _AUTO_SEARCH_ENABLED:
+            found = _search_module(name)
+            if found:
+                # Register the found module
+                _ALIAS_MAP[name] = found
+                return _get_lazy_module(name)
+        
+        # Not found
+        available = list(_ALIAS_MAP.keys())[:10]
+        msg = f"No module found for '{name}'."
+        if available:
+            msg += f" Similar modules: {available}..."
+        raise AttributeError(msg)
+    
+    def __dir__(self) -> List[str]:
+        return list(_ALIAS_MAP.keys())
+    
+    def __repr__(self) -> str:
+        return f"<LazyProxy (auto-correction enabled)>"
+
+
+# Create singleton instance
+lazy = LazyProxy()
+
+
 def _get_lazy_module(alias: str) -> LazyModule:
     """Get or create a LazyModule proxy"""
     if alias not in _LAZY_MODULES:
@@ -4817,6 +4868,8 @@ _do_initialize()
 # Dynamically generate __all__, including all registered aliases and public API
 __all__: List[str] = list(_ALIAS_MAP.keys()) + [
     "__version__",
+    # LazyProxy for auto-correction
+    "lazy",
     # Alias management
     "register_alias",
     "register_aliases",
