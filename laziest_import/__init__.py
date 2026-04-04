@@ -44,7 +44,7 @@ from pathlib import Path as _Path_class
 from types import ModuleType as _ModuleType
 from dataclasses import dataclass as _dataclass, field as _field, asdict as _asdict
 
-__version__ = "0.0.2.2"
+__version__ = "0.0.2.3"
 
 # ============== Initialization State Protection ==============
 # These flags prevent recursive calls during module initialization
@@ -159,7 +159,7 @@ _CONFIRMED_MAPPINGS: Dict[str, str] = {}
 # ============== Enhanced Cache System ==============
 
 # Cache version for compatibility checking
-_CACHE_VERSION: str = "0.0.2.2"
+_CACHE_VERSION: str = "0.0.2.3"
 
 # Multi-level symbol caches
 _STDLIB_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
@@ -1114,6 +1114,76 @@ def _get_cache_dir() -> _Path_class:
     return cache_dir
 
 
+def _get_cache_size() -> int:
+    """
+    Get total cache size in bytes.
+    
+    Returns:
+        Total size of all cache files in bytes
+    """
+    cache_dir = _get_cache_dir()
+    total_size = 0
+    try:
+        for cache_file in cache_dir.glob("*.json"):
+            total_size += cache_file.stat().st_size
+    except (OSError, IOError):
+        pass
+    return total_size
+
+
+def _cleanup_cache_if_needed() -> None:
+    """
+    Clean up old cache files if cache size exceeds limit.
+    
+    Removes oldest cache files until size is under limit.
+    """
+    max_size_bytes = _CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    current_size = _get_cache_size()
+    
+    if current_size <= max_size_bytes:
+        return
+    
+    cache_dir = _get_cache_dir()
+    
+    # Get all cache files with their modification times
+    cache_files = []
+    try:
+        for cache_file in cache_dir.glob("*.json"):
+            cache_files.append((cache_file, cache_file.stat().st_mtime))
+    except (OSError, IOError):
+        return
+    
+    # Sort by modification time (oldest first)
+    cache_files.sort(key=lambda x: x[1])
+    
+    # Remove oldest files until size is under limit
+    for cache_file, _ in cache_files:
+        if current_size <= max_size_bytes:
+            break
+        try:
+            file_size = cache_file.stat().st_size
+            cache_file.unlink()
+            current_size -= file_size
+            if _DEBUG_MODE:
+                _logging_module.debug(f"[laziest-import] Removed old cache file: {cache_file.name}")
+        except (OSError, IOError):
+            continue
+
+
+def _check_cache_size_before_save() -> bool:
+    """
+    Check if we should save cache based on size limit.
+    
+    Returns:
+        True if saving is allowed, False if cache is full
+    """
+    max_size_bytes = _CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    current_size = _get_cache_size()
+    
+    # Allow save if under 90% of limit
+    return current_size < max_size_bytes * 0.9
+
+
 def set_cache_dir(path: Union[str, _Path_class]) -> None:
     """
     Set custom cache directory.
@@ -1225,6 +1295,9 @@ def _save_symbol_index(
         True if saved successfully
     """
     try:
+        # Check cache size and cleanup if needed
+        _cleanup_cache_if_needed()
+        
         # Convert tuples to lists for JSON serialization
         serializable_symbols = {}
         for name, locations in symbols.items():
@@ -1501,6 +1574,9 @@ def _save_file_cache(file_path: str, file_sha: str, modules: Set[str]) -> bool:
         True if saved successfully
     """
     try:
+        # Check cache size and cleanup if needed
+        _cleanup_cache_if_needed()
+        
         cache = FileCache(
             file_path=file_path,
             file_sha=file_sha,
@@ -2245,10 +2321,14 @@ class LazyModule:
         """Get the actual module (lazy load)"""
         cached = object.__getattribute__(self, '_cached_module')
         if cached is not None:
-            # Update access count
+            # Update access count and cache hit
             alias = object.__getattribute__(self, '_alias')
             _IMPORT_STATS.module_access_counts[alias] = _IMPORT_STATS.module_access_counts.get(alias, 0) + 1
+            _CACHE_STATS["module_hits"] += 1
             return cached
+        
+        # Cache miss - will need to load
+        _CACHE_STATS["module_misses"] += 1
         
         module_name = object.__getattribute__(self, '_module_name')
         alias = object.__getattribute__(self, '_alias')
@@ -2483,7 +2563,11 @@ class LazySubmodule:
         """Get the actual submodule (lazy load)"""
         cached = object.__getattribute__(self, '_cached_module')
         if cached is not None:
+            _CACHE_STATS["module_hits"] += 1
             return cached
+        
+        # Cache miss - will need to load
+        _CACHE_STATS["module_misses"] += 1
         
         full_name = object.__getattribute__(self, '_full_name')
         
@@ -3579,6 +3663,8 @@ def get_file_cache_info() -> Dict[str, Any]:
         - cached_modules: List of modules loaded for current file
         - cache_dir: Cache directory path
         - cache_size: Total number of cached files
+        - cache_size_bytes: Total size of cache in bytes
+        - max_cache_size_mb: Maximum allowed cache size in MB
         
     Example:
         >>> info = get_file_cache_info()
@@ -3587,6 +3673,7 @@ def get_file_cache_info() -> Dict[str, Any]:
     """
     cache_dir = _get_cache_dir()
     cache_files = list(cache_dir.glob("*.json"))
+    cache_size_bytes = _get_cache_size()
     
     return {
         "enabled": _FILE_CACHE_ENABLED,
@@ -3594,6 +3681,9 @@ def get_file_cache_info() -> Dict[str, Any]:
         "cached_modules": list(_CALLER_LOADED_MODULES),
         "cache_dir": str(cache_dir),
         "cache_size": len(cache_files),
+        "cache_size_bytes": cache_size_bytes,
+        "cache_size_mb": round(cache_size_bytes / (1024 * 1024), 2),
+        "max_cache_size_mb": _CACHE_CONFIG.get("max_cache_size_mb", 100),
     }
 
 
@@ -3770,6 +3860,13 @@ def __dir__() -> List[str]:
         "get_auto_install_config",
         "set_pip_index",
         "set_pip_extra_args",
+        # Enhanced cache API
+        "set_cache_config",
+        "get_cache_config",
+        "get_cache_stats",
+        "reset_cache_stats",
+        "invalidate_package_cache",
+        "get_cache_version",
     ])
     return sorted(result)
 
