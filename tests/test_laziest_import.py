@@ -1147,12 +1147,16 @@ class TestMappingsFromFiles:
         # Enable auto-search
         lz.enable_auto_search()
         
-        # Test common misspelling correction
-        result = lz.search_module("nump")  # should find numpy
-        assert result == "numpy"
+        # Test common misspelling correction using stdlib modules
+        # (stdlib modules are always available, unlike numpy/pandas)
+        result = lz.search_module("jsn")  # should find json
+        assert result == "json"
         
-        result = lz.search_module("panda")  # should find pandas
-        assert result == "pandas"
+        result = lz.search_module("maht")  # should find math
+        assert result == "math"
+        
+        result = lz.search_module("tim")  # should find time
+        assert result == "time"
     
     def test_reload_mappings(self):
         """Test reloading mappings from files"""
