@@ -1,0 +1,130 @@
+{
+  "_comment": "Common symbol (class/function) name misspelling corrections",
+  
+  "pandas": {
+    "dataframe": "DataFrame",
+    "Dataframe": "DataFrame",
+    "dataFrame": "DataFrame",
+    "DATAFRAME": "DataFrame",
+    "series": "Series",
+    "SERIES": "Series"
+  },
+  
+  "numpy": {
+    "ndarray": "ndarray",
+    "NdArray": "ndarray",
+    "ndarry": "ndarray"
+  },
+  
+  "pytorch": {
+    "tensor": "Tensor",
+    "TENSOR": "Tensor",
+    "tensr": "Tensor"
+  },
+  
+  "tensorflow": {
+    "constant": "constant",
+    "Variable": "Variable",
+    "variable": "Variable"
+  },
+  
+  "matplotlib": {
+    "figure": "Figure",
+    "Figure": "Figure",
+    "FIGURE": "Figure",
+    "subplot": "subplots"
+  },
+  
+  "pandas_io": {
+    "read_csv": "read_csv",
+    "readcsv": "read_csv",
+    "read_excel": "read_excel",
+    "readexcel": "read_excel",
+    "read_json": "read_json",
+    "readjson": "read_json"
+  },
+  
+  "sklearn": {
+    "fit_transform": "fit_transform",
+    "fittransform": "fit_transform",
+    "train_test_split": "train_test_split",
+    "train_test_splitt": "train_test_split"
+  },
+  
+  "common_classes": {
+    "model": "Model",
+    "MODEL": "Model",
+    "layer": "Layer",
+    "LAYER": "Layer",
+    "optimizer": "Optimizer",
+    "OPTIMIZER": "Optimizer",
+    "loss": "Loss",
+    "LOSS": "Loss"
+  },
+  
+  "common_utils": {
+    "logger": "Logger",
+    "LOGGER": "Logger",
+    "config": "Config",
+    "CONFIG": "Config",
+    "client": "Client",
+    "CLIENT": "Client",
+    "server": "Server",
+    "SERVER": "Server",
+    "handler": "Handler",
+    "HANDLER": "Handler",
+    "manager": "Manager",
+    "MANAGER": "Manager",
+    "factory": "Factory",
+    "FACTORY": "Factory",
+    "builder": "Builder",
+    "BUILDER": "Builder",
+    "adapter": "Adapter",
+    "ADAPTER": "Adapter",
+    "wrapper": "Wrapper",
+    "WRAPPER": "Wrapper"
+  },
+  
+  "design_patterns": {
+    "singleton": "Singleton",
+    "SINGLETON": "Singleton",
+    "observer": "Observer",
+    "OBSERVER": "Observer",
+    "strategy": "Strategy",
+    "STRATEGY": "Strategy",
+    "decorator": "Decorator",
+    "DECORATOR": "Decorator"
+  },
+  
+  "exceptions": {
+    "exception": "Exception",
+    "EXCEPTION": "Exception",
+    "error": "Error",
+    "ERROR": "Error",
+    "valueerror": "ValueError",
+    "typeerror": "TypeError",
+    "keyerror": "KeyError",
+    "indexerror": "IndexError",
+    "filenotfound": "FileNotFoundError",
+    "filenotfounderror": "FileNotFoundError"
+  },
+  
+  "typing_common": {
+    "list": "List",
+    "LIST": "List",
+    "dict": "Dict",
+    "DICT": "Dict",
+    "tuple": "Tuple",
+    "TUPLE": "Tuple",
+    "set": "Set",
+    "SET": "Set",
+    "optional": "Optional",
+    "OPTIONAL": "Optional",
+    "union": "Union",
+    "UNION": "Union",
+    "any": "Any",
+    "ANY": "Any",
+    "callable": "Callable",
+    "CALLABLE": "Callable"
+  }
+}

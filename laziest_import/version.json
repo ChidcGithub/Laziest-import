@@ -1,0 +1,12 @@
+{
+    "_comment": "Version compatibility configuration for laziest-import",
+    "_current_version": "0.0.3-pre6",
+    "aliases": {
+        "_min_version": "0.0.3-pre1",
+        "_max_version": "0.0.4"
+    },
+    "mappings": {
+        "_min_version": "0.0.3-pre1",
+        "_max_version": "0.0.4"
+    }
+}

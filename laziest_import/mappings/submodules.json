@@ -1,0 +1,183 @@
+{
+  "_comment": "Common submodule mappings for intelligent import suggestions",
+  "_format": "alias -> [parent_module, full_submodule_path]",
+  
+  "pytorch": {
+    "nn": ["torch", "torch.nn"],
+    "F": ["torch", "torch.nn.functional"],
+    "func": ["torch", "torch.nn.functional"],
+    "functional": ["torch", "torch.nn.functional"],
+    "optim": ["torch", "torch.optim"],
+    "autograd": ["torch", "torch.autograd"],
+    "DataLoader": ["torch", "torch.utils.data"],
+    "Dataset": ["torch", "torch.utils.data"],
+    "distributions": ["torch", "torch.distributions"],
+    "jit": ["torch", "torch.jit"],
+    "onnx": ["torch", "torch.onnx"]
+  },
+  
+  "torchvision": {
+    "transforms": ["torchvision", "torchvision.transforms"],
+    "models": ["torchvision", "torchvision.models"],
+    "datasets_tv": ["torchvision", "torchvision.datasets"]
+  },
+  
+  "tensorflow_keras": {
+    "layers": ["tensorflow", "tensorflow.keras.layers"],
+    "Model": ["tensorflow", "tensorflow.keras.models"],
+    "callbacks": ["tensorflow", "tensorflow.keras.callbacks"],
+    "losses_tf": ["tensorflow", "tensorflow.keras.losses"],
+    "optimizers_tf": ["tensorflow", "tensorflow.keras.optimizers"],
+    "regularizers": ["tensorflow", "tensorflow.keras.regularizers"],
+    "backend": ["tensorflow", "tensorflow.keras.backend"]
+  },
+  
+  "sklearn": {
+    "ensemble": ["sklearn", "sklearn.ensemble"],
+    "linear": ["sklearn", "sklearn.linear_model"],
+    "tree": ["sklearn", "sklearn.tree"],
+    "svm": ["sklearn", "sklearn.svm"],
+    "cluster": ["sklearn", "sklearn.cluster"],
+    "decomposition": ["sklearn", "sklearn.decomposition"],
+    "preprocess": ["sklearn", "sklearn.preprocessing"],
+    "model_selection": ["sklearn", "sklearn.model_selection"],
+    "metrics_sk": ["sklearn", "sklearn.metrics"],
+    "pipeline": ["sklearn", "sklearn.pipeline"],
+    "feature": ["sklearn", "sklearn.feature_extraction"],
+    "neighbors": ["sklearn", "sklearn.neighbors"],
+    "naive_bayes": ["sklearn", "sklearn.naive_bayes"]
+  },
+  
+  "scipy": {
+    "stats": ["scipy", "scipy.stats"],
+    "linalg": ["scipy", "scipy.linalg"],
+    "optimize": ["scipy", "scipy.optimize"],
+    "integrate": ["scipy", "scipy.integrate"],
+    "interpolate": ["scipy", "scipy.interpolate"],
+    "signal": ["scipy", "scipy.signal"],
+    "ndimage": ["scipy", "scipy.ndimage"],
+    "spatial": ["scipy", "scipy.spatial"],
+    "special": ["scipy", "scipy.special"],
+    "io_sp": ["scipy", "scipy.io"],
+    "fft": ["scipy", "scipy.fft"],
+    "sparse": ["scipy", "scipy.sparse"]
+  },
+  
+  "numpy": {
+    "random": ["numpy", "numpy.random"],
+    "linalg_np": ["numpy", "numpy.linalg"],
+    "fft_np": ["numpy", "numpy.fft"],
+    "polynomial": ["numpy", "numpy.polynomial"]
+  },
+  
+  "pandas": {
+    "plotting": ["pandas", "pandas.plotting"],
+    "api": ["pandas", "pandas.api"]
+  },
+  
+  "matplotlib": {
+    "pyplot": ["matplotlib", "matplotlib.pyplot"],
+    "animation": ["matplotlib", "matplotlib.animation"],
+    "cm": ["matplotlib", "matplotlib.cm"],
+    "colors": ["matplotlib", "matplotlib.colors"],
+    "gridspec": ["matplotlib", "matplotlib.gridspec"]
+  },
+  
+  "PIL": {
+    "Image": ["PIL", "PIL.Image"],
+    "ImageDraw": ["PIL", "PIL.ImageDraw"],
+    "ImageFont": ["PIL", "PIL.ImageFont"],
+    "ImageFilter": ["PIL", "PIL.ImageFilter"],
+    "ImageEnhance": ["PIL", "PIL.ImageEnhance"]
+  },
+  
+  "cv2": {
+    "cv2_imgproc": ["cv2", "cv2.imgproc"],
+    "cv2_highgui": ["cv2", "cv2.highgui"],
+    "cv2_dnn": ["cv2", "cv2.dnn"]
+  },
+  
+  "asyncio": {
+    "asyncio_subprocess": ["asyncio", "asyncio.subprocess"],
+    "asyncio_queues": ["asyncio", "asyncio.queues"]
+  },
+  
+  "logging": {
+    "handlers": ["logging", "logging.handlers"],
+    "config_log": ["logging", "logging.config"]
+  },
+  
+  "http": {
+    "client": ["http", "http.client"],
+    "server": ["http", "http.server"],
+    "cookies": ["http", "http.cookies"]
+  },
+  
+  "unittest": {
+    "mock": ["unittest", "unittest.mock"],
+    "TestCase": ["unittest", "unittest"]
+  },
+  
+  "transformers": {
+    "AutoTokenizer": ["transformers", "transformers"],
+    "AutoModel": ["transformers", "transformers"],
+    "AutoConfig": ["transformers", "transformers"],
+    "pipeline_hf": ["transformers", "transformers"],
+    "Trainer": ["transformers", "transformers"]
+  },
+  
+  "plotly": {
+    "graph_objects": ["plotly", "plotly.graph_objects"],
+    "express": ["plotly", "plotly.express"],
+    "figure_factory": ["plotly", "plotly.figure_factory"],
+    "subplots": ["plotly", "plotly.subplots"]
+  },
+  
+  "sqlalchemy": {
+    "Column": ["sqlalchemy", "sqlalchemy"],
+    "create_engine": ["sqlalchemy", "sqlalchemy"],
+    "sessionmaker": ["sqlalchemy", "sqlalchemy.orm"],
+    "declarative_base": ["sqlalchemy", "sqlalchemy.orm"]
+  },
+  
+  "flask": {
+    "request": ["flask", "flask"],
+    "render_template": ["flask", "flask"],
+    "redirect": ["flask", "flask"],
+    "url_for": ["flask", "flask"],
+    "jsonify": ["flask", "flask"]
+  },
+  
+  "django": {
+    "models_dj": ["django", "django.db.models"],
+    "forms": ["django", "django.forms"],
+    "views": ["django", "django.views"],
+    "urls": ["django", "django.urls"],
+    "admin": ["django", "django.contrib.admin"],
+    "auth": ["django", "django.contrib.auth"]
+  },
+  
+  "fastapi": {
+    "FastAPI": ["fastapi", "fastapi"],
+    "APIRouter": ["fastapi", "fastapi"],
+    "Depends": ["fastapi", "fastapi"],
+    "HTTPException": ["fastapi", "fastapi"],
+    "Body": ["fastapi", "fastapi"]
+  },
+  
+  "nltk": {
+    "tokenize": ["nltk", "nltk.tokenize"],
+    "stem": ["nltk", "nltk.stem"],
+    "corpus": ["nltk", "nltk.corpus"],
+    "tag": ["nltk", "nltk.tag"],
+    "chunk": ["nltk", "nltk.chunk"]
+  },
+  
+  "rich": {
+    "print_rich": ["rich", "rich"],
+    "Console": ["rich", "rich.console"],
+    "Table": ["rich", "rich.table"],
+    "Progress": ["rich", "rich.progress"],
+    "Panel": ["rich", "rich.panel"]
+  }
+}

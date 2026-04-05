@@ -1,0 +1,404 @@
+{
+  "_comment": "Module abbreviation mappings for fuzzy matching",
+  
+  "data_science": {
+    "np": "numpy",
+    "numpy": "numpy",
+    "pd": "pandas",
+    "pandas": "pandas",
+    "plt": "matplotlib.pyplot",
+    "mpl": "matplotlib",
+    "matplotlib": "matplotlib",
+    "sns": "seaborn",
+    "seaborn": "seaborn",
+    "sp": "scipy",
+    "scipy": "scipy",
+    "sk": "sklearn",
+    "sklearn": "sklearn",
+    "stats": "scipy.stats",
+    "linalg": "scipy.linalg",
+    "optimize": "scipy.optimize",
+    "fft": "scipy.fft",
+    "sparse": "scipy.sparse"
+  },
+  
+  "machine_learning": {
+    "tf": "tensorflow",
+    "tensorflow": "tensorflow",
+    "torch": "torch",
+    "pytorch": "torch",
+    "keras": "keras",
+    "xgb": "xgboost",
+    "xgboost": "xgboost",
+    "lgb": "lightgbm",
+    "lightgbm": "lightgbm",
+    "cat": "catboost",
+    "catboost": "catboost",
+    "ensemble": "sklearn.ensemble",
+    "linear_model": "sklearn.linear_model",
+    "tree": "sklearn.tree",
+    "svm": "sklearn.svm",
+    "cluster": "sklearn.cluster",
+    "decomposition": "sklearn.decomposition",
+    "preprocessing": "sklearn.preprocessing",
+    "model_selection": "sklearn.model_selection",
+    "metrics": "sklearn.metrics",
+    "pipeline": "sklearn.pipeline",
+    "feature_extraction": "sklearn.feature_extraction"
+  },
+  
+  "deep_learning": {
+    "nn": "torch.nn",
+    "F": "torch.nn.functional",
+    "func": "torch.nn.functional",
+    "optim": "torch.optim",
+    "data": "torch.utils.data",
+    "DataLoader": "torch.utils.data",
+    "autograd": "torch.autograd",
+    "distributions": "torch.distributions",
+    "jit": "torch.jit",
+    "onnx": "torch.onnx",
+    "vision": "torchvision",
+    "tv": "torchvision",
+    "transforms": "torchvision.transforms",
+    "models": "torchvision.models",
+    "audio": "torchaudio",
+    "text": "torchtext"
+  },
+  
+  "tensorflow_keras": {
+    "layers": "tensorflow.keras.layers",
+    "models_tf": "tensorflow.keras.models",
+    "callbacks": "tensorflow.keras.callbacks",
+    "losses": "tensorflow.keras.losses",
+    "optimizers": "tensorflow.keras.optimizers",
+    "backend": "tensorflow.keras.backend",
+    "regularizers": "tensorflow.keras.regularizers"
+  },
+  
+  "web_frameworks": {
+    "flask": "flask",
+    "django": "django",
+    "fastapi": "fastapi",
+    "api": "fastapi",
+    "starlette": "starlette",
+    "tornado": "tornado",
+    "aiohttp": "aiohttp",
+    "sanic": "sanic",
+    "bottle": "bottle",
+    "cherrypy": "cherrypy",
+    "pyramid": "pyramid"
+  },
+  
+  "web_scraping_http": {
+    "bs4": "bs4",
+    "beautifulsoup": "bs4",
+    "BeautifulSoup": "bs4",
+    "requests": "requests",
+    "http": "httpx",
+    "httpx": "httpx",
+    "aiohttp_client": "aiohttp",
+    "scrapy": "scrapy",
+    "selenium": "selenium",
+    "webdriver": "selenium.webdriver",
+    "playwright": "playwright",
+    "lxml": "lxml",
+    "html5lib": "html5lib",
+    "pyquery": "pyquery"
+  },
+  
+  "database": {
+    "db": "sqlite3",
+    "sql": "sqlalchemy",
+    "sa": "sqlalchemy",
+    "orm": "sqlalchemy.orm",
+    "mongo": "pymongo",
+    "pymongo": "pymongo",
+    "redis": "redis",
+    "mysql": "pymysql",
+    "pymysql": "pymysql",
+    "postgres": "psycopg2",
+    "psycopg": "psycopg2",
+    "sqlite": "sqlite3",
+    "peewee": "peewee",
+    "tortoise": "tortoise.orm",
+    "databases": "databases",
+    "alembic": "alembic"
+  },
+  
+  "cloud_services": {
+    "aws": "boto3",
+    "s3": "boto3",
+    "boto": "boto3",
+    "boto3": "boto3",
+    "gcs": "google.cloud.storage",
+    "gcp": "google.cloud",
+    "azure": "azure",
+    "azure_storage": "azure.storage.blob"
+  },
+  
+  "nlp": {
+    "nlp": "spacy",
+    "spacy": "spacy",
+    "nltk": "nltk",
+    "hf": "transformers",
+    "transformers": "transformers",
+    "tokenizers": "tokenizers",
+    "gensim": "gensim",
+    "textblob": "textblob",
+    "flair": "flair",
+    "allennlp": "allennlp",
+    "stanza": "stanza",
+    "polyglot": "polyglot"
+  },
+  
+  "visualization": {
+    "px": "plotly.express",
+    "go": "plotly.graph_objects",
+    "plotly": "plotly",
+    "alt": "altair",
+    "altair": "altair",
+    "bokeh": "bokeh",
+    "holoviews": "holoviews",
+    "dash": "dash",
+    "st": "streamlit",
+    "streamlit": "streamlit",
+    "gradio": "gradio",
+    "vispy": "vispy",
+    "mayavi": "mayavi",
+    "pygal": "pygal"
+  },
+  
+  "image_processing": {
+    "cv": "cv2",
+    "opencv": "cv2",
+    "pil": "PIL",
+    "pillow": "PIL",
+    "PIL": "PIL",
+    "Image": "PIL.Image",
+    "image": "PIL.Image",
+    "imageio": "imageio",
+    "scikit_image": "skimage",
+    "skimage": "skimage",
+    "mahotas": "mahotas",
+    "simplecv": "SimpleCV",
+    "wand": "wand"
+  },
+  
+  "gui": {
+    "qt": "PyQt6",
+    "tk": "tkinter",
+    "gui": "tkinter",
+    "tkinter": "tkinter",
+    "PyQt5": "PyQt5",
+    "PyQt6": "PyQt6",
+    "PySide2": "PySide2",
+    "PySide6": "PySide6",
+    "kivy": "kivy",
+    "wx": "wx",
+    "wxpython": "wx",
+    "flet": "flet",
+    "dearpygui": "dearpygui",
+    "pygame": "pygame"
+  },
+  
+  "testing": {
+    "test": "pytest",
+    "pytest": "pytest",
+    "unittest": "unittest",
+    "mock": "unittest.mock",
+    "hypothesis": "hypothesis",
+    "faker": "faker",
+    "factory": "factory_boy",
+    "coverage": "coverage",
+    "nose": "nose"
+  },
+  
+  "async_concurrency": {
+    "aio": "asyncio",
+    "async": "asyncio",
+    "asyncio": "asyncio",
+    "concurrent": "concurrent.futures",
+    "threading": "threading",
+    "multiprocessing": "multiprocessing",
+    "celery": "celery",
+    "dramatiq": "dramatiq",
+    "huey": "huey",
+    "rq": "rq"
+  },
+  
+  "config_serialization": {
+    "yaml": "yaml",
+    "pyyaml": "yaml",
+    "toml": "toml",
+    "json": "json",
+    "pickle": "pickle",
+    "configparser": "configparser",
+    "dotenv": "dotenv",
+    "hydra": "hydra",
+    "omegaconf": "omegaconf"
+  },
+  
+  "logging_monitoring": {
+    "log": "logging",
+    "logging": "logging",
+    "loguru": "loguru",
+    "structlog": "structlog",
+    "sentry": "sentry_sdk",
+    "prometheus": "prometheus_client",
+    "opentelemetry": "opentelemetry"
+  },
+  
+  "cli": {
+    "click": "click",
+    "argparse": "argparse",
+    "typer": "typer",
+    "rich": "rich",
+    "prompt_toolkit": "prompt_toolkit",
+    "questionary": "questionary"
+  },
+  
+  "security_crypto": {
+    "crypto": "cryptography",
+    "cryptography": "cryptography",
+    "hashlib": "hashlib",
+    "hmac": "hmac",
+    "secrets": "secrets",
+    "jwt": "jwt",
+    "pyjwt": "jwt",
+    "passlib": "passlib",
+    "bcrypt": "bcrypt",
+    "cryptography_hazmat": "cryptography.hazmat"
+  },
+  
+  "web3_blockchain": {
+    "web3": "web3",
+    "eth": "web3",
+    "brownie": "brownie",
+    "solana": "solana",
+    "web3py": "web3"
+  },
+  
+  "date_time": {
+    "datetime": "datetime",
+    "dateutil": "dateutil",
+    "arrow": "arrow",
+    "pendulum": "pendulum",
+    "maya": "maya",
+    "moment": "moment",
+    "pytz": "pytz",
+    "zoneinfo": "zoneinfo"
+  },
+  
+  "data_validation": {
+    "pydantic": "pydantic",
+    "marshmallow": "marshmallow",
+    "cerberus": "cerberus",
+    "voluptuous": "voluptuous",
+    "validators": "validators"
+  },
+  
+  "api_serialization": {
+    "graphql": "graphql",
+    "graphene": "graphene",
+    "ariadne": "ariadne",
+    "strawberry": "strawberry",
+    "protobuf": "google.protobuf",
+    "thrift": "thrift",
+    "avro": "avro",
+    "msgpack": "msgpack",
+    "orjson": "orjson",
+    "ujson": "ujson"
+  },
+  
+  "environment_system": {
+    "os": "os",
+    "sys": "sys",
+    "pathlib": "pathlib",
+    "shutil": "shutil",
+    "subprocess": "subprocess",
+    "platform": "platform",
+    "psutil": "psutil",
+    "socket": "socket",
+    "ssl": "ssl"
+  },
+  
+  "science_engineering": {
+    "sympy": "sympy",
+    "astropy": "astropy",
+    "astroquery": "astroquery",
+    "biopython": "Bio",
+    "Bio": "Bio",
+    "rdkit": "rdkit",
+    "openmm": "simtk.openmm",
+    "pymc": "pymc",
+    "arviz": "arviz"
+  },
+  
+  "office_documents": {
+    "openpyxl": "openpyxl",
+    "xlrd": "xlrd",
+    "xlwt": "xlwt",
+    "docx": "docx",
+    "python_docx": "docx",
+    "pptx": "pptx",
+    "python_pptx": "pptx",
+    "pypdf": "pypdf",
+    "PyPDF2": "PyPDF2",
+    "reportlab": "reportlab",
+    "weasyprint": "weasyprint",
+    "pdfkit": "pdfkit"
+  },
+  
+  "utilities": {
+    "tqdm": "tqdm",
+    "rich_progress": "rich.progress",
+    "itertools": "itertools",
+    "functools": "functools",
+    "operator": "operator",
+    "copy": "copy",
+    "typing": "typing",
+    "typing_extensions": "typing_extensions",
+    "collections": "collections",
+    "dataclasses": "dataclasses",
+    "enum": "enum",
+    "abc": "abc",
+    "contextlib": "contextlib",
+    "warnings": "warnings"
+  },
+  
+  "mlops": {
+    "wandb": "wandb",
+    "mlflow": "mlflow",
+    "dvc": "dvc",
+    "clearml": "clearml",
+    "neptune": "neptune",
+    "aim": "aim",
+    "dvclive": "dvclive",
+    "tensorboard": "tensorboard"
+  },
+  
+  "quant_finance": {
+    "quantlib": "QuantLib",
+    "zipline": "zipline",
+    "backtrader": "backtrader",
+    "yfinance": "yfinance",
+    "pandas_datareader": "pandas_datareader",
+    "ta": "ta",
+    "ccxt": "ccxt"
+  },
+  
+  "game_development": {
+    "arcade": "arcade",
+    "panda3d": "panda3d",
+    "godot": "godot"
+  },
+  
+  "audio": {
+    "pyaudio": "pyaudio",
+    "soundfile": "soundfile",
+    "librosa": "librosa",
+    "pydub": "pydub",
+    "mutagen": "mutagen"
+  }
+}

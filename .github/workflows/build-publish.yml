@@ -13,10 +13,14 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       sha: ${{ steps.version.outputs.sha }}
       build_date: ${{ steps.version.outputs.build_date }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+      release_notes: ${{ steps.release_notes.outputs.release_notes }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -42,9 +46,113 @@ jobs:
         VERSION=$(python -c "import laziest_import; print(laziest_import.__version__)")
         SHA=$(git rev-parse --short HEAD)
         BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        # 判断是否为预览版
+        if [[ "$VERSION" == *"-pre"* ]] || [[ "$VERSION" == *"-alpha"* ]] || [[ "$VERSION" == *"-beta"* ]] || [[ "$VERSION" == *"-rc"* ]]; then
+          IS_PRERELEASE="true"
+        else
+          IS_PRERELEASE="false"
+        fi
+        
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "sha=$SHA" >> $GITHUB_OUTPUT
         echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+        echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+        echo "Is prerelease: $IS_PRERELEASE"
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+        
+        if [ "$IS_PRERELEASE" = "true" ]; then
+          # 预览版：不包含 commit 信息，只显示基本信息
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "## Pre-release" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "This is a pre-release version for testing purposes." >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Pre-release: skipping commit changelog"
+        else
+          # 正式版：生成从上一个稳定版开始的 commit 信息
+          echo "Generating changelog from last stable release..."
+          
+          # 获取上一个稳定版的 tag（排除预览版）
+          LAST_STABLE_TAG=$(git tag --list 'v*' | grep -v -E '(pre|alpha|beta|rc)' | sort -V | tail -n 1 2>/dev/null || echo "")
+          
+          if [ -n "$LAST_STABLE_TAG" ] && [ "$LAST_STABLE_TAG" != "${{ github.ref_name }}" ]; then
+            echo "Last stable tag: $LAST_STABLE_TAG"
+            
+            # 获取从上一个稳定版到当前的所有 commit
+            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges 2>/dev/null || echo "")
+            
+            if [ -z "$COMMITS" ]; then
+              COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+            fi
+          else
+            # 没有上一个稳定版，获取最近的 commits
+            echo "No previous stable tag found, using recent commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -30)
+          fi
+          
+          # 分类 commits
+          FEATURES=$(echo "$COMMITS" | grep -iE '(feat|feature|add|new)' || echo "")
+          FIXES=$(echo "$COMMITS" | grep -iE '(fix|bug|patch|resolve)' || echo "")
+          REFACTOR=$(echo "$COMMITS" | grep -iE '(refactor|restructure|clean|improve)' || echo "")
+          DOCS=$(echo "$COMMITS" | grep -iE '(doc|readme|comment)' || echo "")
+          TESTS=$(echo "$COMMITS" | grep -iE '(test|pytest|coverage)' || echo "")
+          OTHER=$(echo "$COMMITS" | grep -viE '(feat|feature|add|new|fix|bug|patch|resolve|refactor|restructure|clean|improve|doc|readme|comment|test|pytest|coverage)' || echo "")
+          
+          # 生成 release notes
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          
+          if [ -n "$FEATURES" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### New Features" >> $GITHUB_OUTPUT
+            echo "$FEATURES" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$FIXES" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Bug Fixes" >> $GITHUB_OUTPUT
+            echo "$FIXES" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$REFACTOR" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Refactoring" >> $GITHUB_OUTPUT
+            echo "$REFACTOR" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$TESTS" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Tests" >> $GITHUB_OUTPUT
+            echo "$TESTS" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$DOCS" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Documentation" >> $GITHUB_OUTPUT
+            echo "$DOCS" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "$OTHER" ]; then
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Other Changes" >> $GITHUB_OUTPUT
+            echo "$OTHER" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "" >> $GITHUB_OUTPUT
+          echo "---" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Full Changelog" >> $GITHUB_OUTPUT
+          echo '```' >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo '```' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -59,37 +167,61 @@ jobs:
       contents: write
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist/
 
+    - name: Build release body
+      id: body
+      run: |
+        IS_PRERELEASE="${{ needs.build.outputs.is_prerelease }}"
+        VERSION="${{ needs.build.outputs.version }}"
+        SHA="${{ needs.build.outputs.sha }}"
+        BUILD_DATE="${{ needs.build.outputs.build_date }}"
+        RELEASE_NOTES="${{ needs.build.outputs.release_notes }}"
+        
+        # 构建 release body
+        {
+          echo "body<<EOF"
+          echo "## Release Information"
+          echo ""
+          echo "| Property | Value |"
+          echo "|----------|-------|"
+          echo "| **Version** | $VERSION |"
+          echo "| **Commit SHA** | $SHA |"
+          echo "| **Build Date** | $BUILD_DATE |"
+          echo "| **Python** | 3.8+ |"
+          echo ""
+          echo "### Installation"
+          echo '```'
+          echo "pip install laziest-import"
+          echo '```'
+          echo ""
+          echo "$RELEASE_NOTES"
+          echo ""
+          echo "---"
+          echo ""
+          echo "### Files"
+          echo "Wheel and source distribution included in assets."
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref_name }}
         name: laziest-import ${{ needs.build.outputs.version }}
-        body: |
-          ## Release Information
-          
-          | Property | Value |
-          |----------|-------|
-          | **Version** | ${{ needs.build.outputs.version }} |
-          | **Commit SHA** | ${{ needs.build.outputs.sha }} |
-          | **Build Date** | ${{ needs.build.outputs.build_date }} |
-          | **Python** | 3.8+ |
-          
-          ### Installation
-          ```
-          pip install laziest-import
-          ```
-          
-          ### Files
-          - Wheel and source distribution included in assets
+        body: ${{ steps.body.outputs.body }}
         files: dist/*
         draft: false
-        prerelease: ${{ contains(needs.build.outputs.version, '-pre') || contains(needs.build.outputs.version, '-alpha') || contains(needs.build.outputs.version, '-beta') }}
+        prerelease: ${{ needs.build.outputs.is_prerelease == 'true' }}
 
   publish:
     needs: [build, release]

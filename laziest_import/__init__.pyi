@@ -24,6 +24,18 @@ class LazySubmodule:
     def __repr__(self) -> str: ...
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
+class LazySymbol:
+    """Lazy loading symbol (class/function) proxy class."""
+    def __getattr__(self, name: str) -> Any: ...
+    def __setattr__(self, name: str, value: Any) -> None: ...
+    def __dir__(self) -> List[str]: ...
+    def __repr__(self) -> str: ...
+    def __str__(self) -> str: ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+    def __class__(self) -> type: ...
+    def __enter__(self) -> Any: ...
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
+
 # ============== Alias Management ==============
 
 def register_alias(alias: str, module_name: str) -> None:
@@ -101,6 +113,16 @@ class SearchResult:
     score: float
     obj: Optional[Any]
 
+class SymbolMatch:
+    """Scored symbol match with confidence and source information."""
+    module_name: str
+    symbol_name: str
+    symbol_type: str
+    signature: Optional[str]
+    confidence: float
+    source: str
+    obj: Optional[Any]
+
 def enable_symbol_search(
     interactive: bool = True,
     exact_params: bool = False,
@@ -142,6 +164,53 @@ def get_symbol_cache_info() -> Dict[str, Any]:
 
 def clear_symbol_cache() -> None:
     """Clear the symbol cache."""
+    ...
+
+# ============== Symbol Resolution ==============
+
+def set_symbol_preference(symbol: str, module: str) -> None:
+    """Set a user preference for symbol resolution."""
+    ...
+
+def get_symbol_preference(symbol: str) -> Optional[str]:
+    """Get the user preference for a symbol."""
+    ...
+
+def clear_symbol_preference(symbol: str) -> bool:
+    """Clear a user preference for a symbol."""
+    ...
+
+def list_symbol_conflicts(symbol: str) -> List[Dict[str, Any]]:
+    """List all modules that define a symbol with potential conflicts."""
+    ...
+
+def set_module_priority(module: str, priority: int) -> None:
+    """Set the priority for a module in symbol resolution."""
+    ...
+
+def get_module_priority(module: str) -> int:
+    """Get the priority for a module."""
+    ...
+
+def enable_auto_symbol_resolution(
+    auto: bool = True,
+    threshold: float = 0.7,
+    warn_on_conflict: bool = True,
+    context_aware: bool = True
+) -> None:
+    """Configure automatic symbol resolution behavior."""
+    ...
+
+def disable_auto_symbol_resolution() -> None:
+    """Disable automatic symbol resolution."""
+    ...
+
+def get_symbol_resolution_config() -> Dict[str, Any]:
+    """Get current symbol resolution configuration."""
+    ...
+
+def get_loaded_modules_context() -> Set[str]:
+    """Get the set of modules currently loaded/in use."""
     ...
 
 # ============== Configuration ==============
@@ -318,5 +387,6 @@ def set_pip_extra_args(args: List[str]) -> None:
 
 __all__: List[str]
 
-def __getattr__(name: str) -> LazyModule: ...
+def __getattr__(name: str) -> Union[LazyModule, LazySymbol]: ...
+def __dir__() -> List[str]: ...
 def __dir__() -> List[str]: ...

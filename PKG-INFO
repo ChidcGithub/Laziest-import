@@ -1,21 +1,43 @@
+Metadata-Version: 2.4
+Name: laziest-import
+Version: 0.0.3rc2
+Summary: Automatic lazy import library - use common libraries without explicit import statements
+Author-email: Chidc <ChidcGithub@users.noreply.github.com>
+License: MIT
+Project-URL: Homepage, https://github.com/ChidcGithub/Laziest-import
+Project-URL: Repository, https://github.com/ChidcGithub/Laziest-import.git
+Project-URL: Issues, https://github.com/ChidcGithub/Laziest-import/issues
+Keywords: import,lazy,auto-import,convenience,development
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Utilities
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21; extra == "dev"
+Dynamic: license-file
+
 # laziest-import
 
 [![PyPI version](https://img.shields.io/pypi/v/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![PyPI pre-release](https://img.shields.io/github/release/ChidcGithub/Laziest-import/all.svg?label=pre-release&color=orange)](https://github.com/ChidcGithub/Laziest-import/releases)
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![License](https://img.shields.io/pypi/l/laziest-import.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/pypi/dm/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![PyPI - Wheel](https://img.shields.io/pypi/wheel/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/pulls)
 [![GitHub Actions](https://github.com/ChidcGithub/Laziest-import/workflows/Build%20and%20Publish/badge.svg)](https://github.com/ChidcGithub/Laziest-import/actions)
-[![GitHub last commit](https://img.shields.io/github/last-commit/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/commits/main)
-[![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
-[![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
-[![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-222_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
@@ -86,32 +108,25 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 
 | Feature | Description |
 |---------|-------------|
-| **Modular architecture** | Clean 9-module codebase for maintainability |
 | **Lazy loading** | Modules import only on first access, reducing startup overhead |
 | **Submodule support** | `np.linalg.svd()` chains submodules automatically |
 | **Auto-discovery** | Unregistered names search installed modules automatically |
 | **Typo correction** | Misspelling auto-correction (`nump` → `numpy`, `matplotlip` → `matplotlib`) |
-| **Abbreviation expansion** | 300+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
+| **Abbreviation expansion** | 200+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
 | **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
 | **Auto-install** | Optional: missing modules can be pip-installed automatically |
 | **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
 | **Cache persistence** | Symbol index saved to disk with configurable TTL |
 | **Cache statistics** | Track hits/misses and optimize performance |
-| **Version checking** | Automatic compatibility warnings for aliases/mappings |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **222 tests** | Comprehensive test coverage |
 
 ## What's New in v0.0.3
 
-- **Modular Architecture**: Refactored from single 5800-line file to 9 clean modules
-- **Version Compatibility**: Centralized version management with `version.json` and range checking
 - **LazyProxy**: New `lazy` object for automatic typo correction
-- **300+ abbreviations**: Expanded library shortcuts in `mappings/abbreviations.json`
+- **200+ abbreviations**: Expanded library shortcuts
 - **Submodule mappings**: `nn` → `torch.nn`, `optim` → `torch.optim`, etc.
-- **Misspelling correction**: 150+ common typos auto-corrected via fuzzy matching
+- **Misspelling correction**: 100+ common typos auto-corrected
 - **Folder-based config**: Organize aliases in `~/.laziest_import/aliases/A.json`, `B.json`, etc.
-- **JSON-based mappings**: All mappings stored in `mappings/` directory for easy customization
-- **222 tests**: Comprehensive test coverage with pytest
 
 ## Auto-Install
 
@@ -378,44 +393,6 @@ Custom aliases can be configured in:
 ```
 
 Letter-based files load faster - only the relevant file is loaded on demand.
-
-### JSON Mappings
-
-All mappings are stored in `laziest_import/mappings/` directory:
-
-| File | Description |
-|------|-------------|
-| `abbreviations.json` | Module abbreviations (`np` → `numpy`) |
-| `misspellings.json` | Common misspellings (`numpi` → `numpy`) |
-| `submodules.json` | Submodule shortcuts (`nn` → `torch.nn`) |
-| `package_rename.json` | Package rename mappings (`sklearn` → `scikit-learn`) |
-| `symbol_misspellings.json` | Symbol misspellings (`dataframe` → `DataFrame`) |
-| `priorities.json` | Module priorities for conflict resolution |
-
-### Version Management
-
-Version compatibility is managed centrally in `version.json`:
-
-```json
-{
-    "_current_version": "0.0.3-pre6",
-    "aliases": {
-        "_min_version": "0.0.3-pre1",
-        "_max_version": "0.0.4"
-    },
-    "mappings": {
-        "_min_version": "0.0.3-pre1",
-        "_max_version": "0.0.4"
-    }
-}
-```
-
-If the current version is outside the specified range, a warning is issued:
-
-```
-UserWarning: [laziest-import] aliases: Version 0.0.4 is at or above maximum 0.0.4. 
-Some alias features may not work correctly.
-```
 
 ## How It Works
 

@@ -1,4 +1,6 @@
 {
+  "_min_version": "0.0.3-pre1",
+  "_max_version": "0.0.4",
   "ujson": "ujson",
   "underscore": "underscore",
   "undetected-chromedriver": "undetected_chromedriver",

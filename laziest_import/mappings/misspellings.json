@@ -1,0 +1,256 @@
+{
+  "_comment": "Common misspelling corrections for popular packages",
+  
+  "numpy": {
+    "nump": "numpy",
+    "numpi": "numpy",
+    "nupy": "numpy",
+    "numby": "numpy"
+  },
+  
+  "pandas": {
+    "panda": "pandas",
+    "pand": "pandas",
+    "pandass": "pandas"
+  },
+  
+  "matplotlib": {
+    "matplot": "matplotlib",
+    "matplotlip": "matplotlib",
+    "matplolib": "matplotlib",
+    "matploblib": "matplotlib"
+  },
+  
+  "seaborn": {
+    "seaborne": "seaborn",
+    "seabourn": "seaborn"
+  },
+  
+  "sklearn": {
+    "sckit": "sklearn",
+    "scikit": "sklearn",
+    "scikitlearn": "sklearn",
+    "slearn": "sklearn",
+    "sklear": "sklearn"
+  },
+  
+  "tensorflow": {
+    "tensorflo": "tensorflow",
+    "tensorflw": "tensorflow",
+    "tensrflow": "tensorflow"
+  },
+  
+  "torch": {
+    "torchh": "torch",
+    "pytorc": "torch",
+    "pytorchh": "torch"
+  },
+  
+  "keras": {
+    "kerass": "keras"
+  },
+  
+  "xgboost": {
+    "xgbooost": "xgboost",
+    "xgboostt": "xgboost"
+  },
+  
+  "lightgbm": {
+    "lightgbmm": "lightgbm",
+    "lightgmb": "lightgbm"
+  },
+  
+  "flask": {
+    "flaskk": "flask"
+  },
+  
+  "django": {
+    "djangoo": "django"
+  },
+  
+  "fastapi": {
+    "fastapii": "fastapi",
+    "fastepy": "fastapi"
+  },
+  
+  "requests": {
+    "requestss": "requests",
+    "requets": "requests"
+  },
+  
+  "bs4": {
+    "beatifulsoup": "bs4",
+    "beautifilsoup": "bs4",
+    "beautisoup": "bs4",
+    "beautifullsoup": "bs4"
+  },
+  
+  "selenium": {
+    "selenum": "selenium",
+    "selenim": "selenium"
+  },
+  
+  "scrapy": {
+    "scrappy": "scrapy"
+  },
+  
+  "sqlalchemy": {
+    "sqlalchemyy": "sqlalchemy",
+    "sqlalchmey": "sqlalchemy",
+    "sqlachemy": "sqlalchemy"
+  },
+  
+  "pymongo": {
+    "pymongoo": "pymongo"
+  },
+  
+  "redis": {
+    "rediss": "redis"
+  },
+  
+  "plotly": {
+    "plotlyy": "plotly",
+    "plotle": "plotly"
+  },
+  
+  "altair": {
+    "altairr": "altair",
+    "altrair": "altair"
+  },
+  
+  "bokeh": {
+    "boleh": "bokeh",
+    "bookeh": "bokeh"
+  },
+  
+  "gradio": {
+    "gradiio": "gradio",
+    "gradoo": "gradio"
+  },
+  
+  "nltk": {
+    "nltkk": "nltk"
+  },
+  
+  "spacy": {
+    "spacyy": "spacy",
+    "spacey": "spacy"
+  },
+  
+  "transformers": {
+    "tranformers": "transformers",
+    "transformer": "transformers",
+    "transformres": "transformers"
+  },
+  
+  "gensim": {
+    "gensimm": "gensim",
+    "gensem": "gensim"
+  },
+  
+  "cv2": {
+    "opencvv": "cv2",
+    "opncv": "cv2"
+  },
+  
+  "PIL": {
+    "pilllow": "PIL",
+    "pilow": "PIL"
+  },
+  
+  "skimage": {
+    "skimmage": "skimage",
+    "scikitimage": "skimage"
+  },
+  
+  "tqdm": {
+    "tqmdd": "tqdm",
+    "tqmd": "tqdm"
+  },
+  
+  "yaml": {
+    "pyyami": "yaml",
+    "pyyam": "yaml",
+    "yyaml": "yaml"
+  },
+  
+  "pytest": {
+    "pyttest": "pytest",
+    "pytes": "pytest",
+    "pythest": "pytest"
+  },
+  
+  "asyncio": {
+    "asynccio": "asyncio",
+    "asyncioo": "asyncio",
+    "asybcio": "asyncio"
+  },
+  
+  "boto3": {
+    "botooo": "boto3",
+    "botto3": "boto3"
+  },
+  
+  "PyQt6": {
+    "pyqtt": "PyQt6",
+    "pyqt5": "PyQt6"
+  },
+  
+  "tkinter": {
+    "tkintr": "tkinter",
+    "tkinterr": "tkinter"
+  },
+  
+  "kivy": {
+    "kivyy": "kivy"
+  },
+  
+  "pygame": {
+    "pygamee": "pygame"
+  },
+  
+  "cryptography": {
+    "crytography": "cryptography",
+    "cryptograph": "cryptography",
+    "cryptograpy": "cryptography",
+    "crypo": "cryptography"
+  },
+  
+  "pydantic": {
+    "pydanticc": "pydantic",
+    "pydantc": "pydantic"
+  },
+  
+  "click": {
+    "clic": "click",
+    "clickk": "click"
+  },
+  
+  "typer": {
+    "typper": "typer",
+    "typeer": "typer"
+  },
+  
+  "rich": {
+    "richh": "rich"
+  },
+  
+  "logging": {
+    "loging": "logging",
+    "loggging": "logging"
+  },
+  
+  "loguru": {
+    "loguruu": "loguru"
+  },
+  
+  "dotenv": {
+    "dottenv": "dotenv",
+    "dtenv": "dotenv"
+  },
+  
+  "datetime": {
+    "datatime": "datetime",
+    "dattime": "datetime"
+  }
+}

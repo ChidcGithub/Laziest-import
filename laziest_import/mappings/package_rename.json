@@ -1,0 +1,226 @@
+{
+  "_comment": "Mapping of package import names to pip install names",
+  
+  "common_packages": {
+    "sklearn": "scikit-learn",
+    "PIL": "pillow",
+    "cv2": "opencv-python",
+    "bs4": "beautifulsoup4",
+    "yaml": "pyyaml",
+    "dotenv": "python-dotenv",
+    "jwt": "pyjwt",
+    "dateutil": "python-dateutil",
+    "leetcode": "leetcode-api",
+    "crypto": "pycryptodome",
+    "Crypto": "pycryptodome",
+    "Image": "pillow",
+    "Bio": "biopython",
+    "OpenGL": "pyopengl",
+    "fitz": "pymupdf",
+    "docx": "python-docx",
+    "pptx": "python-pptx",
+    "win32com": "pywin32",
+    "kafka": "kafka-python",
+    "mqtt": "paho-mqtt",
+    "zmq": "pyzmq",
+    "web3": "web3",
+    "eth": "web3",
+    "selenium": "selenium",
+    "webdriver": "selenium"
+  },
+  
+  "visualization": {
+    "dash": "dash",
+    "dcc": "dash-core-components",
+    "st": "streamlit",
+    "streamlit": "streamlit",
+    "gradio": "gradio"
+  },
+  
+  "mlops": {
+    "wandb": "wandb",
+    "mlflow": "mlflow",
+    "dvc": "dvc"
+  },
+  
+  "database_drivers": {
+    "mysql": "pymysql",
+    "postgres": "psycopg2",
+    "psycopg": "psycopg2",
+    "mongo": "pymongo",
+    "pymongo": "pymongo",
+    "redis": "redis"
+  },
+  
+  "web_frameworks": {
+    "flask": "flask",
+    "django": "django",
+    "fastapi": "fastapi",
+    "starlette": "starlette",
+    "tornado": "tornado",
+    "aiohttp": "aiohttp"
+  },
+  
+  "data_science": {
+    "np": "numpy",
+    "numpy": "numpy",
+    "pd": "pandas",
+    "pandas": "pandas",
+    "plt": "matplotlib",
+    "matplotlib": "matplotlib",
+    "sns": "seaborn",
+    "seaborn": "seaborn",
+    "sp": "scipy",
+    "scipy": "scipy",
+    "sk": "scikit-learn",
+    "xgb": "xgboost",
+    "xgboost": "xgboost",
+    "lgb": "lightgbm",
+    "lightgbm": "lightgbm",
+    "cat": "catboost",
+    "catboost": "catboost"
+  },
+  
+  "deep_learning": {
+    "tf": "tensorflow",
+    "tensorflow": "tensorflow",
+    "torch": "torch",
+    "pytorch": "torch",
+    "keras": "keras",
+    "transformers": "transformers",
+    "hf": "transformers"
+  },
+  
+  "nlp": {
+    "nlp": "spacy",
+    "spacy": "spacy",
+    "nltk": "nltk",
+    "gensim": "gensim",
+    "textblob": "textblob"
+  },
+  
+  "image_processing": {
+    "cv": "opencv-python",
+    "opencv": "opencv-python",
+    "pil": "pillow",
+    "pillow": "pillow",
+    "skimage": "scikit-image",
+    "imageio": "imageio"
+  },
+  
+  "web_scraping": {
+    "requests": "requests",
+    "httpx": "httpx",
+    "scrapy": "scrapy",
+    "playwright": "playwright",
+    "lxml": "lxml",
+    "pyquery": "pyquery"
+  },
+  
+  "testing": {
+    "pytest": "pytest",
+    "test": "pytest",
+    "hypothesis": "hypothesis",
+    "faker": "faker",
+    "factory": "factory_boy",
+    "coverage": "coverage"
+  },
+  
+  "cli": {
+    "click": "click",
+    "typer": "typer",
+    "rich": "rich",
+    "prompt_toolkit": "prompt-toolkit",
+    "questionary": "questionary"
+  },
+  
+  "config": {
+    "toml": "toml",
+    "hydra": "hydra-core",
+    "omegaconf": "omegaconf"
+  },
+  
+  "logging": {
+    "loguru": "loguru",
+    "structlog": "structlog",
+    "sentry": "sentry-sdk"
+  },
+  
+  "security": {
+    "cryptography": "cryptography",
+    "passlib": "passlib",
+    "bcrypt": "bcrypt"
+  },
+  
+  "data_validation": {
+    "pydantic": "pydantic",
+    "marshmallow": "marshmallow",
+    "cerberus": "cerberus"
+  },
+  
+  "async_utils": {
+    "celery": "celery",
+    "huey": "huey",
+    "rq": "rq",
+    "dramatiq": "dramatiq"
+  },
+  
+  "gui": {
+    "PyQt5": "PyQt5",
+    "PyQt6": "PyQt6",
+    "PySide2": "PySide2",
+    "PySide6": "PySide6",
+    "kivy": "kivy",
+    "wx": "wxPython",
+    "wxpython": "wxPython",
+    "flet": "flet",
+    "dearpygui": "dearpygui",
+    "pygame": "pygame"
+  },
+  
+  "audio": {
+    "pyaudio": "pyaudio",
+    "soundfile": "soundfile",
+    "librosa": "librosa",
+    "pydub": "pydub"
+  },
+  
+  "office": {
+    "openpyxl": "openpyxl",
+    "xlrd": "xlrd",
+    "xlwt": "xlwt",
+    "pypdf": "pypdf",
+    "PyPDF2": "PyPDF2",
+    "reportlab": "reportlab"
+  },
+  
+  "cloud": {
+    "aws": "boto3",
+    "s3": "boto3",
+    "boto": "boto3",
+    "boto3": "boto3",
+    "gcs": "google-cloud-storage",
+    "gcp": "google-cloud"
+  },
+  
+  "science": {
+    "sympy": "sympy",
+    "astropy": "astropy",
+    "biopython": "biopython",
+    "rdkit": "rdkit"
+  },
+  
+  "quant_finance": {
+    "quantlib": "QuantLib",
+    "zipline": "zipline",
+    "backtrader": "backtrader",
+    "yfinance": "yfinance",
+    "ccxt": "ccxt"
+  },
+  
+  "utilities": {
+    "tqdm": "tqdm",
+    "psutil": "psutil",
+    "typing_extensions": "typing-extensions"
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "_comment": "Module priority configuration for symbol resolution conflicts",
+  "_description": "Higher priority = preferred source for ambiguous symbols",
+  
+  "data_science_core": {
+    "pandas": 100,
+    "numpy": 99,
+    "polars": 85
+  },
+  
+  "deep_learning": {
+    "torch": 95,
+    "tensorflow": 90,
+    "keras": 85,
+    "jax": 80,
+    "sklearn": 75,
+    "scikit-learn": 75
+  },
+  
+  "visualization": {
+    "matplotlib": 90,
+    "matplotlib.pyplot": 90,
+    "seaborn": 80,
+    "plotly": 75,
+    "bokeh": 70,
+    "altair": 65
+  },
+  
+  "web_frameworks": {
+    "flask": 80,
+    "django": 80,
+    "fastapi": 85,
+    "requests": 85,
+    "httpx": 80,
+    "aiohttp": 75
+  },
+  
+  "database": {
+    "sqlalchemy": 80,
+    "peewee": 70
+  },
+  
+  "testing": {
+    "pytest": 80
+  },
+  
+  "async": {
+    "asyncio": 60
+  },
+  
+  "stdlib": {
+    "json": 50,
+    "os": 50,
+    "sys": 50,
+    "re": 50,
+    "datetime": 50,
+    "pathlib": 50,
+    "collections": 50,
+    "itertools": 50,
+    "functools": 50
+  },
+  
+  "nlp": {
+    "spacy": 85,
+    "nltk": 80,
+    "transformers": 90
+  },
+  
+  "image_processing": {
+    "cv2": 85,
+    "PIL": 80,
+    "skimage": 75
+  },
+  
+  "ml_tools": {
+    "xgboost": 80,
+    "lightgbm": 80,
+    "catboost": 75
+  },
+  
+  "mlops": {
+    "wandb": 85,
+    "mlflow": 85,
+    "dvc": 75
+  },
+  
+  "config_tools": {
+    "hydra": 80,
+    "omegaconf": 75,
+    "pydantic": 85
+  },
+  
+  "cli_tools": {
+    "click": 80,
+    "typer": 80,
+    "rich": 85
+  },
+  
+  "logging_tools": {
+    "loguru": 85,
+    "structlog": 80,
+    "logging": 50
+  },
+  
+  "web_scraping": {
+    "scrapy": 85,
+    "selenium": 80,
+    "playwright": 80,
+    "bs4": 75,
+    "requests": 85
+  },
+  
+  "database_drivers": {
+    "pymongo": 80,
+    "redis": 80,
+    "psycopg2": 80,
+    "pymysql": 75
+  },
+  
+  "cloud_services": {
+    "boto3": 90,
+    "google.cloud": 85,
+    "azure": 80
+  },
+  
+  "data_validation": {
+    "pydantic": 90,
+    "marshmallow": 80,
+    "cerberus": 70
+  },
+  
+  "serialization": {
+    "orjson": 85,
+    "ujson": 80,
+    "msgpack": 75,
+    "json": 50
+  },
+  
+  "utilities": {
+    "tqdm": 85,
+    "psutil": 75
+  },
+  
+  "testing_tools": {
+    "pytest": 90,
+    "hypothesis": 80,
+    "faker": 75
+  }
+}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "laziest-import"
-version = "0.0.3-pre2"
+dynamic = ["version"]
 description = "Automatic lazy import library - use common libraries without explicit import statements"
 readme = "README.md"
 license = {text = "MIT"}
@@ -45,7 +45,10 @@ where = ["."]
 include = ["laziest_import*"]
 
 [tool.setuptools.package-data]
-laziest_import = ["py.typed", "aliases/*.json"]
+laziest_import = ["py.typed", "version.json", "aliases/*.json", "mappings/*.json"]
+
+[tool.setuptools.dynamic]
+version = {attr = "laziest_import._config.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
