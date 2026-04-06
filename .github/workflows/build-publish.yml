@@ -148,9 +148,7 @@ jobs:
         
         # Generate release notes
         if is_prerelease:
-            release_notes = """## Pre-release
-
-This is a pre-release version for testing purposes."""
+            release_notes = "## Pre-release\n\nThis is a pre-release version for testing purposes."
         else:
             # Get last stable tag
             tags = run_git('tag', '--list', 'v*').split('\n')
@@ -184,26 +182,23 @@ This is a pre-release version for testing purposes."""
                 release_notes += "```"
         
         # Build release body
-        body = f"""## Release Information
-
-| Property | Value |
-|----------|-------|
-| **Version** | {version} |
-| **Commit SHA** | {sha} |
-| **Build Date** | {build_date} |
-| **Python** | 3.8+ |
-
-### Installation
-```
-pip install laziest-import
-```
-
-{release_notes}
-
----
-
-### Files
-Wheel and source distribution included in assets."""
+        body = (
+            "## Release Information\n\n"
+            "| Property | Value |\n"
+            "|----------|-------|\n"
+            f"| **Version** | {version} |\n"
+            f"| **Commit SHA** | {sha} |\n"
+            f"| **Build Date** | {build_date} |\n"
+            "| **Python** | 3.8+ |\n\n"
+            "### Installation\n"
+            "```\n"
+            "pip install laziest-import\n"
+            "```\n\n"
+            f"{release_notes}\n\n"
+            "---\n\n"
+            "### Files\n"
+            "Wheel and source distribution included in assets."
+        )
         
         # Write body to file for gh command
         with open('/tmp/release_body.md', 'w') as f:
