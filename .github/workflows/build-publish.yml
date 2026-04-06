@@ -86,15 +86,15 @@ jobs:
             echo "Last stable tag: $LAST_STABLE_TAG"
             
             # 获取从上一个稳定版到当前的所有 commit
-            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges 2>/dev/null || echo "")
+            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"- %s [%h]" --no-merges 2>/dev/null || echo "")
             
             if [ -z "$COMMITS" ]; then
-              COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+              COMMITS=$(git log --pretty=format:"- %s [%h]" --no-merges -20)
             fi
           else
             # 没有上一个稳定版，获取最近的 commits
             echo "No previous stable tag found, using recent commits"
-            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -30)
+            COMMITS=$(git log --pretty=format:"- %s [%h]" --no-merges -30)
           fi
           
           # 分类 commits
