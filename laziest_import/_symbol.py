@@ -10,6 +10,7 @@ import pkgutil
 import time
 import logging
 import warnings
+import threading
 
 from ._config import (
     _DEBUG_MODE,
@@ -87,6 +88,10 @@ def _is_stdlib_module(module_name: str) -> bool:
         'zipfile', 'zipimport', 'zlib', 'zoneinfo',
     }
     return module_name.split('.')[0] in stdlib_prefixes
+
+
+# Thread lock for symbol index building
+_SYMBOL_INDEX_LOCK = threading.Lock()
 
 
 def _scan_module_symbols(
@@ -225,59 +230,66 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
             logging.debug("[laziest-import] Skipping symbol index build during initialization")
         return
     
+    # Quick check without lock
     if _SYMBOL_INDEX_BUILT and not force:
         return
     
     if not _SYMBOL_SEARCH_CONFIG["cache_enabled"]:
         return
     
-    start_time = time.perf_counter()
-    
-    if not force:
-        _TRACKED_PACKAGES = _load_tracked_packages()
-        
-        stdlib_cache = _load_symbol_index("stdlib")
-        if stdlib_cache:
-            _STDLIB_SYMBOL_CACHE = {
-                k: [tuple(loc) for loc in v]
-                for k, v in stdlib_cache.symbols.items()
-            }
-            _STDLIB_CACHE_BUILT = True
-            if _DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Loaded stdlib symbol index: "
-                    f"{len(_STDLIB_SYMBOL_CACHE)} symbols"
-                )
-        
-        third_party_cache = _load_symbol_index("third_party")
-        if third_party_cache:
-            _THIRD_PARTY_SYMBOL_CACHE = {
-                k: [tuple(loc) for loc in v]
-                for k, v in third_party_cache.symbols.items()
-            }
-            _THIRD_PARTY_CACHE_BUILT = True
-            if _DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Loaded third-party symbol index: "
-                    f"{len(_THIRD_PARTY_SYMBOL_CACHE)} symbols"
-                )
-        
-        if _STDLIB_CACHE_BUILT or _THIRD_PARTY_CACHE_BUILT:
-            _SYMBOL_CACHE.clear()
-            _SYMBOL_CACHE.update(_STDLIB_SYMBOL_CACHE)
-            _SYMBOL_CACHE.update(_THIRD_PARTY_SYMBOL_CACHE)
-            _SYMBOL_INDEX_BUILT = True
-            
-            _CACHE_STATS["symbol_hits"] += 1
-            elapsed = time.perf_counter() - start_time
-            _CACHE_STATS["last_build_time"] = elapsed
-            
-            if _DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Symbol index loaded from cache: "
-                    f"{len(_SYMBOL_CACHE)} symbols in {elapsed:.3f}s"
-                )
+    # Use lock to prevent multiple threads from building simultaneously
+    with _SYMBOL_INDEX_LOCK:
+        # Double-check after acquiring lock
+        if _SYMBOL_INDEX_BUILT and not force:
             return
+        
+        start_time = time.perf_counter()
+        
+        if not force:
+            _TRACKED_PACKAGES = _load_tracked_packages()
+            
+            stdlib_cache = _load_symbol_index("stdlib")
+            if stdlib_cache:
+                _STDLIB_SYMBOL_CACHE = {
+                    k: [tuple(loc) for loc in v]
+                    for k, v in stdlib_cache.symbols.items()
+                }
+                _STDLIB_CACHE_BUILT = True
+                if _DEBUG_MODE:
+                    logging.info(
+                        f"[laziest-import] Loaded stdlib symbol index: "
+                        f"{len(_STDLIB_SYMBOL_CACHE)} symbols"
+                    )
+            
+            third_party_cache = _load_symbol_index("third_party")
+            if third_party_cache:
+                _THIRD_PARTY_SYMBOL_CACHE = {
+                    k: [tuple(loc) for loc in v]
+                    for k, v in third_party_cache.symbols.items()
+                }
+                _THIRD_PARTY_CACHE_BUILT = True
+                if _DEBUG_MODE:
+                    logging.info(
+                        f"[laziest-import] Loaded third-party symbol index: "
+                        f"{len(_THIRD_PARTY_SYMBOL_CACHE)} symbols"
+                    )
+            
+            if _STDLIB_CACHE_BUILT or _THIRD_PARTY_CACHE_BUILT:
+                _SYMBOL_CACHE.clear()
+                _SYMBOL_CACHE.update(_STDLIB_SYMBOL_CACHE)
+                _SYMBOL_CACHE.update(_THIRD_PARTY_SYMBOL_CACHE)
+                _SYMBOL_INDEX_BUILT = True
+                
+                _CACHE_STATS["symbol_hits"] += 1
+                elapsed = time.perf_counter() - start_time
+                _CACHE_STATS["last_build_time"] = elapsed
+                
+                if _DEBUG_MODE:
+                    logging.info(
+                        f"[laziest-import] Symbol index loaded from cache: "
+                        f"{len(_SYMBOL_CACHE)} symbols in {elapsed:.3f}s"
+                    )
+                return
     
     _CACHE_STATS["symbol_misses"] += 1
     

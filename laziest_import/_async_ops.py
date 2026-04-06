@@ -28,7 +28,12 @@ async def import_async(alias: str) -> Any:
     Returns:
         The imported module object
     """
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop, create a new one
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
     
     def _sync_import():
         if alias in _LAZY_MODULES:

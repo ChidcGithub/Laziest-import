@@ -10,6 +10,7 @@ import time
 import warnings
 import logging
 import pkgutil
+import threading
 
 from ._config import (
     _DEBUG_MODE,
@@ -324,6 +325,10 @@ def _rebuild_global_namespace() -> None:
             _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 
+# Thread lock for cache building
+_CACHE_BUILD_LOCK = threading.Lock()
+
+
 def _build_known_modules_cache(force: bool = False) -> Set[str]:
     """
     Build cache of all known importable modules.
@@ -336,61 +341,72 @@ def _build_known_modules_cache(force: bool = False) -> Set[str]:
     """
     global _KNOWN_MODULES_CACHE, _KNOWN_MODULES_CACHE_TIME
     
-    current_time = time.time()
+    # Quick check without lock for performance
     if _KNOWN_MODULES_CACHE is not None and not force:
+        current_time = time.time()
         if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
             return _KNOWN_MODULES_CACHE
     
-    modules: Set[str] = set()
-    
-    # Add already loaded modules
-    modules.update(sys.modules.keys())
-    
-    # Iterate through all modules in search paths
-    for path in sys.path:
-        if not path:
-            path = '.'
-        if not Path(path).exists():
-            continue
-        try:
-            for finder, name, ispkg in pkgutil.iter_modules([path]):
-                modules.add(name)
-        except (OSError, ImportError):
-            continue
-    
-    # Add standard library modules
-    if hasattr(sys, 'stdlib_module_names'):
-        modules.update(sys.stdlib_module_names)
-    else:
-        stdlib_modules = {
-            'abc', 'argparse', 'array', 'ast', 'asyncio', 'atexit', 'base64',
-            'bisect', 'builtins', 'bz2', 'calendar', 'cgi', 'cmath', 'cmd',
-            'code', 'codecs', 'collections', 'configparser', 'contextlib',
-            'copy', 'csv', 'ctypes', 'dataclasses', 'datetime', 'dbm', 'decimal',
-            'difflib', 'dis', 'email', 'enum', 'errno', 'fcntl', 'filecmp',
-            'fileinput', 'fnmatch', 'fractions', 'ftplib', 'functools', 'gc',
-            'getopt', 'getpass', 'gettext', 'glob', 'gzip', 'hashlib', 'heapq',
-            'hmac', 'html', 'http', 'imaplib', 'importlib', 'inspect', 'io',
-            'itertools', 'json', 'keyword', 'linecache', 'locale', 'logging',
-            'lzma', 'mailbox', 'marshal', 'math', 'mimetypes', 'mmap',
-            'multiprocessing', 'netrc', 'numbers', 'operator', 'optparse', 'os',
-            'pathlib', 'pickle', 'platform', 'plistlib', 'poplib', 'pprint',
-            'profile', 'queue', 'random', 're', 'reprlib', 'sched', 'secrets',
-            'select', 'shelve', 'shlex', 'shutil', 'signal', 'site', 'smtplib',
-            'socket', 'socketserver', 'sqlite3', 'ssl', 'stat', 'statistics',
-            'string', 'struct', 'subprocess', 'sys', 'sysconfig', 'tarfile',
-            'tempfile', 'termios', 'textwrap', 'threading', 'time', 'timeit',
-            'tkinter', 'token', 'tokenize', 'trace', 'traceback', 'types',
-            'typing', 'unicodedata', 'unittest', 'urllib', 'uuid', 'warnings',
-            'wave', 'weakref', 'webbrowser', 'wsgiref', 'xml', 'xmlrpc',
-            'zipfile', 'zipimport', 'zlib', 'zoneinfo',
-        }
-        modules.update(stdlib_modules)
-    
-    _KNOWN_MODULES_CACHE = modules
-    _KNOWN_MODULES_CACHE_TIME = current_time
-    
-    return modules
+    # Use lock to prevent multiple threads from rebuilding simultaneously
+    with _CACHE_BUILD_LOCK:
+        # Double-check after acquiring lock
+        if _KNOWN_MODULES_CACHE is not None and not force:
+            current_time = time.time()
+            if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
+                return _KNOWN_MODULES_CACHE
+        
+        # Build modules cache inside the lock
+        modules: Set[str] = set()
+        
+        # Add already loaded modules
+        modules.update(sys.modules.keys())
+        
+        # Iterate through all modules in search paths
+        for path in sys.path:
+            if not path:
+                path = '.'
+            if not Path(path).exists():
+                continue
+            try:
+                for finder, name, ispkg in pkgutil.iter_modules([path]):
+                    modules.add(name)
+            except (OSError, ImportError):
+                continue
+        
+        # Add standard library modules
+        if hasattr(sys, 'stdlib_module_names'):
+            modules.update(sys.stdlib_module_names)
+        else:
+            stdlib_modules = {
+                'abc', 'argparse', 'array', 'ast', 'asyncio', 'atexit', 'base64',
+                'bisect', 'builtins', 'bz2', 'calendar', 'cgi', 'cmath', 'cmd',
+                'code', 'codecs', 'collections', 'configparser', 'contextlib',
+                'copy', 'csv', 'ctypes', 'dataclasses', 'datetime', 'dbm', 'decimal',
+                'difflib', 'dis', 'email', 'enum', 'errno', 'fcntl', 'filecmp',
+                'fileinput', 'fnmatch', 'fractions', 'ftplib', 'functools', 'gc',
+                'getopt', 'getpass', 'gettext', 'glob', 'gzip', 'hashlib', 'heapq',
+                'hmac', 'html', 'http', 'imaplib', 'importlib', 'inspect', 'io',
+                'itertools', 'json', 'keyword', 'linecache', 'locale', 'logging',
+                'lzma', 'mailbox', 'marshal', 'math', 'mimetypes', 'mmap',
+                'multiprocessing', 'netrc', 'numbers', 'operator', 'optparse', 'os',
+                'pathlib', 'pickle', 'platform', 'plistlib', 'poplib', 'pprint',
+                'profile', 'queue', 'random', 're', 'reprlib', 'sched', 'secrets',
+                'select', 'shelve', 'shlex', 'shutil', 'signal', 'site', 'smtplib',
+                'socket', 'socketserver', 'sqlite3', 'ssl', 'stat', 'statistics',
+                'string', 'struct', 'subprocess', 'sys', 'sysconfig', 'tarfile',
+                'tempfile', 'termios', 'textwrap', 'threading', 'time', 'timeit',
+                'tkinter', 'token', 'tokenize', 'trace', 'traceback', 'types',
+                'typing', 'unicodedata', 'unittest', 'urllib', 'uuid', 'warnings',
+                'wave', 'weakref', 'webbrowser', 'wsgiref', 'xml', 'xmlrpc',
+                'zipfile', 'zipimport', 'zlib', 'zoneinfo',
+            }
+            modules.update(stdlib_modules)
+        
+        # Update global variables inside the lock
+        _KNOWN_MODULES_CACHE = modules
+        _KNOWN_MODULES_CACHE_TIME = time.time()
+        
+        return modules
 
 
 # ============== Alias API ==============

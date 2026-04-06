@@ -33,6 +33,9 @@ from ._config import (
 # Cache version for compatibility checking
 _CACHE_VERSION: str = "0.0.2.3"
 
+# Thread lock for cache operations
+_CACHE_LOCK = threading.Lock()
+
 # Current caller file info
 _CALLER_FILE_PATH: Optional[str] = None
 _CALLER_FILE_SHA: Optional[str] = None
@@ -515,12 +518,13 @@ def _save_current_cache() -> None:
     if not _FILE_CACHE_ENABLED:
         return
     
-    if _CALLER_FILE_PATH and _CALLER_FILE_SHA and _CALLER_LOADED_MODULES:
-        _save_file_cache(
-            _CALLER_FILE_PATH,
-            _CALLER_FILE_SHA,
-            _CALLER_LOADED_MODULES,
-        )
+    with _CACHE_LOCK:
+        if _CALLER_FILE_PATH and _CALLER_FILE_SHA and _CALLER_LOADED_MODULES:
+            _save_file_cache(
+                _CALLER_FILE_PATH,
+                _CALLER_FILE_SHA,
+                _CALLER_LOADED_MODULES.copy(),  # Use copy to avoid modification during save
+            )
 
 
 # Register exit handler

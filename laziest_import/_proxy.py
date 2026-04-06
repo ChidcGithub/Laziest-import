@@ -8,6 +8,7 @@ import time
 import logging
 import importlib
 import asyncio
+import threading
 from types import ModuleType
 
 from ._config import (
@@ -561,12 +562,22 @@ class LazyProxy:
 lazy = LazyProxy()
 
 
+# Thread lock for LazyModule creation
+_MODULE_PROXY_LOCK = threading.Lock()
+
+
 def _get_lazy_module(alias: str) -> LazyModule:
     """Get or create a LazyModule proxy"""
-    if alias not in _LAZY_MODULES:
-        if _ALIAS_MAP:
-            module_name = _ALIAS_MAP.get(alias, alias)
-        else:
-            module_name = _lookup_alias_fast(alias) or alias
-        _LAZY_MODULES[alias] = LazyModule(alias, module_name)
-    return _LAZY_MODULES[alias]
+    # First check without lock for performance
+    if alias in _LAZY_MODULES:
+        return _LAZY_MODULES[alias]
+    
+    with _MODULE_PROXY_LOCK:
+        # Double-check after acquiring lock
+        if alias not in _LAZY_MODULES:
+            if _ALIAS_MAP:
+                module_name = _ALIAS_MAP.get(alias, alias)
+            else:
+                module_name = _lookup_alias_fast(alias) or alias
+            _LAZY_MODULES[alias] = LazyModule(alias, module_name)
+        return _LAZY_MODULES[alias]

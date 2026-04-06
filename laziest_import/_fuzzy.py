@@ -10,6 +10,8 @@ import importlib.util
 import logging
 import warnings
 
+import threading
+
 from ._config import (
     _DEBUG_MODE,
     _AUTO_SEARCH_ENABLED,
@@ -29,6 +31,7 @@ from ._config import (
 # ============== Mapping Cache ==============
 _MAPPING_CACHE: Dict[str, Any] = {}
 _MAPPINGS_LOADED: bool = False
+_MAPPINGS_LOCK = threading.Lock()
 
 
 def _get_mappings_dir() -> Path:
@@ -86,17 +89,23 @@ def _load_all_mappings() -> None:
     """Load all mapping files into cache."""
     global _MAPPING_CACHE, _MAPPINGS_LOADED
     
+    # Quick check without lock for performance
     if _MAPPINGS_LOADED:
         return
     
-    _MAPPING_CACHE = {
-        "abbreviations": _load_mapping_file("abbreviations.json"),
-        "misspellings": _load_mapping_file("misspellings.json"),
-        "submodules": _load_mapping_file("submodules.json"),
-        "package_rename": _load_mapping_file("package_rename.json"),
-        "symbol_misspellings": _load_mapping_file("symbol_misspellings.json"),
-    }
-    _MAPPINGS_LOADED = True
+    with _MAPPINGS_LOCK:
+        # Double-check after acquiring lock
+        if _MAPPINGS_LOADED:
+            return
+        
+        _MAPPING_CACHE = {
+            "abbreviations": _load_mapping_file("abbreviations.json"),
+            "misspellings": _load_mapping_file("misspellings.json"),
+            "submodules": _load_mapping_file("submodules.json"),
+            "package_rename": _load_mapping_file("package_rename.json"),
+            "symbol_misspellings": _load_mapping_file("symbol_misspellings.json"),
+        }
+        _MAPPINGS_LOADED = True
 
 
 def reload_mappings() -> None:
