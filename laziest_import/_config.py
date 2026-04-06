@@ -43,6 +43,11 @@ def get_version_range(target: str) -> Tuple[Optional[str], Optional[str]]:
     return (min_ver, max_ver)
 
 
+def get_cache_version() -> str:
+    """Get cache version from version.json."""
+    return _VERSION_CONFIG.get("_cache_version", __version__)
+
+
 # ============== Priority Loading ==============
 def _load_priorities_from_file() -> Dict[str, int]:
     """Load module priorities from JSON file."""
@@ -216,6 +221,36 @@ _CACHE_STATS: Dict[str, Any] = {
 
 # Tracked packages for incremental updates
 _TRACKED_PACKAGES: Dict[str, Dict[str, Any]] = {}
+
+# Incremental index update configuration
+_INCREMENTAL_INDEX_CONFIG: Dict[str, Any] = {
+    "enabled": True,
+    "check_version": True,  # Check package version changes
+    "check_mtime": False,   # Check file modification time (slower)
+    "background_build": True,  # Build index in background on startup
+    "background_timeout": 60.0,  # Timeout for background index build
+}
+
+# Module skip configuration for faster scanning
+_MODULE_SKIP_CONFIG: Dict[str, Any] = {
+    "skip_test_modules": True,
+    "skip_internal_modules": True,
+    "skip_large_modules": True,
+    "large_module_threshold": 100,  # Skip modules with more than this many public names
+    "skip_modules_file": None,  # Path to custom skip modules JSON file
+}
+
+# Background preheat configuration
+_PREHEAT_CONFIG: Dict[str, Any] = {
+    "enabled": True,
+    "async_index_build": True,
+    "preload_common_modules": True,
+    "max_preload_threads": 4,
+}
+
+# Background index build state
+_BACKGROUND_INDEX_BUILDING: bool = False
+_BACKGROUND_INDEX_THREAD: Optional[threading.Thread] = None
 
 # Reserved names that shouldn't be proxied
 _RESERVED_NAMES: Set[str] = {

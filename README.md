@@ -397,13 +397,14 @@ Version compatibility is managed centrally in `version.json`:
 
 ```json
 {
-    "_current_version": "0.0.3-pre6",
+    "_current_version": "0.0.3.1",
+    "_cache_version": "0.0.3.1",
     "aliases": {
-        "_min_version": "0.0.3-pre1",
+        "_min_version": "0.0.3",
         "_max_version": "0.0.4"
     },
     "mappings": {
-        "_min_version": "0.0.3-pre1",
+        "_min_version": "0.0.3",
         "_max_version": "0.0.4"
     }
 }

@@ -69,6 +69,16 @@ from ._cache import (
     clear_file_cache,
     get_file_cache_info,
     force_save_cache,
+    # Package version functions
+    get_package_version,
+    get_all_package_versions,
+    get_laziest_import_version,
+    # Incremental index functions
+    enable_incremental_index,
+    enable_background_build,
+    enable_cache_compression,
+    get_incremental_config,
+    get_preheat_config,
 )
 
 # Import alias functionality
@@ -327,7 +337,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol]:
     
     Supports:
     - Module aliases (np -> numpy)
-    - Module name auto-correction (nump -> numpy)
+    - Module name autocorrection (nump -> numpy)
     - Symbol auto-resolution (DataFrame -> pandas.DataFrame)
     """
     global _INITIALIZING, _INITIALIZED
@@ -417,6 +427,11 @@ def __dir__() -> List[str]:
         "install_package", "get_auto_install_config", "set_pip_index", "set_pip_extra_args",
         "set_cache_config", "get_cache_config", "get_cache_stats", "reset_cache_stats",
         "invalidate_package_cache", "get_cache_version",
+        # Package version functions
+        "get_package_version", "get_all_package_versions", "get_laziest_import_version",
+        # Incremental index functions
+        "enable_incremental_index", "enable_background_build", "enable_cache_compression",
+        "get_incremental_config", "get_preheat_config",
     ])
     return sorted(result)
 
@@ -465,6 +480,13 @@ _BASE_EXPORTS = [
     # Cache API
     "set_cache_config", "get_cache_config", "get_cache_stats", "reset_cache_stats",
     "invalidate_package_cache", "get_cache_version",
+    # Package version
+    "get_package_version", "get_all_package_versions", "get_laziest_import_version",
+    # Incremental index
+    "enable_incremental_index", "enable_background_build", "enable_cache_compression",
+    "get_incremental_config", "get_preheat_config",
+    # Fun stuff
+    "easter_egg", "help",
 ]
 
 # __all__ will be updated after initialization
@@ -500,6 +522,388 @@ def _do_initialize() -> None:
             __all__ = sorted(set(_BASE_EXPORTS) | set(_ALIAS_MAP.keys()))
         finally:
             _INITIALIZING = False
+
+
+# ============== Easter Egg & Help ==============
+
+def easter_egg(name: str = "default") -> str:
+    """Get a fun Easter egg message!
+    
+    Args:
+        name: The Easter egg name. Available options:
+            - "default": A random fun fact about lazy imports
+            - "author": Author's message
+            - "quote": A programming quote
+            - "tip": A lazy import tip
+            - "secret": A secret message (shhh!)
+            - "thanks": Special thanks
+    
+    Returns:
+        A fun message string.
+
+    """
+    import random
+    from ._config import __version__
+    
+    eggs = {
+        "default": [
+            "[*] Laziest-import: Because typing 'import numpy as np' is so 2020!",
+            "[*] Lazy loading: The art of procrastination, but for code!",
+            "[*] Did you know? Your imports are now 471x faster on cache load!",
+            "[*] Magic? No, it's just smart caching and lazy evaluation!",
+            "[*] Hot take: Real programmers don't import until they have to.",
+            "[*] This is not an Easter egg...Just kidding.",
+            "[*] Do you know? I'm a developer from senior high school, Writing these English sentences is almost using up all my English skills.",
+            "[*] Hello world.",
+            "[*] You are not using C++, definitely.",
+        ],
+        "author": [
+            """+--------------------------------------------------------------+
+|  Hello, intrepid explorer!                                    |
+|                                                              |
+|  I created laziest-import because I got tired of             |
+|  waiting for heavy libraries to load every time I            |
+|  started a script. Now, imports are instant!                 |
+|                                                              |
+|  Hope this little tool saves you as much time as it          |
+|  saved me. Happy coding!                                     |
+|                                                              |
+|  Still reading? This is not an Easter egg.   :)              |
+|                                                              |
+|  -- Chidc (Author of laziest-import)                         |
++--------------------------------------------------------------+""",
+        ],
+        "quote": [
+            '"The best code is no code at all. The second best is lazy-loaded code." -- Anonymous',
+            '"Why import everything when you can import nothing... until you need it?" -- Lazy Philosophy',
+            '"In the future, all imports will be lazy, and I will be their prophet." -- Probably Me',
+            '"Premature optimization is the root of all evil. Lazy loading is the root of all speed." -- Wise Words',
+        ],
+        "tip": [
+            "[Tip] Use lz.search_symbol('DataFrame') to find where a symbol comes from!",
+            "[Tip] lz.get_symbol_cache_info() shows you how many symbols are cached!",
+            "[Tip] Enable cache compression with lz.enable_cache_compression() to save disk space!",
+            "[Tip] Use lz.clear_symbol_cache() to force a full rebuild of the symbol index!",
+            "[Tip] The cache is stored in ~/.laziest_import/ - you can back it up!",
+        ],
+        "secret": [
+            "[Secret] You found the hidden message! There's nothing more here... or is there?",
+            "[Secret] The cache version is a lie. Just kidding, it's real. Or is it?",
+            "[Secret] If you're reading this, you're probably procrastinating. Get back to coding!",
+            "[Secret] There is no secret. But now that you're here, have a great day!",
+        ],
+        "thanks": [
+            """Special Thanks:
+            
+* Python community for being awesome
+* All the library developers whose code we lazily import
+* You, for using this package!
+* Stack Overflow (we all know why)
+* Coffee, the real power behind this project""",
+        ],
+    }
+    
+    if name in eggs:
+        messages = eggs[name]
+        return random.choice(messages) if len(messages) > 1 else messages[0]
+    else:
+        # Unknown name, give a hint
+        available = ", ".join(f'"{k}"' for k in eggs.keys())
+        return f"[?] Unknown easter egg '{name}'. Try one of: {available}"
+
+
+def help(topic: Optional[str] = None) -> str:
+    """Get help on laziest-import topics.
+    
+    Args:
+        topic: Optional topic to get help on. Available topics:
+            - None: General overview
+            - "quickstart": Quick start guide
+            - "lazy": How lazy imports work
+            - "alias": Alias system
+            - "symbol": Symbol search
+            - "cache": Caching system
+            - "config": Configuration options
+            - "async": Async imports
+            - "hooks": Import hooks
+            - "api": Full API reference
+    
+    Returns:
+        Help text for the requested topic.
+    
+    Examples:
+        >>> import laziest_import as lz
+        >>> print(lz.help())
+        >>> print(lz.help("quickstart"))
+        >>> print(lz.help("cache"))
+    """
+    from ._config import __version__
+    
+    help_texts = {
+        None: f"""+------------------------------------------------------------------+
+|              laziest-import v{__version__} - Help Center               |
++------------------------------------------------------------------+
+|  The laziest way to import Python modules!                        |
+|                                                                   |
+|  Quick Start:                                                     |
+|    import laziest_import as lz                                    |
+|    np = lz.numpy      # Lazy import!                              |
+|    pd = lz.pandas     # So lazy!                                  |
+|    df = pd.DataFrame() # Now it actually imports                  |
+|                                                                   |
+|  Available Topics:                                                |
+|    help("quickstart") - Quick start guide                         |
+|    help("lazy")      - How lazy imports work                      |
+|    help("alias")     - Alias system                               |
+|    help("symbol")    - Symbol search                              |
+|    help("cache")     - Caching system                             |
+|    help("config")    - Configuration options                      |
+|    help("async")     - Async imports                              |
+|    help("hooks")     - Import hooks                               |
+|    help("api")       - Full API reference                         |
++-------------------------------------------------------------------+""",
+        
+        "quickstart": """Quick Start Guide
+
+Basic Usage:
+  import laziest_import as lz
+  
+  # Lazy import - doesn't actually import until used
+  np = lz.numpy
+  pd = lz.pandas
+  
+  # Now numpy is imported (only when you use it)
+  arr = np.array([1, 2, 3])
+  
+Common Patterns:
+  # Standard library
+  os = lz.os
+  json = lz.json
+  
+  # Third-party
+  tf = lz.tensorflow    # tensorflow
+  plt = lz.matplotlib.pyplot  # submodules work too!
+  
+  # Using search
+  lz.search_symbol("DataFrame")  # Find where DataFrame lives
+  
+Tips:
+  * Use lz.list_loaded() to see what's imported
+  * Use lz.search_symbol() to find symbols
+  * First run builds cache (~2s), subsequent runs are instant!
+""",
+        
+        "lazy": """How Lazy Imports Work
+
+The Magic:
+  When you write 'np = lz.numpy', nothing is imported yet!
+  The import only happens when you actually USE it:
+  
+  np = lz.numpy       # No import yet!
+  arr = np.array([1]) # NOW numpy is imported
+  
+How It Works:
+  1. Creates a proxy object that looks like the module
+  2. Intercepts all attribute access
+  3. On first access, performs the real import
+  4. Replaces itself with the real module
+  
+Benefits:
+  * Faster startup time
+  * Lower memory usage
+  * Only import what you need
+  * Great for notebooks and scripts
+""",
+        
+        "alias": """Alias System
+
+Built-in Aliases:
+  lz.np    → numpy
+  lz.pd    → pandas
+  lz.plt   → matplotlib.pyplot
+  lz.tf    → tensorflow
+  lz.torch → torch
+  
+Custom Aliases:
+  # Register your own
+  lz.register_alias("my_np", "numpy")
+  my_np = lz.my_np
+  
+  # Register multiple
+  lz.register_aliases({
+      "np": "numpy",
+      "pd": "pandas"
+  })
+  
+  # Remove alias
+  lz.unregister_alias("my_np")
+  
+List Aliases:
+  lz.list_loaded()     # Loaded modules
+  lz.list_available()  # All known aliases
+""",
+        
+        "symbol": """Symbol Search
+
+Find where symbols come from:
+  # Find DataFrame
+  lz.search_symbol("DataFrame")
+  # → Found: pandas.DataFrame
+  
+  # Find with details
+  lz.search_symbol("array", show_all=True)
+  
+Symbol Resolution:
+  # Set preference when multiple modules have same symbol
+  lz.set_symbol_preference("array", "numpy")
+  
+  # List conflicts
+  lz.list_symbol_conflicts()
+  
+Cache Info:
+  lz.get_symbol_cache_info()  # See cache stats
+  lz.clear_symbol_cache()     # Force rebuild
+""",
+        
+        "cache": """Caching System
+
+Cache Location:
+  ~/.laziest_import/
+    ├── stdlib_cache.json.gz
+    ├── third_party_cache.json.gz
+    └── tracked_packages.json
+  
+Cache Management:
+  lz.enable_file_cache()    # Enable caching
+  lz.disable_file_cache()   # Disable caching
+  lz.clear_file_cache()     # Clear all caches
+  lz.get_file_cache_info()  # Cache info
+  
+Incremental Updates:
+  lz.enable_incremental_index()     # Enable
+  lz.get_incremental_config()       # Get config
+  
+Compression:
+  lz.enable_cache_compression()     # Save space
+  
+Performance:
+  * First run: ~2s (builds index)
+  * Cached run: ~0.003s (700x faster!)
+""",
+        
+        "config": """Configuration Options
+
+Debug Mode:
+  lz.enable_debug_mode()   # Enable logging
+  lz.disable_debug_mode()  # Disable logging
+  
+Auto Search:
+  lz.enable_auto_search()  # Search unknown modules
+  lz.disable_auto_search()
+  
+Retry on Failure:
+  lz.enable_retry()        # Retry failed imports
+  lz.disable_retry()
+  
+Cache Settings:
+  lz.set_cache_dir(path)   # Custom cache location
+  lz.get_cache_dir()       # Get current location
+  
+Symbol Search:
+  lz.enable_symbol_search()
+  lz.disable_symbol_search()
+  
+Auto Install:
+  lz.enable_auto_install()  # Auto-install missing
+""",
+        
+        "async": """Async Imports
+
+Async Import:
+  import asyncio
+  import laziest_import as lz
+  
+  async def main():
+      # Import asynchronously
+      np = await lz.import_async("numpy")
+      arr = np.array([1, 2, 3])
+  
+  asyncio.run(main())
+  
+Multiple Async:
+  async def main():
+      modules = await lz.import_multiple_async([
+          "numpy",
+          "pandas", 
+          "matplotlib"
+      ])
+      np = modules["numpy"]
+  
+Benefits:
+  * Non-blocking imports
+  * Concurrent loading
+  * Great for web apps
+""",
+        
+        "hooks": """Import Hooks
+
+Pre-Import Hooks:
+  def before_import(module_name):
+      print(f"About to import {module_name}")
+  
+  lz.add_pre_import_hook(before_import)
+  
+Post-Import Hooks:
+  def after_import(module_name, module):
+      print(f"Imported {module_name}")
+  
+  lz.add_post_import_hook(after_import)
+  
+Remove Hooks:
+  lz.remove_pre_import_hook(func)
+  lz.remove_post_import_hook(func)
+  lz.clear_import_hooks()  # Remove all
+  
+Use Cases:
+  * Logging
+  * Profiling
+  * Dependency tracking
+""",
+        
+        "api": """Full API Reference
+
+Basic Imports:
+  lz.<module>              # Lazy import
+  lz.get_module(name)      # Get loaded module
+  
+Version Info:
+  lz.__version__           # Library version
+  lz.get_cache_version()   # Cache version
+  lz.get_package_version(name)  # Package version
+  
+Search:
+  lz.search_module(name)   # Search for module
+  lz.search_class(name)    # Search for class
+  lz.search_symbol(name)   # Search for symbol
+  
+Cache:
+  lz.clear_cache()         # Clear memory cache
+  lz.clear_file_cache()    # Clear file cache
+  lz.get_file_cache_info() # Cache info
+  
+Aliases:
+  lz.register_alias(a, m)  # Register alias
+  lz.unregister_alias(a)   # Remove alias
+  lz.list_loaded()         # Loaded modules
+  lz.list_available()      # Available aliases
+  
+Config:
+  lz.enable_*() / lz.disable_*()  # Toggle features
+  lz.is_*_enabled()               # Check status
+""",
+    }
+    
+    return help_texts.get(topic, f"Unknown topic: '{topic}'. Try help() for available topics.")
 
 
 # Run initialization

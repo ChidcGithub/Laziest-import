@@ -29,6 +29,8 @@ from ._config import (
     _CACHE_STATS,
     _TRACKED_PACKAGES,
     _CACHE_CONFIG,
+    _INCREMENTAL_INDEX_CONFIG,
+    _MODULE_SKIP_CONFIG,
     SearchResult,
     SymbolMatch,
 )
@@ -117,6 +119,7 @@ def _scan_module_symbols(
     if _SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
         return symbols
     
+    # Enhanced skip modules using configuration
     skip_modules = {
         'test', 'tests', 'testing', 'conftest', 'setup', 'examples',
         'docs', 'doc', 'scripts', 'tools', 'vendor', 'vendored',
@@ -124,7 +127,14 @@ def _scan_module_symbols(
         'pytest', 'py.test', 'sphinx', 'mkdocs',
         'laziest_import', 'laziest-import',
     }
-    if any(skip in module_name.lower() for skip in skip_modules):
+    
+    # Additional skip patterns from configuration
+    if _MODULE_SKIP_CONFIG.get("skip_test_modules", True):
+        skip_modules.update(['_test', 'test_', 'tests_', '_tests'])
+    
+    # Check if module should be skipped
+    module_lower = module_name.lower()
+    if any(skip in module_lower for skip in skip_modules):
         return symbols
     
     internal_patterns = ['._', '.core.', '.linalg.linalg', '.internal.']
@@ -154,6 +164,14 @@ def _scan_module_symbols(
                 public_names = [n for n in public_names if isinstance(n, str)]
         except Exception:
             public_names = []
+        
+        # Check for large modules and optionally skip
+        large_threshold = _MODULE_SKIP_CONFIG.get("large_module_threshold", 100)
+        if _MODULE_SKIP_CONFIG.get("skip_large_modules", True) and len(public_names) > large_threshold:
+            # For large modules, only scan __all__ if defined, otherwise skip most
+            if not hasattr(module, '__all__'):
+                # Filter to only include likely important symbols
+                public_names = [n for n in public_names if not n.startswith('_')][:large_threshold]
         
         MAX_SYMBOLS_PER_MODULE = 100
         if len(public_names) > MAX_SYMBOLS_PER_MODULE:
@@ -224,11 +242,11 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
     global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE, _STDLIB_SYMBOL_CACHE, _THIRD_PARTY_SYMBOL_CACHE
     global _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT, _CACHE_STATS, _TRACKED_PACKAGES
     
-    # Skip during initialization but allow force build
+    # Skip full build during initialization but allow cache loading
+    # Only skip if we're not loading from cache
     if not _INITIALIZED and not force:
-        if _DEBUG_MODE:
-            logging.debug("[laziest-import] Skipping symbol index build during initialization")
-        return
+        # Still try to load from cache even during initialization
+        pass
     
     # Quick check without lock
     if _SYMBOL_INDEX_BUILT and not force:
@@ -245,10 +263,18 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
         
         start_time = time.perf_counter()
         
-        if not force:
-            _TRACKED_PACKAGES = _load_tracked_packages()
+        # Always load tracked packages for incremental update detection
+        existing_tracked = _load_tracked_packages()
+        
+        # Try to load from cache first (for both force and non-force)
+        stdlib_cache = _load_symbol_index("stdlib")
+        third_party_cache = _load_symbol_index("third_party")
+        
+        if not force and (stdlib_cache or third_party_cache):
+            # Load from cache
+            _TRACKED_PACKAGES.clear()
+            _TRACKED_PACKAGES.update(existing_tracked)
             
-            stdlib_cache = _load_symbol_index("stdlib")
             if stdlib_cache:
                 _STDLIB_SYMBOL_CACHE = {
                     k: [tuple(loc) for loc in v]
@@ -261,7 +287,6 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
                         f"{len(_STDLIB_SYMBOL_CACHE)} symbols"
                     )
             
-            third_party_cache = _load_symbol_index("third_party")
             if third_party_cache:
                 _THIRD_PARTY_SYMBOL_CACHE = {
                     k: [tuple(loc) for loc in v]
@@ -278,7 +303,10 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
                 _SYMBOL_CACHE.clear()
                 _SYMBOL_CACHE.update(_STDLIB_SYMBOL_CACHE)
                 _SYMBOL_CACHE.update(_THIRD_PARTY_SYMBOL_CACHE)
-                _SYMBOL_INDEX_BUILT = True
+                
+                # Update config module variables
+                import laziest_import._config as config
+                config._SYMBOL_INDEX_BUILT = True
                 
                 _CACHE_STATS["symbol_hits"] += 1
                 elapsed = time.perf_counter() - start_time
@@ -360,9 +388,11 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
         except Exception:
             continue
     
-    _SYMBOL_INDEX_BUILT = True
-    _STDLIB_CACHE_BUILT = True
-    _THIRD_PARTY_CACHE_BUILT = True
+    # Update config module variables
+    import laziest_import._config as config
+    config._SYMBOL_INDEX_BUILT = True
+    config._STDLIB_CACHE_BUILT = True
+    config._THIRD_PARTY_CACHE_BUILT = True
     
     _save_symbol_index(_STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
     _save_symbol_index(_THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party)
@@ -790,14 +820,15 @@ def get_symbol_search_config() -> Dict[str, Any]:
 def get_symbol_cache_info() -> Dict[str, Any]:
     """Get information about the symbol cache."""
     from ._cache import clear_symbol_cache
+    import laziest_import._config as config
     
     return {
-        "built": _SYMBOL_INDEX_BUILT,
+        "built": config._SYMBOL_INDEX_BUILT,
         "symbol_count": len(_SYMBOL_CACHE),
         "stdlib_symbols": len(_STDLIB_SYMBOL_CACHE),
         "third_party_symbols": len(_THIRD_PARTY_SYMBOL_CACHE),
-        "stdlib_built": _STDLIB_CACHE_BUILT,
-        "third_party_built": _THIRD_PARTY_CACHE_BUILT,
+        "stdlib_built": config._STDLIB_CACHE_BUILT,
+        "third_party_built": config._THIRD_PARTY_CACHE_BUILT,
         "confirmed_mappings": len(_CONFIRMED_MAPPINGS),
         "tracked_packages": len(_TRACKED_PACKAGES),
         "cache_stats": dict(_CACHE_STATS),
@@ -881,3 +912,200 @@ def get_symbol_resolution_config() -> Dict[str, Any]:
 def get_loaded_modules_context() -> Set[str]:
     """Get the set of currently loaded module names."""
     return _infer_context()
+
+
+# ============== Incremental Index Build ==============
+
+def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
+    """Build symbol index incrementally, only scanning changed packages.
+    
+    This function is optimized for scenarios where most packages haven't changed.
+    It detects which packages are new or updated and only scans those.
+    
+    Args:
+        timeout: Maximum time to spend on incremental build
+        
+    Returns:
+        True if incremental build was successful, False if full rebuild needed
+    """
+    global _SYMBOL_INDEX_BUILT, _SYMBOL_CACHE, _TRACKED_PACKAGES
+    
+    if not _INCREMENTAL_INDEX_CONFIG.get("enabled", True):
+        return False
+    
+    # Load existing tracked packages first
+    existing_tracked = _load_tracked_packages()
+    if existing_tracked:
+        _TRACKED_PACKAGES.clear()
+        _TRACKED_PACKAGES.update(existing_tracked)
+    
+    # Check if we have existing cache
+    if not _TRACKED_PACKAGES:
+        if _DEBUG_MODE:
+            logging.info("[laziest-import] No existing cache, need full rebuild")
+        return False
+    
+    from ._cache import (
+        _get_incremental_update_modules,
+        _detect_changed_packages,
+    )
+    
+    # Detect changes
+    new_packages, updated_packages, removed_packages = _detect_changed_packages()
+    
+    if not new_packages and not updated_packages and not removed_packages:
+        if _DEBUG_MODE:
+            logging.info("[laziest-import] No package changes detected, skip incremental build")
+        return True
+    
+    if _DEBUG_MODE:
+        logging.info(
+            f"[laziest-import] Incremental update: "
+            f"{len(new_packages)} new, {len(updated_packages)} updated, {len(removed_packages)} removed"
+        )
+    
+    # Check if too many changes
+    total_changes = len(new_packages) + len(updated_packages) + len(removed_packages)
+    if total_changes > len(_TRACKED_PACKAGES) * 0.5:  # More than 50% changed
+        if _DEBUG_MODE:
+            logging.info("[laziest-import] Too many changes, full rebuild recommended")
+        return False
+    
+    start_time = time.perf_counter()
+    depth = _SYMBOL_SEARCH_CONFIG["search_depth"]
+    scanned_count = 0
+    
+    # Remove symbols from removed/updated packages
+    packages_to_remove = removed_packages | updated_packages
+    for pkg in packages_to_remove:
+        _remove_package_symbols(pkg)
+    
+    # Scan new and updated packages
+    packages_to_scan = new_packages | updated_packages
+    known_modules = _build_known_modules_cache()
+    
+    for module_name in known_modules:
+        if time.perf_counter() - start_time > timeout:
+            if _DEBUG_MODE:
+                logging.info(f"[laziest-import] Incremental build timed out after {timeout}s")
+            break
+        
+        top_level = module_name.split('.')[0]
+        if top_level not in packages_to_scan:
+            continue
+        
+        try:
+            symbols = _scan_module_symbols(module_name, depth)
+            
+            is_stdlib = _is_stdlib_module(module_name)
+            target_cache = _STDLIB_SYMBOL_CACHE if is_stdlib else _THIRD_PARTY_SYMBOL_CACHE
+            
+            for sym_name, locations in symbols.items():
+                if sym_name not in _SYMBOL_CACHE:
+                    _SYMBOL_CACHE[sym_name] = []
+                _SYMBOL_CACHE[sym_name].extend(locations)
+                
+                if sym_name not in target_cache:
+                    target_cache[sym_name] = []
+                target_cache[sym_name].extend(locations)
+            
+            scanned_count += 1
+            
+        except Exception:
+            continue
+    
+    # Update tracked packages
+    from ._cache import _track_package, _save_tracked_packages, _save_symbol_index
+    for pkg in packages_to_scan:
+        _track_package(pkg)
+    _save_tracked_packages()
+    _save_symbol_index(_STDLIB_SYMBOL_CACHE, "stdlib")
+    _save_symbol_index(_THIRD_PARTY_SYMBOL_CACHE, "third_party")
+    
+    elapsed = time.perf_counter() - start_time
+    _CACHE_STATS["last_build_time"] = elapsed
+    _CACHE_STATS["build_count"] += 1
+    
+    if _DEBUG_MODE:
+        logging.info(
+            f"[laziest-import] Incremental index built: scanned {scanned_count} modules in {elapsed:.2f}s"
+        )
+    
+    # Update config module variable
+    import laziest_import._config as config
+    config._SYMBOL_INDEX_BUILT = True
+    return True
+
+
+def _remove_package_symbols(package_name: str) -> None:
+    """Remove all symbols from a specific package from the cache."""
+    global _SYMBOL_CACHE, _STDLIB_SYMBOL_CACHE, _THIRD_PARTY_SYMBOL_CACHE
+    
+    # Remove from main cache
+    to_remove = []
+    for symbol, locations in _SYMBOL_CACHE.items():
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name + '.') and loc[0] != package_name]
+        if filtered:
+            _SYMBOL_CACHE[symbol] = filtered
+        else:
+            to_remove.append(symbol)
+    
+    for symbol in to_remove:
+        del _SYMBOL_CACHE[symbol]
+    
+    # Remove from stdlib cache
+    to_remove = []
+    for symbol, locations in _STDLIB_SYMBOL_CACHE.items():
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name + '.') and loc[0] != package_name]
+        if filtered:
+            _STDLIB_SYMBOL_CACHE[symbol] = filtered
+        else:
+            to_remove.append(symbol)
+    
+    for symbol in to_remove:
+        del _STDLIB_SYMBOL_CACHE[symbol]
+    
+    # Remove from third-party cache
+    to_remove = []
+    for symbol, locations in _THIRD_PARTY_SYMBOL_CACHE.items():
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name + '.') and loc[0] != package_name]
+        if filtered:
+            _THIRD_PARTY_SYMBOL_CACHE[symbol] = filtered
+        else:
+            to_remove.append(symbol)
+    
+    for symbol in to_remove:
+        del _THIRD_PARTY_SYMBOL_CACHE[symbol]
+
+
+def build_symbol_index_incremental() -> bool:
+    """Public API for incremental symbol index build.
+    
+    Returns:
+        True if incremental build was successful, False otherwise
+    """
+    return _build_incremental_symbol_index()
+
+
+# ============== Module Skip Configuration API ==============
+
+def get_module_skip_config() -> Dict[str, Any]:
+    """Get current module skip configuration."""
+    return dict(_MODULE_SKIP_CONFIG)
+
+
+def set_module_skip_config(
+    skip_test_modules: Optional[bool] = None,
+    skip_internal_modules: Optional[bool] = None,
+    skip_large_modules: Optional[bool] = None,
+    large_module_threshold: Optional[int] = None,
+) -> None:
+    """Configure module skip settings."""
+    if skip_test_modules is not None:
+        _MODULE_SKIP_CONFIG["skip_test_modules"] = skip_test_modules
+    if skip_internal_modules is not None:
+        _MODULE_SKIP_CONFIG["skip_internal_modules"] = skip_internal_modules
+    if skip_large_modules is not None:
+        _MODULE_SKIP_CONFIG["skip_large_modules"] = skip_large_modules
+    if large_module_threshold is not None:
+        _MODULE_SKIP_CONFIG["large_module_threshold"] = large_module_threshold

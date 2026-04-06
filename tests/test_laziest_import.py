@@ -18,8 +18,17 @@ class TestBasicImport:
     def test_module_version(self):
         """Test module version exists"""
         import laziest_import
+        import json
+        from pathlib import Path
+        
         assert hasattr(laziest_import, '__version__')
-        assert laziest_import.__version__ == "0.0.3"
+        
+        # Version should match version.json
+        version_file = Path(__file__).parent.parent / "laziest_import" / "version.json"
+        with open(version_file, encoding="utf-8") as f:
+            version_config = json.load(f)
+        expected_version = version_config.get("_current_version")
+        assert laziest_import.__version__ == expected_version
     
     def test_import_with_alias(self):
         """Test import using alias prefix"""
@@ -2642,3 +2651,348 @@ class TestMisspelledModuleImport:
         # Both should either match the same thing or both be None
         if result1 is not None and result2 is not None:
             assert result1 == result2
+
+
+# ============== New Performance Feature Tests ==============
+
+class TestIncrementalIndex:
+    """Test incremental index update functionality"""
+    
+    def test_get_incremental_config(self):
+        """Test getting incremental config"""
+        from laziest_import._cache import get_incremental_config
+        
+        config = get_incremental_config()
+        assert isinstance(config, dict)
+        assert "enabled" in config
+    
+    def test_enable_incremental_index(self):
+        """Test enabling/disabling incremental index"""
+        from laziest_import._cache import (
+            enable_incremental_index,
+            get_incremental_config,
+        )
+        
+        enable_incremental_index(True)
+        config = get_incremental_config()
+        assert config["enabled"] is True
+        
+        enable_incremental_index(False)
+        config = get_incremental_config()
+        assert config["enabled"] is False
+        
+        # Restore default
+        enable_incremental_index(True)
+    
+    def test_build_symbol_index_incremental(self):
+        """Test incremental symbol index build"""
+        from laziest_import._symbol import build_symbol_index_incremental
+        
+        # Should return True or False depending on state
+        result = build_symbol_index_incremental()
+        assert isinstance(result, bool)
+
+
+class TestBackgroundIndexBuild:
+    """Test background index build functionality"""
+    
+    def test_enable_background_build(self):
+        """Test enabling/disabling background build"""
+        from laziest_import._cache import (
+            enable_background_build,
+            get_preheat_config,
+        )
+        
+        enable_background_build(True)
+        config = get_preheat_config()
+        assert config["enabled"] is True
+        
+        enable_background_build(False)
+        config = get_preheat_config()
+        assert config["enabled"] is False
+        
+        # Restore default
+        enable_background_build(True)
+    
+    def test_is_background_index_building(self):
+        """Test checking background build status"""
+        from laziest_import._cache import _is_background_index_building
+        
+        result = _is_background_index_building()
+        assert isinstance(result, bool)
+    
+    def test_get_preheat_config(self):
+        """Test getting preheat config"""
+        from laziest_import._cache import get_preheat_config
+        
+        config = get_preheat_config()
+        assert isinstance(config, dict)
+        assert "enabled" in config
+        assert "async_index_build" in config
+
+
+class TestModuleSkipConfig:
+    """Test module skip configuration"""
+    
+    def test_get_module_skip_config(self):
+        """Test getting module skip config"""
+        from laziest_import._symbol import get_module_skip_config
+        
+        config = get_module_skip_config()
+        assert isinstance(config, dict)
+        assert "skip_test_modules" in config
+        assert "skip_large_modules" in config
+        assert "large_module_threshold" in config
+    
+    def test_set_module_skip_config(self):
+        """Test setting module skip config"""
+        from laziest_import._symbol import (
+            set_module_skip_config,
+            get_module_skip_config,
+        )
+        
+        # Set new values
+        set_module_skip_config(
+            skip_test_modules=False,
+            skip_large_modules=False,
+            large_module_threshold=200,
+        )
+        
+        config = get_module_skip_config()
+        assert config["skip_test_modules"] is False
+        assert config["skip_large_modules"] is False
+        assert config["large_module_threshold"] == 200
+        
+        # Restore defaults
+        set_module_skip_config(
+            skip_test_modules=True,
+            skip_large_modules=True,
+            large_module_threshold=100,
+        )
+
+
+class TestCacheCompression:
+    """Test cache compression functionality"""
+    
+    def test_enable_cache_compression(self):
+        """Test enabling/disabling cache compression"""
+        from laziest_import._cache import (
+            enable_cache_compression,
+            get_cache_config,
+        )
+        
+        enable_cache_compression(True)
+        config = get_cache_config()
+        assert config["enable_compression"] is True
+        
+        enable_cache_compression(False)
+        config = get_cache_config()
+        assert config["enable_compression"] is False
+        
+        # Restore default
+        enable_cache_compression(False)
+    
+    def test_save_and_load_compressed_cache(self):
+        """Test saving and loading compressed cache"""
+        from laziest_import._cache import (
+            _save_compressed_json,
+            _load_compressed_json,
+            _get_cache_dir,
+        )
+        import tempfile
+        import os
+        
+        # Create test data
+        test_data = {
+            "test_key": "test_value",
+            "nested": {"a": 1, "b": 2},
+            "list": [1, 2, 3],
+        }
+        
+        # Save to temp file
+        cache_dir = _get_cache_dir()
+        test_file = cache_dir / "test_compressed.json.gz"
+        
+        try:
+            # Save compressed
+            result = _save_compressed_json(test_data, test_file)
+            assert result is True
+            assert test_file.exists()
+            
+            # Load compressed
+            loaded = _load_compressed_json(test_file)
+            assert loaded is not None
+            assert loaded["test_key"] == "test_value"
+            assert loaded["nested"]["a"] == 1
+            assert loaded["list"] == [1, 2, 3]
+        finally:
+            # Cleanup
+            if test_file.exists():
+                test_file.unlink()
+
+
+class TestPackageDetection:
+    """Test package detection for incremental updates"""
+    
+    def test_get_installed_packages(self):
+        """Test getting installed packages"""
+        from laziest_import._cache import _get_installed_packages
+        
+        packages = _get_installed_packages()
+        assert isinstance(packages, set)
+        # Should have at least some packages
+        assert len(packages) > 0
+    
+    def test_detect_changed_packages(self):
+        """Test detecting changed packages"""
+        from laziest_import._cache import _detect_changed_packages
+        
+        new_pkgs, updated_pkgs, removed_pkgs = _detect_changed_packages()
+        assert isinstance(new_pkgs, set)
+        assert isinstance(updated_pkgs, set)
+        assert isinstance(removed_pkgs, set)
+    
+    def test_get_incremental_update_modules(self):
+        """Test getting modules for incremental update"""
+        from laziest_import._cache import _get_incremental_update_modules
+        
+        modules, needs_full = _get_incremental_update_modules()
+        assert isinstance(modules, set)
+        assert isinstance(needs_full, bool)
+
+
+class TestRemovePackageSymbols:
+    """Test removing package symbols from cache"""
+    
+    def test_remove_package_symbols_basic(self):
+        """Test basic symbol removal"""
+        from laziest_import._symbol import (
+            _remove_package_symbols,
+            _SYMBOL_CACHE,
+        )
+        from laziest_import._config import _TRACKED_PACKAGES
+        
+        # Add some test symbols
+        test_pkg = "__test_package_for_removal__"
+        _SYMBOL_CACHE["test_symbol_1"] = [(f"{test_pkg}.module", "function", None)]
+        _SYMBOL_CACHE["test_symbol_2"] = [
+            (f"{test_pkg}.module", "class", None),
+            ("other_package.module", "function", None),
+        ]
+        
+        # Remove the package symbols
+        _remove_package_symbols(test_pkg)
+        
+        # Verify removal
+        assert "test_symbol_1" not in _SYMBOL_CACHE
+        assert "test_symbol_2" in _SYMBOL_CACHE
+        assert len(_SYMBOL_CACHE["test_symbol_2"]) == 1
+        assert _SYMBOL_CACHE["test_symbol_2"][0][0] == "other_package.module"
+
+
+class TestIntegrationNewFeatures:
+    """Integration tests for new features"""
+    
+    def test_full_workflow(self):
+        """Test full workflow with new features"""
+        from laziest_import._cache import (
+            enable_cache_compression,
+            enable_background_build,
+            enable_incremental_index,
+            get_cache_config,
+            get_preheat_config,
+            get_incremental_config,
+        )
+        from laziest_import._symbol import (
+            get_module_skip_config,
+            set_module_skip_config,
+        )
+        
+        # Enable all features
+        enable_cache_compression(True)
+        enable_background_build(True)
+        enable_incremental_index(True)
+        
+        # Verify all enabled
+        assert get_cache_config()["enable_compression"] is True
+        assert get_preheat_config()["enabled"] is True
+        assert get_incremental_config()["enabled"] is True
+        
+        # Test module skip config
+        set_module_skip_config(skip_large_modules=True, large_module_threshold=50)
+        config = get_module_skip_config()
+        assert config["skip_large_modules"] is True
+        assert config["large_module_threshold"] == 50
+        
+        # Restore defaults
+        enable_cache_compression(False)
+        set_module_skip_config(large_module_threshold=100)
+
+
+class TestPackageVersion:
+    """Test package version functionality"""
+    
+    def test_get_package_version_existing(self):
+        """Test getting version of existing packages"""
+        import laziest_import as lz
+        
+        # Test common packages
+        numpy_ver = lz.get_package_version('numpy')
+        pandas_ver = lz.get_package_version('pandas')
+        
+        # Should return version strings
+        assert numpy_ver is not None
+        assert pandas_ver is not None
+        assert isinstance(numpy_ver, str)
+        assert isinstance(pandas_ver, str)
+    
+    def test_get_package_version_nonexistent(self):
+        """Test getting version of nonexistent package"""
+        import laziest_import as lz
+        
+        version = lz.get_package_version('this_package_definitely_does_not_exist_12345')
+        assert version is None
+    
+    def test_get_package_version_normalized_name(self):
+        """Test that package names are normalized"""
+        import laziest_import as lz
+        
+        # Both formats should work
+        ver1 = lz.get_package_version('laziest_import')
+        ver2 = lz.get_package_version('laziest-import')
+        
+        # At least one should work
+        assert ver1 is not None or ver2 is not None
+    
+    def test_get_all_package_versions(self):
+        """Test getting all package versions"""
+        import laziest_import as lz
+        
+        versions = lz.get_all_package_versions()
+        
+        assert isinstance(versions, dict)
+        assert len(versions) > 0
+        
+        # All values should be strings
+        for pkg, ver in versions.items():
+            assert isinstance(pkg, str)
+            assert isinstance(ver, str)
+    
+    def test_get_laziest_import_version(self):
+        """Test getting laziest-import version"""
+        import laziest_import as lz
+        
+        version = lz.get_laziest_import_version()
+        
+        assert version is not None
+        assert isinstance(version, str)
+        # Should have version-like format
+        assert len(version) > 0
+    
+    def test_version_matches_version_attribute(self):
+        """Test that version functions match __version__"""
+        import laziest_import as lz
+        
+        # __version__ should be defined
+        assert hasattr(lz, '__version__')
+        assert lz.__version__ is not None

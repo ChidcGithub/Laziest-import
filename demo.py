@@ -8,6 +8,10 @@ laziest-import to automatically discover and import 3D graphics libraries.
 # Use laziest-import for all imports
 from laziest_import import *
 
+print(help())
+print("="*50)
+
+
 # Enable symbol search with non-interactive mode for demo
 enable_symbol_search(interactive=False)
 
@@ -81,3 +85,4 @@ plt.show()
 print("\n✓ Figure displayed in window")
 
 print("\n✓ Demo completed successfully!")
+

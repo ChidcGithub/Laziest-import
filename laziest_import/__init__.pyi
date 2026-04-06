@@ -383,10 +383,85 @@ def set_pip_extra_args(args: List[str]) -> None:
     """Set extra arguments for pip install."""
     ...
 
+# ============== Package Version ==============
+
+def get_package_version(package_name: str) -> Optional[str]:
+    """Get the version of an installed package."""
+    ...
+
+def get_all_package_versions() -> Dict[str, str]:
+    """Get versions of all installed packages."""
+    ...
+
+def get_laziest_import_version() -> str:
+    """Get the version of laziest-import library."""
+    ...
+
+# ============== Incremental Index ==============
+
+def enable_incremental_index(enabled: bool = True) -> None:
+    """Enable or disable incremental index updates."""
+    ...
+
+def enable_background_build(enabled: bool = True) -> None:
+    """Enable or disable background index building."""
+    ...
+
+def enable_cache_compression(enabled: bool = True) -> None:
+    """Enable or disable cache compression."""
+    ...
+
+def get_incremental_config() -> Dict[str, Any]:
+    """Get incremental index update configuration."""
+    ...
+
+def get_preheat_config() -> Dict[str, Any]:
+    """Get background preheat configuration."""
+    ...
+
+# ============== Easter Egg & Help ==============
+
+def easter_egg(name: str = "default") -> str:
+    """Get a fun easter egg message!
+    
+    Args:
+        name: The easter egg name. Available options:
+            - "default": A random fun fact about lazy imports
+            - "author": Author's message
+            - "quote": A programming quote
+            - "tip": A lazy import tip
+            - "secret": A secret message (shhh!)
+            - "thanks": Special thanks
+    
+    Returns:
+        A fun message string.
+    """
+    ...
+
+def help(topic: Optional[str] = None) -> str:
+    """Get help on laziest-import topics.
+    
+    Args:
+        topic: Optional topic to get help on. Available topics:
+            - None: General overview
+            - "quickstart": Quick start guide
+            - "lazy": How lazy imports work
+            - "alias": Alias system
+            - "symbol": Symbol search
+            - "cache": Caching system
+            - "config": Configuration options
+            - "async": Async imports
+            - "hooks": Import hooks
+            - "api": Full API reference
+    
+    Returns:
+        Help text for the requested topic.
+    """
+    ...
+
 # ============== Module-level attributes ==============
 
 __all__: List[str]
 
 def __getattr__(name: str) -> Union[LazyModule, LazySymbol]: ...
-def __dir__() -> List[str]: ...
 def __dir__() -> List[str]: ...

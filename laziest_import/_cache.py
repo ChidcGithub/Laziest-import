@@ -2,7 +2,7 @@
 Cache system for laziest-import.
 """
 
-from typing import Dict, List, Optional, Set, Any, Tuple, Union
+from typing import Dict, List, Optional, Set, Any, Tuple, Union, Callable
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import sys
@@ -14,6 +14,8 @@ import threading
 import traceback
 import atexit
 import importlib.util
+import gzip
+import io
 
 from ._config import (
     _DEBUG_MODE,
@@ -28,10 +30,15 @@ from ._config import (
     _STDLIB_CACHE_BUILT,
     _THIRD_PARTY_CACHE_BUILT,
     _CONFIRMED_MAPPINGS,
+    _INCREMENTAL_INDEX_CONFIG,
+    _PREHEAT_CONFIG,
+    _BACKGROUND_INDEX_BUILDING,
+    _BACKGROUND_INDEX_THREAD,
+    get_cache_version as _get_cache_version_from_config,
 )
 
-# Cache version for compatibility checking
-_CACHE_VERSION: str = "0.0.2.3"
+# Cache version for compatibility checking (loaded from version.json)
+_CACHE_VERSION: str = _get_cache_version_from_config()
 
 # Thread lock for cache operations
 _CACHE_LOCK = threading.Lock()
@@ -179,12 +186,44 @@ class SymbolIndexCache:
         )
 
 
+def _save_compressed_json(data: Dict[str, Any], file_path: Path) -> bool:
+    """Save data as compressed JSON using gzip."""
+    try:
+        json_str = json.dumps(data, indent=2, ensure_ascii=False)
+        with gzip.open(file_path, 'wt', encoding='utf-8') as f:
+            f.write(json_str)
+        return True
+    except Exception as e:
+        if _DEBUG_MODE:
+            logging.warning(f"[laziest-import] Failed to save compressed cache: {e}")
+        return False
+
+
+def _load_compressed_json(file_path: Path) -> Optional[Dict[str, Any]]:
+    """Load compressed JSON data using gzip."""
+    try:
+        with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _should_use_compression(cache_type: str) -> bool:
+    """Check if compression should be used for this cache type."""
+    return _CACHE_CONFIG.get("enable_compression", False)
+
+
+def _get_compressed_path(file_path: Path) -> Path:
+    """Get the compressed version of a cache file path."""
+    return file_path.with_suffix(file_path.suffix + ".gz")
+
+
 def _save_symbol_index(
     symbols: Dict[str, List[Tuple[str, str, Optional[str]]]],
     cache_type: str = "all",
     module_count: int = 0
 ) -> bool:
-    """Save symbol index to cache file."""
+    """Save symbol index to cache file with optional compression."""
     try:
         _cleanup_cache_if_needed()
         
@@ -203,8 +242,29 @@ def _save_symbol_index(
         )
         
         cache_path = _get_symbol_index_path(cache_type)
+        use_compression = _should_use_compression(cache_type)
+        
+        if use_compression:
+            compressed_path = _get_compressed_path(cache_path)
+            if _save_compressed_json(cache.to_dict(), compressed_path):
+                # Remove uncompressed version if exists
+                if cache_path.exists():
+                    cache_path.unlink()
+                if _DEBUG_MODE:
+                    logging.info(
+                        f"[laziest-import] Saved {cache_type} symbol index (compressed): "
+                        f"{len(symbols)} symbols from {module_count} modules"
+                    )
+                return True
+            # Fall back to uncompressed if compression fails
+        
         with open(cache_path, 'w', encoding='utf-8') as f:
             json.dump(cache.to_dict(), f, indent=2)
+        
+        # Remove compressed version if exists (switching from compressed to uncompressed)
+        compressed_path = _get_compressed_path(cache_path)
+        if compressed_path.exists():
+            compressed_path.unlink()
         
         if _DEBUG_MODE:
             logging.info(
@@ -219,14 +279,30 @@ def _save_symbol_index(
 
 
 def _load_symbol_index(cache_type: str = "all") -> Optional[SymbolIndexCache]:
-    """Load symbol index from cache file."""
+    """Load symbol index from cache file (supports both compressed and uncompressed)."""
     try:
         cache_path = _get_symbol_index_path(cache_type)
-        if not cache_path.exists():
-            return None
+        compressed_path = _get_compressed_path(cache_path)
         
-        with open(cache_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        data = None
+        
+        # Try compressed version first
+        if compressed_path.exists():
+            data = _load_compressed_json(compressed_path)
+            if data is None:
+                # Corrupted compressed file, try to remove and fall back
+                try:
+                    compressed_path.unlink()
+                except Exception:
+                    pass
+        
+        # Fall back to uncompressed
+        if data is None and cache_path.exists():
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        
+        if data is None:
+            return None
         
         cache = SymbolIndexCache.from_dict(data)
         
@@ -630,14 +706,22 @@ def get_cache_version() -> str:
 
 def clear_symbol_cache() -> None:
     """Clear the symbol cache (memory only)."""
-    global _SYMBOL_INDEX_BUILT, _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT
+    from ._config import (
+        _SYMBOL_INDEX_BUILT as config_symbol_built,
+        _STDLIB_CACHE_BUILT as config_stdlib_built,
+        _THIRD_PARTY_CACHE_BUILT as config_third_party_built,
+    )
+    import laziest_import._config as config
+    
     _SYMBOL_CACHE.clear()
     _STDLIB_SYMBOL_CACHE.clear()
     _THIRD_PARTY_SYMBOL_CACHE.clear()
     _CONFIRMED_MAPPINGS.clear()
-    _SYMBOL_INDEX_BUILT = False
-    _STDLIB_CACHE_BUILT = False
-    _THIRD_PARTY_CACHE_BUILT = False
+    
+    # Modify the actual config module variables
+    config._SYMBOL_INDEX_BUILT = False
+    config._STDLIB_CACHE_BUILT = False
+    config._THIRD_PARTY_CACHE_BUILT = False
 
 
 # ============== File Cache API ==============
@@ -697,3 +781,271 @@ def force_save_cache() -> bool:
     """Force save current cache."""
     _save_current_cache()
     return True
+
+
+# ============== Background Index Building ==============
+
+def _start_background_index_build(callback: Optional[Callable[[], None]] = None) -> bool:
+    """Start background symbol index build.
+    
+    Args:
+        callback: Optional callback to run after build completes
+        
+    Returns:
+        True if background build started, False if already running or disabled
+    """
+    from ._config import _BACKGROUND_INDEX_BUILDING, _BACKGROUND_INDEX_THREAD
+    
+    if not _PREHEAT_CONFIG.get("enabled", True):
+        return False
+    
+    if not _PREHEAT_CONFIG.get("async_index_build", True):
+        return False
+    
+    if _BACKGROUND_INDEX_BUILDING:
+        return False
+    
+    if _SYMBOL_INDEX_BUILT:
+        return False
+    
+    def _background_build_worker():
+        global _BACKGROUND_INDEX_BUILDING
+        from ._config import _BACKGROUND_INDEX_BUILDING as _bg_flag
+        from ._symbol import _build_symbol_index
+        
+        try:
+            # Import the flag dynamically to get the reference
+            import laziest_import._config as config_module
+            config_module._BACKGROUND_INDEX_BUILDING = True
+            
+            timeout = _INCREMENTAL_INDEX_CONFIG.get("background_timeout", 60.0)
+            _build_symbol_index(force=False, timeout=timeout)
+            
+            if callback:
+                callback()
+                
+        except Exception as e:
+            if _DEBUG_MODE:
+                logging.warning(f"[laziest-import] Background index build failed: {e}")
+        finally:
+            import laziest_import._config as config_module
+            config_module._BACKGROUND_INDEX_BUILDING = False
+    
+    thread = threading.Thread(target=_background_build_worker, daemon=True)
+    thread.start()
+    return True
+
+
+def _is_background_index_building() -> bool:
+    """Check if background index build is in progress."""
+    from ._config import _BACKGROUND_INDEX_BUILDING
+    return _BACKGROUND_INDEX_BUILDING
+
+
+def _wait_for_background_index(timeout: float = 30.0) -> bool:
+    """Wait for background index build to complete.
+    
+    Args:
+        timeout: Maximum time to wait in seconds
+        
+    Returns:
+        True if build completed, False if timeout
+    """
+    from ._config import _BACKGROUND_INDEX_THREAD
+    
+    if not _is_background_index_building():
+        return True
+    
+    start = time.time()
+    while time.time() - start < timeout:
+        if not _is_background_index_building():
+            return True
+        time.sleep(0.1)
+    
+    return False
+
+
+# ============== Incremental Index Update ==============
+
+def _get_installed_packages() -> Set[str]:
+    """Get set of installed top-level packages."""
+    try:
+        from importlib.metadata import distributions
+        packages = set()
+        for dist in distributions():
+            # Get top-level package names
+            name = dist.metadata.get("Name", "")
+            if name:
+                # Convert package name to import name (e.g., my-package -> my_package)
+                import_name = name.lower().replace("-", "_")
+                packages.add(import_name)
+        return packages
+    except Exception:
+        return set()
+
+
+def _detect_changed_packages() -> Tuple[Set[str], Set[str], Set[str]]:
+    """Detect package changes since last scan.
+    
+    Returns:
+        Tuple of (new_packages, updated_packages, removed_packages)
+    """
+    if not _INCREMENTAL_INDEX_CONFIG.get("enabled", True):
+        return set(), set(), set()
+    
+    current_packages = _get_installed_packages()
+    tracked_packages = set(_TRACKED_PACKAGES.keys())
+    
+    new_packages = current_packages - tracked_packages
+    removed_packages = tracked_packages - current_packages
+    
+    # Check for version updates
+    updated_packages = set()
+    if _INCREMENTAL_INDEX_CONFIG.get("check_version", True):
+        for pkg in tracked_packages & current_packages:
+            if _check_package_changed(pkg):
+                updated_packages.add(pkg)
+    
+    return new_packages, updated_packages, removed_packages
+
+
+def _get_incremental_update_modules() -> Tuple[Set[str], bool]:
+    """Get modules that need incremental update.
+    
+    Returns:
+        Tuple of (modules_to_update, needs_full_rebuild)
+    """
+    new_packages, updated_packages, removed_packages = _detect_changed_packages()
+    
+    # If no existing cache, need full rebuild
+    if not _TRACKED_PACKAGES:
+        return set(), True
+    
+    # If too many changes, full rebuild might be faster
+    total_changes = len(new_packages) + len(updated_packages) + len(removed_packages)
+    if total_changes > len(_TRACKED_PACKAGES) * 0.3:  # More than 30% changed
+        return set(), True
+    
+    # Collect modules to update
+    modules_to_update = set()
+    
+    # Add new package modules
+    from ._alias import _build_known_modules_cache
+    all_modules = _build_known_modules_cache()
+    
+    for pkg in new_packages | updated_packages:
+        for mod in all_modules:
+            if mod.split('.')[0] == pkg:
+                modules_to_update.add(mod)
+    
+    return modules_to_update, False
+
+
+def enable_incremental_index(enabled: bool = True) -> None:
+    """Enable or disable incremental index updates."""
+    from ._config import _INCREMENTAL_INDEX_CONFIG
+    _INCREMENTAL_INDEX_CONFIG["enabled"] = enabled
+
+
+def enable_background_build(enabled: bool = True) -> None:
+    """Enable or disable background index building."""
+    from ._config import _PREHEAT_CONFIG
+    _PREHEAT_CONFIG["enabled"] = enabled
+    _PREHEAT_CONFIG["async_index_build"] = enabled
+
+
+def enable_cache_compression(enabled: bool = True) -> None:
+    """Enable or disable cache compression."""
+    _CACHE_CONFIG["enable_compression"] = enabled
+
+
+def get_incremental_config() -> Dict[str, Any]:
+    """Get incremental index update configuration."""
+    from ._config import _INCREMENTAL_INDEX_CONFIG
+    return dict(_INCREMENTAL_INDEX_CONFIG)
+
+
+def get_preheat_config() -> Dict[str, Any]:
+    """Get background preheat configuration."""
+    from ._config import _PREHEAT_CONFIG
+    return dict(_PREHEAT_CONFIG)
+
+
+def get_package_version(package_name: str) -> Optional[str]:
+    """Get the version of an installed package.
+    
+    Args:
+        package_name: The name of the package (e.g., 'numpy', 'pandas')
+        
+    Returns:
+        Version string if found, None otherwise
+        
+    Examples:
+        >>> get_package_version('numpy')
+        '1.24.0'
+        >>> get_package_version('nonexistent')
+        None
+    """
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        # Normalize package name (handle both my-package and my_package)
+        normalized = package_name.lower().replace('_', '-')
+        return version(normalized)
+    except PackageNotFoundError:
+        return None
+    except Exception:
+        return None
+
+
+def get_all_package_versions() -> Dict[str, str]:
+    """Get versions of all installed packages.
+    
+    Returns:
+        Dictionary mapping package names to their versions
+    """
+    try:
+        from importlib.metadata import distributions
+        versions = {}
+        for dist in distributions():
+            name = dist.metadata.get("Name", "")
+            ver = dist.metadata.get("Version", "")
+            if name and ver:
+                # Use normalized name
+                import_name = name.lower().replace("-", "_")
+                versions[import_name] = ver
+        return versions
+    except Exception:
+        return {}
+
+
+def get_laziest_import_version() -> str:
+    """Get the version of laziest-import library itself.
+    
+    Priority:
+    1. Read from version.json (most reliable for development)
+    2. Fallback to importlib.metadata (for installed package)
+    
+    Returns:
+        Version string
+    """
+    # First try to read from version.json (same source as __version__)
+    try:
+        import os
+        version_file = os.path.join(os.path.dirname(__file__), 'version.json')
+        if os.path.exists(version_file):
+            with open(version_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                version = data.get('_current_version')
+                if version:
+                    return version
+    except Exception:
+        pass
+    
+    # Fallback to importlib.metadata for installed package
+    try:
+        from importlib.metadata import version
+        return version('laziest-import')
+    except Exception:
+        pass
+    
+    return 'unknown'
