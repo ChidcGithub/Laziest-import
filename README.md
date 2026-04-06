@@ -5,7 +5,6 @@
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![License](https://img.shields.io/pypi/l/laziest-import.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/pypi/dm/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![PyPI - Wheel](https://img.shields.io/pypi/wheel/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/issues)
