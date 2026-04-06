@@ -69,11 +69,13 @@ jobs:
         
         if [ "$IS_PRERELEASE" = "true" ]; then
           # 预览版：不包含 commit 信息，只显示基本信息
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
-          echo "## Pre-release" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "This is a pre-release version for testing purposes." >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          cat >> $GITHUB_OUTPUT << 'ENDOFNOTES'
+        release_notes<<EOF
+        ## Pre-release
+        
+        This is a pre-release version for testing purposes.
+        EOF
+        ENDOFNOTES
           echo "Pre-release: skipping commit changelog"
         else
           # 正式版：生成从上一个稳定版开始的 commit 信息
@@ -84,64 +86,63 @@ jobs:
           
           if [ -n "$LAST_STABLE_TAG" ] && [ "$LAST_STABLE_TAG" != "${{ github.ref_name }}" ]; then
             echo "Last stable tag: $LAST_STABLE_TAG"
-            
-            # 获取从上一个稳定版到当前的所有 commit
-            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"- %s [%h]" --no-merges 2>/dev/null || echo "")
-            
+            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"%s [%h]" --no-merges 2>/dev/null || echo "")
             if [ -z "$COMMITS" ]; then
-              COMMITS=$(git log --pretty=format:"- %s [%h]" --no-merges -20)
+              COMMITS=$(git log --pretty=format:"%s [%h]" --no-merges -20)
             fi
           else
-            # 没有上一个稳定版，获取最近的 commits
             echo "No previous stable tag found, using recent commits"
-            COMMITS=$(git log --pretty=format:"- %s [%h]" --no-merges -30)
+            COMMITS=$(git log --pretty=format:"%s [%h]" --no-merges -30)
           fi
           
+          # 保存 commits 到临时文件
+          echo "$COMMITS" > /tmp/commits.txt
+          
           # 分类 commits
-          FEATURES=$(echo "$COMMITS" | grep -iE '(feat|feature|add|new)' || echo "")
-          FIXES=$(echo "$COMMITS" | grep -iE '(fix|bug|patch|resolve)' || echo "")
-          REFACTOR=$(echo "$COMMITS" | grep -iE '(refactor|restructure|clean|improve)' || echo "")
-          DOCS=$(echo "$COMMITS" | grep -iE '(doc|readme|comment)' || echo "")
-          TESTS=$(echo "$COMMITS" | grep -iE '(test|pytest|coverage)' || echo "")
-          OTHER=$(echo "$COMMITS" | grep -viE '(feat|feature|add|new|fix|bug|patch|resolve|refactor|restructure|clean|improve|doc|readme|comment|test|pytest|coverage)' || echo "")
+          FEATURES=$(grep -iE '(feat|feature|add|new)' /tmp/commits.txt 2>/dev/null || echo "")
+          FIXES=$(grep -iE '(fix|bug|patch|resolve)' /tmp/commits.txt 2>/dev/null || echo "")
+          REFACTOR=$(grep -iE '(refactor|restructure|clean|improve)' /tmp/commits.txt 2>/dev/null || echo "")
+          DOCS=$(grep -iE '(doc|readme|comment)' /tmp/commits.txt 2>/dev/null || echo "")
+          TESTS=$(grep -iE '(test|pytest|coverage)' /tmp/commits.txt 2>/dev/null || echo "")
+          OTHER=$(grep -viE '(feat|feature|add|new|fix|bug|patch|resolve|refactor|restructure|clean|improve|doc|readme|comment|test|pytest|coverage)' /tmp/commits.txt 2>/dev/null || echo "")
           
           # 生成 release notes
-          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo 'release_notes<<EOF' >> $GITHUB_OUTPUT
           
           if [ -n "$FEATURES" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### New Features" >> $GITHUB_OUTPUT
-            echo "$FEATURES" >> $GITHUB_OUTPUT
+            echo "$FEATURES" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           if [ -n "$FIXES" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### Bug Fixes" >> $GITHUB_OUTPUT
-            echo "$FIXES" >> $GITHUB_OUTPUT
+            echo "$FIXES" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           if [ -n "$REFACTOR" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### Refactoring" >> $GITHUB_OUTPUT
-            echo "$REFACTOR" >> $GITHUB_OUTPUT
+            echo "$REFACTOR" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           if [ -n "$TESTS" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### Tests" >> $GITHUB_OUTPUT
-            echo "$TESTS" >> $GITHUB_OUTPUT
+            echo "$TESTS" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           if [ -n "$DOCS" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### Documentation" >> $GITHUB_OUTPUT
-            echo "$DOCS" >> $GITHUB_OUTPUT
+            echo "$DOCS" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           if [ -n "$OTHER" ]; then
             echo "" >> $GITHUB_OUTPUT
             echo "### Other Changes" >> $GITHUB_OUTPUT
-            echo "$OTHER" >> $GITHUB_OUTPUT
+            echo "$OTHER" | sed 's/^/- /' >> $GITHUB_OUTPUT
           fi
           
           echo "" >> $GITHUB_OUTPUT
@@ -149,9 +150,11 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### Full Changelog" >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
+          cat /tmp/commits.txt | sed 's/^/- /' >> $GITHUB_OUTPUT
           echo '```' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          rm -f /tmp/commits.txt
         fi
 
     - name: Upload artifacts
