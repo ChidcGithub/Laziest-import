@@ -190,31 +190,40 @@ jobs:
         BUILD_DATE="${{ needs.build.outputs.build_date }}"
         RELEASE_NOTES="${{ needs.build.outputs.release_notes }}"
         
-        # 构建 release body
-        {
-          echo "body<<EOF"
-          echo "## Release Information"
-          echo ""
-          echo "| Property | Value |"
-          echo "|----------|-------|"
-          echo "| **Version** | $VERSION |"
-          echo "| **Commit SHA** | $SHA |"
-          echo "| **Build Date** | $BUILD_DATE |"
-          echo "| **Python** | 3.8+ |"
-          echo ""
-          echo "### Installation"
-          echo '```'
-          echo "pip install laziest-import"
-          echo '```'
-          echo ""
-          echo "$RELEASE_NOTES"
-          echo ""
-          echo "---"
-          echo ""
-          echo "### Files"
-          echo "Wheel and source distribution included in assets."
-          echo "EOF"
-        } >> $GITHUB_OUTPUT
+        # 构建 release body 使用 heredoc 避免命令注入
+        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
+        body<<EOF
+        ## Release Information
+        
+        | Property | Value |
+        |----------|-------|
+        ENDOFBODY
+        
+        echo "| **Version** | $VERSION |" >> $GITHUB_OUTPUT
+        echo "| **Commit SHA** | $SHA |" >> $GITHUB_OUTPUT
+        echo "| **Build Date** | $BUILD_DATE |" >> $GITHUB_OUTPUT
+        echo "| **Python** | 3.8+ |" >> $GITHUB_OUTPUT
+        
+        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
+        
+        ### Installation
+        ```
+        pip install laziest-import
+        ```
+        
+        ENDOFBODY
+        
+        # 安全写入 RELEASE_NOTES
+        printf '%s\n' "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+        
+        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
+        
+        ---
+        
+        ### Files
+        Wheel and source distribution included in assets.
+        EOF
+        ENDOFBODY
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
