@@ -2936,15 +2936,13 @@ class TestPackageVersion:
         """Test getting version of existing packages"""
         import laziest_import as lz
         
-        # Test common packages
-        numpy_ver = lz.get_package_version('numpy')
-        pandas_ver = lz.get_package_version('pandas')
+        # Test with laziest-import itself (always installed in test env)
+        version = lz.get_package_version('laziest-import')
         
-        # Should return version strings
-        assert numpy_ver is not None
-        assert pandas_ver is not None
-        assert isinstance(numpy_ver, str)
-        assert isinstance(pandas_ver, str)
+        # Should return version string
+        assert version is not None
+        assert isinstance(version, str)
+        assert len(version) > 0
     
     def test_get_package_version_nonexistent(self):
         """Test getting version of nonexistent package"""
