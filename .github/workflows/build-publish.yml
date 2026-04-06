@@ -14,7 +14,6 @@ jobs:
       sha: ${{ steps.version.outputs.sha }}
       build_date: ${{ steps.version.outputs.build_date }}
       is_prerelease: ${{ steps.version.outputs.is_prerelease }}
-      release_notes: ${{ steps.release_notes.outputs.release_notes }}
 
     steps:
     - name: Checkout code
@@ -43,119 +42,28 @@ jobs:
     - name: Get version info
       id: version
       run: |
-        VERSION=$(python -c "import laziest_import; print(laziest_import.__version__)")
-        SHA=$(git rev-parse --short HEAD)
-        BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        python << 'PYEOF'
+        import os
+        import subprocess
+        from datetime import datetime, timezone
         
-        # 判断是否为预览版
-        if [[ "$VERSION" == *"-pre"* ]] || [[ "$VERSION" == *"-alpha"* ]] || [[ "$VERSION" == *"-beta"* ]] || [[ "$VERSION" == *"-rc"* ]]; then
-          IS_PRERELEASE="true"
-        else
-          IS_PRERELEASE="false"
-        fi
+        import laziest_import
         
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "sha=$SHA" >> $GITHUB_OUTPUT
-        echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
-        echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-        echo "Version: $VERSION"
-        echo "Is prerelease: $IS_PRERELEASE"
-
-    - name: Generate release notes
-      id: release_notes
-      run: |
-        VERSION="${{ steps.version.outputs.version }}"
-        IS_PRERELEASE="${{ steps.version.outputs.is_prerelease }}"
+        version = laziest_import.__version__
+        sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
+        build_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         
-        if [ "$IS_PRERELEASE" = "true" ]; then
-          # 预览版：不包含 commit 信息，只显示基本信息
-          cat >> $GITHUB_OUTPUT << 'ENDOFNOTES'
-        release_notes<<EOF
-        ## Pre-release
+        is_prerelease = any(x in version for x in ['-pre', '-alpha', '-beta', '-rc'])
         
-        This is a pre-release version for testing purposes.
-        EOF
-        ENDOFNOTES
-          echo "Pre-release: skipping commit changelog"
-        else
-          # 正式版：生成从上一个稳定版开始的 commit 信息
-          echo "Generating changelog from last stable release..."
-          
-          # 获取上一个稳定版的 tag（排除预览版）
-          LAST_STABLE_TAG=$(git tag --list 'v*' | grep -v -E '(pre|alpha|beta|rc)' | sort -V | tail -n 1 2>/dev/null || echo "")
-          
-          if [ -n "$LAST_STABLE_TAG" ] && [ "$LAST_STABLE_TAG" != "${{ github.ref_name }}" ]; then
-            echo "Last stable tag: $LAST_STABLE_TAG"
-            COMMITS=$(git log $LAST_STABLE_TAG..HEAD --pretty=format:"%s [%h]" --no-merges 2>/dev/null || echo "")
-            if [ -z "$COMMITS" ]; then
-              COMMITS=$(git log --pretty=format:"%s [%h]" --no-merges -20)
-            fi
-          else
-            echo "No previous stable tag found, using recent commits"
-            COMMITS=$(git log --pretty=format:"%s [%h]" --no-merges -30)
-          fi
-          
-          # 保存 commits 到临时文件
-          echo "$COMMITS" > /tmp/commits.txt
-          
-          # 分类 commits
-          FEATURES=$(grep -iE '(feat|feature|add|new)' /tmp/commits.txt 2>/dev/null || echo "")
-          FIXES=$(grep -iE '(fix|bug|patch|resolve)' /tmp/commits.txt 2>/dev/null || echo "")
-          REFACTOR=$(grep -iE '(refactor|restructure|clean|improve)' /tmp/commits.txt 2>/dev/null || echo "")
-          DOCS=$(grep -iE '(doc|readme|comment)' /tmp/commits.txt 2>/dev/null || echo "")
-          TESTS=$(grep -iE '(test|pytest|coverage)' /tmp/commits.txt 2>/dev/null || echo "")
-          OTHER=$(grep -viE '(feat|feature|add|new|fix|bug|patch|resolve|refactor|restructure|clean|improve|doc|readme|comment|test|pytest|coverage)' /tmp/commits.txt 2>/dev/null || echo "")
-          
-          # 生成 release notes
-          echo 'release_notes<<EOF' >> $GITHUB_OUTPUT
-          
-          if [ -n "$FEATURES" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### New Features" >> $GITHUB_OUTPUT
-            echo "$FEATURES" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          if [ -n "$FIXES" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### Bug Fixes" >> $GITHUB_OUTPUT
-            echo "$FIXES" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          if [ -n "$REFACTOR" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### Refactoring" >> $GITHUB_OUTPUT
-            echo "$REFACTOR" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          if [ -n "$TESTS" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### Tests" >> $GITHUB_OUTPUT
-            echo "$TESTS" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          if [ -n "$DOCS" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### Documentation" >> $GITHUB_OUTPUT
-            echo "$DOCS" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          if [ -n "$OTHER" ]; then
-            echo "" >> $GITHUB_OUTPUT
-            echo "### Other Changes" >> $GITHUB_OUTPUT
-            echo "$OTHER" | sed 's/^/- /' >> $GITHUB_OUTPUT
-          fi
-          
-          echo "" >> $GITHUB_OUTPUT
-          echo "---" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "### Full Changelog" >> $GITHUB_OUTPUT
-          echo '```' >> $GITHUB_OUTPUT
-          cat /tmp/commits.txt | sed 's/^/- /' >> $GITHUB_OUTPUT
-          echo '```' >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          rm -f /tmp/commits.txt
-        fi
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write(f"version={version}\n")
+            f.write(f"sha={sha}\n")
+            f.write(f"build_date={build_date}\n")
+            f.write(f"is_prerelease={'true' if is_prerelease else 'false'}\n")
+        
+        print(f"Version: {version}")
+        print(f"Is prerelease: {is_prerelease}")
+        PYEOF
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -181,59 +89,142 @@ jobs:
         name: dist
         path: dist/
 
-    - name: Build release body
-      id: body
-      run: |
-        IS_PRERELEASE="${{ needs.build.outputs.is_prerelease }}"
-        VERSION="${{ needs.build.outputs.version }}"
-        SHA="${{ needs.build.outputs.sha }}"
-        BUILD_DATE="${{ needs.build.outputs.build_date }}"
-        RELEASE_NOTES="${{ needs.build.outputs.release_notes }}"
-        
-        # 构建 release body 使用 heredoc 避免命令注入
-        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
-        body<<EOF
-        ## Release Information
-        
-        | Property | Value |
-        |----------|-------|
-        ENDOFBODY
-        
-        echo "| **Version** | $VERSION |" >> $GITHUB_OUTPUT
-        echo "| **Commit SHA** | $SHA |" >> $GITHUB_OUTPUT
-        echo "| **Build Date** | $BUILD_DATE |" >> $GITHUB_OUTPUT
-        echo "| **Python** | 3.8+ |" >> $GITHUB_OUTPUT
-        
-        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
-        
-        ### Installation
-        ```
-        pip install laziest-import
-        ```
-        
-        ENDOFBODY
-        
-        # 安全写入 RELEASE_NOTES
-        printf '%s\n' "$RELEASE_NOTES" >> $GITHUB_OUTPUT
-        
-        cat >> $GITHUB_OUTPUT << 'ENDOFBODY'
-        
-        ---
-        
-        ### Files
-        Wheel and source distribution included in assets.
-        EOF
-        ENDOFBODY
-
     - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: laziest-import ${{ needs.build.outputs.version }}
-        body: ${{ steps.body.outputs.body }}
-        files: dist/*
-        draft: false
-        prerelease: ${{ needs.build.outputs.is_prerelease == 'true' }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        python << 'PYEOF'
+        import os
+        import subprocess
+        import re
+        
+        version = "${{ needs.build.outputs.version }}"
+        sha = "${{ needs.build.outputs.sha }}"
+        build_date = "${{ needs.build.outputs.build_date }}"
+        is_prerelease = "${{ needs.build.outputs.is_prerelease }}" == "true"
+        tag_name = os.environ.get('GITHUB_REF_NAME', f'v{version}')
+        
+        def run_git(*args):
+            result = subprocess.run(['git'] + list(args), capture_output=True, text=True)
+            return result.stdout.strip()
+        
+        def get_commits(since_tag=None, limit=30):
+            if since_tag:
+                cmd = ['log', since_tag + '..HEAD', '--pretty=format:%s [%h]', '--no-merges']
+                result = subprocess.run(['git'] + cmd, capture_output=True, text=True)
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip().split('\n')
+            cmd = ['log', '--pretty=format:%s [%h]', '--no-merges', f'-{limit}']
+            result = subprocess.run(['git'] + cmd, capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip().split('\n')
+            return []
+        
+        def categorize_commits(commits):
+            features, fixes, refactor, tests, docs, other = [], [], [], [], [], []
+            for c in commits:
+                cl = c.lower()
+                if any(x in cl for x in ['feat', 'feature', 'add', 'new']):
+                    features.append(c)
+                elif any(x in cl for x in ['fix', 'bug', 'patch', 'resolve']):
+                    fixes.append(c)
+                elif any(x in cl for x in ['refactor', 'restructure', 'clean', 'improve']):
+                    refactor.append(c)
+                elif any(x in cl for x in ['test', 'pytest', 'coverage']):
+                    tests.append(c)
+                elif any(x in cl for x in ['doc', 'readme', 'comment']):
+                    docs.append(c)
+                else:
+                    other.append(c)
+            return features, fixes, refactor, tests, docs, other
+        
+        def format_section(title, commits):
+            if not commits:
+                return ""
+            lines = [f"\n### {title}"]
+            for c in commits:
+                lines.append(f"- {c}")
+            return "\n".join(lines)
+        
+        # Generate release notes
+        if is_prerelease:
+            release_notes = """## Pre-release
+
+This is a pre-release version for testing purposes."""
+        else:
+            # Get last stable tag
+            tags = run_git('tag', '--list', 'v*').split('\n')
+            stable_tags = [t for t in tags if t and not re.search(r'(pre|alpha|beta|rc)', t)]
+            last_stable = stable_tags[-1] if stable_tags else None
+            
+            if last_stable and last_stable != tag_name:
+                print(f"Last stable tag: {last_stable}")
+                commits = get_commits(last_stable)
+            else:
+                print("No previous stable tag found, using recent commits")
+                commits = get_commits()
+            
+            features, fixes, refactor, tests, docs, other = categorize_commits(commits)
+            
+            sections = []
+            sections.append(format_section("New Features", features))
+            sections.append(format_section("Bug Fixes", fixes))
+            sections.append(format_section("Refactoring", refactor))
+            sections.append(format_section("Tests", tests))
+            sections.append(format_section("Documentation", docs))
+            sections.append(format_section("Other Changes", other))
+            
+            release_notes = "\n".join(s for s in sections if s)
+            
+            # Add full changelog
+            if commits:
+                release_notes += "\n\n---\n\n### Full Changelog\n```\n"
+                for c in commits:
+                    release_notes += f"- {c}\n"
+                release_notes += "```"
+        
+        # Build release body
+        body = f"""## Release Information
+
+| Property | Value |
+|----------|-------|
+| **Version** | {version} |
+| **Commit SHA** | {sha} |
+| **Build Date** | {build_date} |
+| **Python** | 3.8+ |
+
+### Installation
+```
+pip install laziest-import
+```
+
+{release_notes}
+
+---
+
+### Files
+Wheel and source distribution included in assets."""
+        
+        # Write body to file for gh command
+        with open('/tmp/release_body.md', 'w') as f:
+            f.write(body)
+        
+        # Create release using gh CLI
+        cmd = [
+            'gh', 'release', 'create', tag_name,
+            '--title', f'laziest-import {version}',
+            '--notes-file', '/tmp/release_body.md',
+        ]
+        if is_prerelease:
+            cmd.append('--prerelease')
+        
+        # Add files
+        for f in os.listdir('dist'):
+            cmd.append(f'dist/{f}')
+        
+        subprocess.run(cmd, check=True)
+        print(f"Release {tag_name} created successfully!")
+        PYEOF
 
   publish:
     needs: [build, release]
