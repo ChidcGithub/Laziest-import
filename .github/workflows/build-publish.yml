@@ -150,13 +150,40 @@ jobs:
         if is_prerelease:
             release_notes = "## Pre-release\n\nThis is a pre-release version for testing purposes."
         else:
-            # Get last stable tag
-            tags = run_git('tag', '--list', 'v*').split('\n')
-            stable_tags = [t for t in tags if t and not re.search(r'(pre|alpha|beta|rc)', t)]
-            last_stable = stable_tags[-1] if stable_tags else None
+            # Get all tags and sort by version number
+            tags_output = run_git('tag', '--list', 'v*')
+            all_tags = [t.strip() for t in tags_output.split('\n') if t.strip()]
             
-            if last_stable and last_stable != tag_name:
-                print(f"Last stable tag: {last_stable}")
+            # Filter stable tags (no pre-release markers)
+            stable_tags = [t for t in all_tags if not re.search(r'(pre|alpha|beta|rc)', t, re.IGNORECASE)]
+            
+            # Sort by version number (semantic versioning)
+            def version_key(tag):
+                # Extract version number from tag (e.g., v0.0.3.1 -> (0, 0, 3, 1))
+                ver = tag.lstrip('v')
+                parts = []
+                for p in ver.split('.'):
+                    # Handle parts like '0', '1', etc.
+                    match = re.match(r'^(\d+)', p)
+                    if match:
+                        parts.append(int(match.group(1)))
+                    else:
+                        parts.append(0)
+                return tuple(parts)
+            
+            stable_tags.sort(key=version_key)
+            
+            # Find current tag and previous stable
+            current_idx = -1
+            for i, t in enumerate(stable_tags):
+                if t == tag_name:
+                    current_idx = i
+                    break
+            
+            # Get previous stable tag (exclude current)
+            if current_idx > 0:
+                last_stable = stable_tags[current_idx - 1]
+                print(f"Current tag: {tag_name}, Last stable: {last_stable}")
                 commits = get_commits(last_stable)
             else:
                 print("No previous stable tag found, using recent commits")
