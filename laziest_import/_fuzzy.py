@@ -32,6 +32,7 @@ from ._config import (
 _MAPPING_CACHE: Dict[str, Any] = {}
 _MAPPINGS_LOADED: bool = False
 _MAPPINGS_LOCK = threading.Lock()
+_MAPPINGS_VERSION_CHECKED: bool = False  # Track if version has been checked
 
 
 def _get_mappings_dir() -> Path:
@@ -42,8 +43,9 @@ def _get_mappings_dir() -> Path:
 def _load_mapping_file(filename: str) -> Dict[str, Any]:
     """Load a mapping JSON file, removing metadata keys.
     
-    Checks version range from version.json for the 'mappings' target.
+    Checks version range from version.json for the 'mappings' target (only once).
     """
+    global _MAPPINGS_VERSION_CHECKED
     mappings_dir = _get_mappings_dir()
     file_path = mappings_dir / filename
     
@@ -52,18 +54,20 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
             logging.warning(f"[laziest-import] Mapping file not found: {file_path}")
         return {}
     
-    # Check version range from version.json (only check once for mappings)
-    min_version, max_version = get_version_range("mappings")
-    if min_version is not None or max_version is not None:
-        is_valid, warning_msg = check_version_range(
-            min_version, max_version, file_path="mappings"
-        )
-        if not is_valid:
-            warnings.warn(
-                f"[laziest-import] {warning_msg}. Some mapping features may not work correctly.",
-                UserWarning,
-                stacklevel=3
+    # Check version range from version.json (only check once for all mappings)
+    if not _MAPPINGS_VERSION_CHECKED:
+        _MAPPINGS_VERSION_CHECKED = True
+        min_version, max_version = get_version_range("mappings")
+        if min_version is not None or max_version is not None:
+            is_valid, warning_msg = check_version_range(
+                min_version, max_version, file_path="mappings"
             )
+            if not is_valid:
+                warnings.warn(
+                    f"[laziest-import] {warning_msg}. Some mapping features may not work correctly.",
+                    UserWarning,
+                    stacklevel=3
+                )
     
     try:
         with open(file_path, encoding="utf-8") as f:
@@ -110,8 +114,9 @@ def _load_all_mappings() -> None:
 
 def reload_mappings() -> None:
     """Reload all mapping files from disk."""
-    global _MAPPING_CACHE, _MAPPINGS_LOADED
+    global _MAPPING_CACHE, _MAPPINGS_LOADED, _MAPPINGS_VERSION_CHECKED
     _MAPPINGS_LOADED = False
+    _MAPPINGS_VERSION_CHECKED = False
     _MAPPING_CACHE = {}
     _load_all_mappings()
 

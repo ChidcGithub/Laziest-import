@@ -35,6 +35,10 @@ from ._config import (
     _BACKGROUND_INDEX_BUILDING,
     _BACKGROUND_INDEX_THREAD,
     get_cache_version as _get_cache_version_from_config,
+    # Setter functions for state modification
+    _set_symbol_index_built,
+    _set_stdlib_cache_built,
+    _set_third_party_cache_built,
 )
 
 # Cache version for compatibility checking (loaded from version.json)
@@ -711,17 +715,16 @@ def clear_symbol_cache() -> None:
         _STDLIB_CACHE_BUILT as config_stdlib_built,
         _THIRD_PARTY_CACHE_BUILT as config_third_party_built,
     )
-    import laziest_import._config as config
     
     _SYMBOL_CACHE.clear()
     _STDLIB_SYMBOL_CACHE.clear()
     _THIRD_PARTY_SYMBOL_CACHE.clear()
     _CONFIRMED_MAPPINGS.clear()
     
-    # Modify the actual config module variables
-    config._SYMBOL_INDEX_BUILT = False
-    config._STDLIB_CACHE_BUILT = False
-    config._THIRD_PARTY_CACHE_BUILT = False
+    # Modify the config module variables using setters
+    _set_symbol_index_built(False)
+    _set_stdlib_cache_built(False)
+    _set_third_party_cache_built(False)
 
 
 # ============== File Cache API ==============

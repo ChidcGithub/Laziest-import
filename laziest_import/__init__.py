@@ -174,12 +174,51 @@ def get_module(alias: str) -> Optional[Any]:
 
 
 def clear_cache() -> None:
-    """Clear the module cache."""
+    """Clear the module cache.
+    
+    This clears all cached module instances, but keeps alias mappings intact.
+    Use reload_aliases() to reset aliases, or reset_all() to reset everything.
+    """
     global _LAZY_MODULES
     for lm in _LAZY_MODULES.values():
         object.__setattr__(lm, '_cached_module', None)
         object.__setattr__(lm, '_submodule_cache', {})
     _LAZY_MODULES.clear()
+
+
+def reset_all() -> None:
+    """Reset all state including cache, aliases, and symbol index.
+    
+    This performs a complete reset:
+    - Clears module cache
+    - Reloads aliases from configuration files
+    - Clears symbol cache
+    
+    Use this for a complete reset. Use clear_cache() for a lighter reset
+    that only clears loaded modules.
+    """
+    global _LAZY_MODULES
+    
+    # Clear module cache
+    for lm in _LAZY_MODULES.values():
+        object.__setattr__(lm, '_cached_module', None)
+        object.__setattr__(lm, '_submodule_cache', {})
+    _LAZY_MODULES.clear()
+    
+    # Reload aliases from configuration
+    from ._alias import reload_aliases
+    reload_aliases()
+    
+    # Clear symbol cache
+    from ._cache import clear_symbol_cache
+    clear_symbol_cache()
+    
+    # Reset import stats
+    reset_import_stats()
+    
+    # Clear confirmed mappings
+    from ._config import _CONFIRMED_MAPPINGS
+    _CONFIRMED_MAPPINGS.clear()
 
 
 def get_version(alias: str) -> Optional[str]:
@@ -401,7 +440,7 @@ def __dir__() -> List[str]:
     result.extend([
         "__version__", "lazy",
         "register_alias", "register_aliases", "unregister_alias",
-        "list_loaded", "list_available", "get_module", "clear_cache",
+        "list_loaded", "list_available", "get_module", "clear_cache", "reset_all",
         "get_version", "reload_module",
         "enable_auto_search", "disable_auto_search", "is_auto_search_enabled",
         "search_module", "search_class", "rebuild_module_cache",
@@ -444,7 +483,7 @@ _BASE_EXPORTS = [
     "LazyModule", "LazySymbol", "LazySubmodule", "LazyProxy",
     # Alias management
     "register_alias", "register_aliases", "unregister_alias",
-    "list_loaded", "list_available", "get_module", "clear_cache",
+    "list_loaded", "list_available", "get_module", "clear_cache", "reset_all",
     "get_version", "reload_module",
     # Auto-search
     "enable_auto_search", "disable_auto_search", "is_auto_search_enabled",

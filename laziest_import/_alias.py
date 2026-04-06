@@ -299,8 +299,13 @@ def _validate_alias(alias: str, module_name: str) -> bool:
     if not alias or not module_name:
         return False
     if not alias.isidentifier():
+        # Allow '-' and '.' for special use cases (e.g., pip package name mapping)
+        # but warn that they cannot be used directly as attribute access
         if '-' in alias or '.' in alias:
-            return True
+            # Only allow if the entire alias is a valid module/package name pattern
+            # (e.g., "my-package", "package.module")
+            if alias.replace('-', '_').replace('.', '_').isidentifier():
+                return True
         warnings.warn(f"Alias '{alias}' is not a valid Python identifier")
         return False
     return True

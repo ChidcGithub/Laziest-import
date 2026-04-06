@@ -33,6 +33,10 @@ from ._config import (
     _MODULE_SKIP_CONFIG,
     SearchResult,
     SymbolMatch,
+    # Setter functions for state modification
+    _set_symbol_index_built,
+    _set_stdlib_cache_built,
+    _set_third_party_cache_built,
 )
 from ._cache import (
     _load_symbol_index,
@@ -305,8 +309,7 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
                 _SYMBOL_CACHE.update(_THIRD_PARTY_SYMBOL_CACHE)
                 
                 # Update config module variables
-                import laziest_import._config as config
-                config._SYMBOL_INDEX_BUILT = True
+                _set_symbol_index_built(True)
                 
                 _CACHE_STATS["symbol_hits"] += 1
                 elapsed = time.perf_counter() - start_time
@@ -389,10 +392,9 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
             continue
     
     # Update config module variables
-    import laziest_import._config as config
-    config._SYMBOL_INDEX_BUILT = True
-    config._STDLIB_CACHE_BUILT = True
-    config._THIRD_PARTY_CACHE_BUILT = True
+    _set_symbol_index_built(True)
+    _set_stdlib_cache_built(True)
+    _set_third_party_cache_built(True)
     
     _save_symbol_index(_STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
     _save_symbol_index(_THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party)
@@ -795,14 +797,12 @@ def is_symbol_search_enabled() -> bool:
 
 def rebuild_symbol_index() -> None:
     """Rebuild the symbol index."""
-    global _SYMBOL_INDEX_BUILT, _STDLIB_CACHE_BUILT, _THIRD_PARTY_CACHE_BUILT
-    
     _SYMBOL_CACHE.clear()
     _STDLIB_SYMBOL_CACHE.clear()
     _THIRD_PARTY_SYMBOL_CACHE.clear()
-    _SYMBOL_INDEX_BUILT = False
-    _STDLIB_CACHE_BUILT = False
-    _THIRD_PARTY_CACHE_BUILT = False
+    _set_symbol_index_built(False)
+    _set_stdlib_cache_built(False)
+    _set_third_party_cache_built(False)
     
     for cache_type in ["stdlib", "third_party", "all"]:
         cache_path = _get_symbol_index_path(cache_type)
@@ -1032,8 +1032,7 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
         )
     
     # Update config module variable
-    import laziest_import._config as config
-    config._SYMBOL_INDEX_BUILT = True
+    _set_symbol_index_built(True)
     return True
 
 

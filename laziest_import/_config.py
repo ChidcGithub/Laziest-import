@@ -410,3 +410,30 @@ def check_version_range(
     if warnings_list:
         return (False, "; ".join(warnings_list))
     return (True, None)
+
+
+# ============== Symbol Index State Setters ==============
+# These functions provide a clean way to modify symbol index state from other modules
+
+def _set_symbol_index_built(value: bool) -> None:
+    """Set the symbol index built state."""
+    global _SYMBOL_INDEX_BUILT
+    _SYMBOL_INDEX_BUILT = value
+
+
+def _set_stdlib_cache_built(value: bool) -> None:
+    """Set the stdlib cache built state."""
+    global _STDLIB_CACHE_BUILT
+    _STDLIB_CACHE_BUILT = value
+
+
+def _set_third_party_cache_built(value: bool) -> None:
+    """Set the third-party cache built state."""
+    global _THIRD_PARTY_CACHE_BUILT
+    _THIRD_PARTY_CACHE_BUILT = value
+
+
+def _set_background_index_building(value: bool) -> None:
+    """Set the background index building state."""
+    global _BACKGROUND_INDEX_BUILDING
+    _BACKGROUND_INDEX_BUILDING = value

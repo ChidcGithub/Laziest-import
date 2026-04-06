@@ -117,9 +117,9 @@ class LazySymbol:
         obj = self._get_object()
         return str(obj)
     
-    def __class__(self) -> type:
-        obj = self._get_object()
-        return obj.__class__
+    # Note: __class__ cannot be overridden as a method for isinstance/type to work correctly.
+    # Instead, we provide __instancecheck__ and __subclasscheck__ for type checking support.
+    # Users can access the underlying object's class via _get_object().__class__
     
     def __instancecheck__(self, instance: Any) -> bool:
         obj = self._get_object()
