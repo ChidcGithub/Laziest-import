@@ -15,7 +15,7 @@ def _load_version_config() -> Dict[str, Any]:
     version_file = Path(__file__).parent / "version.json"
     if not version_file.exists():
         return {}
-    
+
     try:
         with open(version_file, encoding="utf-8") as f:
             return json.load(f)
@@ -30,10 +30,10 @@ __version__ = _VERSION_CONFIG.get("_current_version", "0.0.3-pre6")
 def get_version_range(target: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Get version range for a specific target (aliases or mappings).
-    
+
     Args:
         target: "aliases" or "mappings"
-        
+
     Returns:
         Tuple of (min_version, max_version)
     """
@@ -54,11 +54,11 @@ def _load_priorities_from_file() -> Dict[str, int]:
     priorities_file = Path(__file__).parent / "mappings" / "priorities.json"
     if not priorities_file.exists():
         return {}
-    
+
     try:
         with open(priorities_file, encoding="utf-8") as f:
             data = json.load(f)
-        
+
         # Flatten the categorized structure
         result: Dict[str, int] = {}
         for key, value in data.items():
@@ -69,6 +69,7 @@ def _load_priorities_from_file() -> Dict[str, int]:
         return result
     except (json.JSONDecodeError, OSError):
         return {}
+
 
 # ============== Initialization State ==============
 _INITIALIZING: bool = False
@@ -108,6 +109,7 @@ def get_init_error() -> Optional[str]:
     """Get initialization error message if any."""
     return _INIT_ERROR
 
+
 # ============== Core Configuration ==============
 _AUTO_SEARCH_ENABLED: bool = True
 
@@ -136,6 +138,7 @@ _FILE_CACHE_ENABLED: bool = True
 @dataclass
 class ImportStats:
     """Import statistics record."""
+
     total_imports: int = 0
     total_time: float = 0.0
     module_times: Dict[str, float] = field(default_factory=dict)
@@ -258,7 +261,7 @@ _TRACKED_PACKAGES: Dict[str, Dict[str, Any]] = {}
 _INCREMENTAL_INDEX_CONFIG: Dict[str, Any] = {
     "enabled": True,
     "check_version": True,  # Check package version changes
-    "check_mtime": False,   # Check file modification time (slower)
+    "check_mtime": False,  # Check file modification time (slower)
     "background_build": True,  # Build index in background on startup
     "background_timeout": 60.0,  # Timeout for background index build
 }
@@ -286,16 +289,33 @@ _BACKGROUND_INDEX_THREAD: Optional[threading.Thread] = None
 
 # Reserved names that shouldn't be proxied
 _RESERVED_NAMES: Set[str] = {
-    '__name__', '__doc__', '__package__', '__loader__', '__spec__',
-    '__path__', '__file__', '__cached__', '__builtins__', '__import__',
-    '__all__', '__version__', '__author__', '__email__', '__license__',
-    '__copyright__', '__credits__', '__maintainer__', '__status__',
+    "__name__",
+    "__doc__",
+    "__package__",
+    "__loader__",
+    "__spec__",
+    "__path__",
+    "__file__",
+    "__cached__",
+    "__builtins__",
+    "__import__",
+    "__all__",
+    "__version__",
+    "__author__",
+    "__email__",
+    "__license__",
+    "__copyright__",
+    "__credits__",
+    "__maintainer__",
+    "__status__",
 }
+
 
 # ============== Dataclasses ==============
 @dataclass
 class SearchResult:
     """Search result for a symbol."""
+
     module_name: str
     symbol_name: str
     symbol_type: str  # 'class', 'function', 'callable'
@@ -307,6 +327,7 @@ class SearchResult:
 @dataclass
 class SymbolMatch:
     """Scored symbol match with confidence and source information."""
+
     module_name: str
     symbol_name: str
     symbol_type: str
@@ -317,10 +338,15 @@ class SymbolMatch:
 
 
 # ============== Helper Functions ==============
+_IMPORT_CONTEXT_LOCK = threading.Lock()
+
+
 def get_importing_modules() -> Set[str]:
     """Get the set of modules currently being imported (thread-local)."""
-    if not hasattr(_IMPORT_CONTEXT, 'importing'):
-        _IMPORT_CONTEXT.importing = set()
+    if not hasattr(_IMPORT_CONTEXT, "importing"):
+        with _IMPORT_CONTEXT_LOCK:
+            if not hasattr(_IMPORT_CONTEXT, "importing"):
+                _IMPORT_CONTEXT.importing = set()
     return _IMPORT_CONTEXT.importing
 
 
@@ -338,38 +364,38 @@ def get_init_lock() -> threading.RLock:
 def _parse_version(version_str: str) -> Tuple[Tuple[int, ...], Optional[str]]:
     """
     Parse a version string into comparable components.
-    
+
     Supports formats like:
     - "0.0.3-pre6" -> ((0, 0, 3), "pre6")
     - "1.2.3" -> ((1, 2, 3), None)
     - "0.0.3" -> ((0, 0, 3), None)
-    
+
     Returns:
         Tuple of (numeric_tuple, prerelease_suffix)
     """
     import re
-    
+
     # Split into main version and prerelease suffix
-    match = re.match(r'^(\d+(?:\.\d+)*)(?:-(.+))?$', version_str.strip())
+    match = re.match(r"^(\d+(?:\.\d+)*)(?:-(.+))?$", version_str.strip())
     if not match:
         return ((0,), None)
-    
+
     numeric_part = match.group(1)
     prerelease = match.group(2)
-    
+
     # Parse numeric components
     try:
-        numeric_tuple = tuple(int(x) for x in numeric_part.split('.'))
+        numeric_tuple = tuple(int(x) for x in numeric_part.split("."))
     except ValueError:
         numeric_tuple = (0,)
-    
+
     return (numeric_tuple, prerelease)
 
 
 def _compare_versions(v1: str, v2: str) -> int:
     """
     Compare two version strings.
-    
+
     Returns:
         -1 if v1 < v2
         0 if v1 == v2
@@ -377,17 +403,17 @@ def _compare_versions(v1: str, v2: str) -> int:
     """
     n1, p1 = _parse_version(v1)
     n2, p2 = _parse_version(v2)
-    
+
     # Compare numeric parts
     max_len = max(len(n1), len(n2))
     n1_padded = n1 + (0,) * (max_len - len(n1))
     n2_padded = n2 + (0,) * (max_len - len(n2))
-    
+
     if n1_padded < n2_padded:
         return -1
     elif n1_padded > n2_padded:
         return 1
-    
+
     # Numeric parts equal, compare prerelease
     # No prerelease > prerelease (e.g., 1.0 > 1.0-alpha)
     if p1 is None and p2 is None:
@@ -396,7 +422,7 @@ def _compare_versions(v1: str, v2: str) -> int:
         return 1  # v1 is release, v2 is prerelease
     if p2 is None:
         return -1  # v1 is prerelease, v2 is release
-    
+
     # Both have prerelease, compare lexicographically
     if p1 < p2:
         return -1
@@ -406,39 +432,39 @@ def _compare_versions(v1: str, v2: str) -> int:
 
 
 def check_version_range(
-    min_version: Optional[str], 
-    max_version: Optional[str], 
+    min_version: Optional[str],
+    max_version: Optional[str],
     current_version: str = __version__,
-    file_path: Optional[str] = None
+    file_path: Optional[str] = None,
 ) -> Tuple[bool, Optional[str]]:
     """
     Check if current version is within the specified range.
-    
+
     Args:
         min_version: Minimum version (inclusive), None means no lower bound
-        max_version: Maximum version (exclusive), None means no upper bound
+        max_version: Maximum version (inclusive), None means no upper bound
         current_version: Current version to check
         file_path: Optional file path for warning message
-        
+
     Returns:
         Tuple of (is_valid, warning_message)
     """
     warnings_list = []
-    
+
     if min_version is not None:
         if _compare_versions(current_version, min_version) < 0:
             msg = f"Version {current_version} is below minimum {min_version}"
             if file_path:
                 msg = f"{file_path}: {msg}"
             warnings_list.append(msg)
-    
+
     if max_version is not None:
-        if _compare_versions(current_version, max_version) >= 0:
-            msg = f"Version {current_version} is at or above maximum {max_version}"
+        if _compare_versions(current_version, max_version) > 0:
+            msg = f"Version {current_version} is above maximum {max_version}"
             if file_path:
                 msg = f"{file_path}: {msg}"
             warnings_list.append(msg)
-    
+
     if warnings_list:
         return (False, "; ".join(warnings_list))
     return (True, None)
@@ -446,6 +472,7 @@ def check_version_range(
 
 # ============== Symbol Index State Setters ==============
 # These functions provide a clean way to modify symbol index state from other modules
+
 
 def _set_symbol_index_built(value: bool) -> None:
     """Set the symbol index built state."""

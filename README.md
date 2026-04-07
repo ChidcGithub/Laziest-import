@@ -85,32 +85,35 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 
 | Feature | Description |
 |---------|-------------|
-| **Modular architecture** | Clean 9-module codebase for maintainability |
+| **Modular architecture** | Clean 10-module codebase for maintainability |
 | **Lazy loading** | Modules import only on first access, reducing startup overhead |
+| **Lazy function loading** | Symbol functions loaded on-demand for faster startup |
+| **Background index build** | Symbol index builds in background thread |
+| **Symbol sharding** | Large packages split into shards for faster access |
 | **Submodule support** | `np.linalg.svd()` chains submodules automatically |
 | **Auto-discovery** | Unregistered names search installed modules automatically |
 | **Typo correction** | Misspelling auto-correction (`nump` → `numpy`, `matplotlip` → `matplotlib`) |
 | **Abbreviation expansion** | 300+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
 | **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
+| **Symbol location** | `lz.which()` finds where symbols are defined |
 | **Auto-install** | Optional: missing modules can be pip-installed automatically |
 | **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
 | **Cache persistence** | Symbol index saved to disk with configurable TTL |
 | **Cache statistics** | Track hits/misses and optimize performance |
 | **Version checking** | Automatic compatibility warnings for aliases/mappings |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **222 tests** | Comprehensive test coverage |
+| **285+ tests** | Comprehensive test coverage |
 
-## What's New in v0.0.3
+## What's New in v0.0.4
 
-- **Modular Architecture**: Refactored from single 5800-line file to 9 clean modules
-- **Version Compatibility**: Centralized version management with `version.json` and range checking
-- **LazyProxy**: New `lazy` object for automatic typo correction
-- **300+ abbreviations**: Expanded library shortcuts in `mappings/abbreviations.json`
-- **Submodule mappings**: `nn` → `torch.nn`, `optim` → `torch.optim`, etc.
-- **Misspelling correction**: 150+ common typos auto-corrected via fuzzy matching
-- **Folder-based config**: Organize aliases in `~/.laziest_import/aliases/A.json`, `B.json`, etc.
-- **JSON-based mappings**: All mappings stored in `mappings/` directory for easy customization
-- **222 tests**: Comprehensive test coverage with pytest
+- **Background Index Building**: Symbol index builds in background thread, no blocking
+- **Lazy-loaded Functions**: Reduced startup time by lazy-loading symbol functions
+- **Symbol Sharding**: Large package symbols stored in shards for faster access
+- **Symbol Location Finder**: `lz.which()` - find where symbols are defined
+- **Interactive Help**: `lz.help()` - comprehensive help system with topics
+- **Jupyter Magics**: `%%lazy`, `%lazyimport`, `%lazylist`, `%lazysearch`
+- **User Config File**: `~/.laziestrc` for persistent configuration
+- **285+ tests**: Comprehensive test coverage
 
 ## Auto-Install
 
@@ -270,6 +273,89 @@ async def main():
     np, pd = modules['numpy'], modules['pandas']
 
 asyncio.run(main())
+```
+
+</details>
+
+<details>
+<summary>Symbol Location Finder</summary>
+
+```python
+import laziest_import as lz
+
+# Find where a symbol is defined
+loc = lz.which('sqrt')
+print(loc)  # numpy.sqrt
+
+# Find in a specific module
+loc = lz.which('DataFrame', 'pandas')
+
+# Find all locations
+locs = lz.which_all('sqrt')
+for loc in locs:
+    print(f"{loc.module_name}.{loc.symbol_name}")
+```
+
+</details>
+
+<details>
+<summary>Interactive Help</summary>
+
+```python
+import laziest_import as lz
+
+# General help
+print(lz.help())
+
+# Specific topics
+print(lz.help('quickstart'))
+print(lz.help('which'))
+print(lz.help('jupyter'))
+```
+
+</details>
+
+<details>
+<summary>Jupyter/IPython Magics</summary>
+
+```python
+# Load the extension
+%load_ext laziest_import
+
+# Import modules lazily in current session
+%lazyimport numpy pandas
+
+# List available modules
+%lazylist
+
+# Search for symbols
+%lazysearch sqrt
+%lazysearch DataFrame
+
+# Cell magic for lazy import
+%%lazy -m numpy
+arr = np.array([1, 2, 3])
+```
+
+</details>
+
+<details>
+<summary>User Configuration</summary>
+
+```python
+import laziest_import as lz
+
+# Create default config file
+lz.create_rc_file()
+
+# Load config
+config = lz.load_rc_config()
+
+# Get specific value
+value = lz.get_rc_value('debug', default=False)
+
+# Config info
+info = lz.get_rc_info()
 ```
 
 </details>
