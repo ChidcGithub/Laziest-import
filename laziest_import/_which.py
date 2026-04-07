@@ -188,9 +188,10 @@ def _find_symbol_live(
     if module_hint:
         priority_modules.append(module_hint)
 
-    # Add common data science modules
+    # Add common data science modules and stdlib
     priority_modules.extend(
         [
+            "math",
             "numpy",
             "pandas",
             "torch",
