@@ -101,11 +101,8 @@ def which(
         if locations:
             return _create_location_from_tuple(symbol_name, locations[0])
 
-    # If not in cache and index is built, try direct import
-    if not _SYMBOL_INDEX_BUILT:
-        return _find_symbol_live(symbol_name, module_hint)
-
-    return None
+    # If not in cache, try live search (even if index is built but cache is empty)
+    return _find_symbol_live(symbol_name, module_hint)
 
 
 def which_all(symbol_name: str) -> List[SymbolLocation]:

@@ -17,7 +17,8 @@ class TestWhichFunction:
         import laziest_import as lz
 
         loc = lz.which("sqrt")
-        assert loc is not None
+        # sqrt may be in math or numpy depending on environment
+        assert loc is not None, "which() should find sqrt in math or numpy"
         assert loc.symbol_name == "sqrt"
 
     def test_which_with_module_hint(self):
