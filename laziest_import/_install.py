@@ -84,10 +84,32 @@ def _install_package_sync(
         return False, f"Installation failed: {e}"
 
 
+def _is_interactive_terminal() -> bool:
+    """Check if we're running in an interactive terminal."""
+    import sys
+    if not sys.stdin.isatty():
+        return False
+    if not sys.stdout.isatty():
+        return False
+    return True
+
+
 def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
-    """Ask user for confirmation before installing a package."""
+    """Ask user for confirmation before installing a package.
+    
+    In non-interactive environments, returns False for safety.
+    """
     if not _AUTO_INSTALL_CONFIG["interactive"]:
         return True
+    
+    # Check if we're in an interactive terminal
+    if not _is_interactive_terminal():
+        if _DEBUG_MODE:
+            logging.debug(
+                f"[laziest-import] Non-interactive environment, "
+                f"auto-declining installation of '{package_name}'"
+            )
+        return False
     
     print(f"\n[laziest-import] Module '{module_name}' is not installed.")
     print(f"  Package to install: {package_name}")
@@ -98,6 +120,14 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
         return response in ('', 'y', 'yes')
     except (EOFError, KeyboardInterrupt):
         print("\nInstallation cancelled.")
+        return False
+    except OSError:
+        # OSError can occur in some non-interactive environments
+        if _DEBUG_MODE:
+            logging.debug(
+                f"[laziest-import] OSError during install confirm, "
+                f"auto-declining installation"
+            )
         return False
 
 

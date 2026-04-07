@@ -34,10 +34,11 @@ from ._proxy import (
     _get_lazy_module,
 )
 
+# Import config module for state access (avoid value copy issues)
+from . import _config as _config_module
+
 # Import config internals needed for __getattr__
 from ._config import (
-    _INITIALIZING,
-    _INITIALIZED,
     _AUTO_SEARCH_ENABLED,
     _ALIAS_MAP,
     _LAZY_MODULES,
@@ -46,6 +47,11 @@ from ._config import (
     _DEBUG_MODE,
     _RESERVED_NAMES,
     get_init_lock,
+    # State helper functions
+    is_initializing,
+    is_initialized,
+    is_init_failed,
+    get_init_error,
 )
 
 # For dynamic export with __all__
@@ -379,11 +385,21 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol]:
     - Module name autocorrection (nump -> numpy)
     - Symbol auto-resolution (DataFrame -> pandas.DataFrame)
     """
-    global _INITIALIZING, _INITIALIZED
+    # Use helper functions to access state (avoids value copy issue)
+    _initializing = is_initializing()
+    _initialized = is_initialized()
+    _failed = is_init_failed()
+    _error = get_init_error()
     
-    if _INITIALIZING and not _INITIALIZED:
+    if _initializing and not _initialized:
         raise AttributeError(
             f"module '{__name__}' is still initializing, cannot access '{name}' yet."
+        )
+    
+    if _failed:
+        raise AttributeError(
+            f"module '{__name__}' failed to initialize: {_error}. "
+            f"Cannot access '{name}'."
         )
     
     if name in _RESERVED_NAMES:
@@ -401,7 +417,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol]:
             return _get_lazy_module(name)
     
     # 3. Try symbol auto-resolution
-    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _INITIALIZED:
+    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
         from ._config import _SYMBOL_PREFERENCES
         symbol_match = _search_symbol_enhanced(name, auto=True)
         if symbol_match:
@@ -421,7 +437,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol]:
             )
     
     # 4. Fall back to interactive symbol search
-    if _SYMBOL_SEARCH_CONFIG["enabled"] and _INITIALIZED:
+    if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
         found_module = _handle_symbol_not_found(name)
         if found_module:
             return _get_lazy_module(name)
@@ -536,15 +552,25 @@ __all__ = sorted(_BASE_EXPORTS)
 
 def _do_initialize() -> None:
     """Perform module initialization."""
-    global _INITIALIZING, _INITIALIZED, _ALIAS_MAP, __all__
+    global _ALIAS_MAP, __all__
     
     lock = get_init_lock()
     
     with lock:
-        if _INITIALIZED:
+        # Use module to access state (avoid value copy issue)
+        if _config_module._INITIALIZED:
             return
         
-        _INITIALIZING = True
+        if _config_module._INIT_FAILED:
+            # Don't retry if previously failed
+            raise RuntimeError(
+                f"laziest-import initialization previously failed: "
+                f"{_config_module._INIT_ERROR}"
+            )
+        
+        _config_module._INITIALIZING = True
+        _config_module._INIT_FAILED = False
+        _config_module._INIT_ERROR = None
         
         try:
             # Load aliases
@@ -555,12 +581,18 @@ def _do_initialize() -> None:
             from ._cache import _init_file_cache
             _init_file_cache()
             
-            _INITIALIZED = True
+            _config_module._INITIALIZED = True
             
             # Update __all__ to include aliases
             __all__ = sorted(set(_BASE_EXPORTS) | set(_ALIAS_MAP.keys()))
+            
+        except Exception as e:
+            # Record failure state
+            _config_module._INIT_FAILED = True
+            _config_module._INIT_ERROR = str(e)
+            raise
         finally:
-            _INITIALIZING = False
+            _config_module._INITIALIZING = False
 
 
 # ============== Easter Egg & Help ==============

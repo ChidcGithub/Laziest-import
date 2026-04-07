@@ -14,7 +14,7 @@ import threading
 
 from ._config import (
     _DEBUG_MODE,
-    _INITIALIZED,
+    is_initialized,
     _SYMBOL_SEARCH_CONFIG,
     _SYMBOL_CACHE,
     _STDLIB_SYMBOL_CACHE,
@@ -248,7 +248,7 @@ def _build_symbol_index(force: bool = False, max_modules: int = 100, timeout: fl
     
     # Skip full build during initialization but allow cache loading
     # Only skip if we're not loading from cache
-    if not _INITIALIZED and not force:
+    if not is_initialized() and not force:
         # Still try to load from cache even during initialization
         pass
     
@@ -702,12 +702,49 @@ def _warn_symbol_conflict(name: str, matches: List[SymbolMatch]) -> None:
     )
 
 
+def _is_interactive_terminal() -> bool:
+    """Check if we're running in an interactive terminal."""
+    import sys
+    # Check if stdin is a tty (interactive terminal)
+    if not sys.stdin.isatty():
+        return False
+    # Check if stdout is a tty
+    if not sys.stdout.isatty():
+        return False
+    # Check if we're in a Jupyter notebook or IPython
+    try:
+        from IPython import get_ipython
+        if get_ipython() is not None:
+            # In IPython/Jupyter, input() may not work properly
+            # but we can still try if it's a terminal
+            return sys.stdin.isatty()
+    except ImportError:
+        pass
+    return True
+
+
 def _interactive_confirm(results: List[SearchResult], symbol_name: str) -> Optional[str]:
-    """Interactively ask user to confirm which module to use."""
+    """Interactively ask user to confirm which module to use.
+    
+    Returns None if:
+    - No results
+    - User cancels
+    - Not in interactive environment and interactive mode is on
+    """
     if not results:
         return None
     
     if not _SYMBOL_SEARCH_CONFIG["interactive"]:
+        return results[0].module_name
+    
+    # Check if we're in an interactive terminal
+    if not _is_interactive_terminal():
+        # Not interactive, auto-select first result with a warning
+        if _DEBUG_MODE:
+            logging.debug(
+                f"[laziest-import] Non-interactive environment, auto-selecting "
+                f"'{results[0].module_name}' for symbol '{symbol_name}'"
+            )
         return results[0].module_name
     
     print(f"\n[laziest-import] Found {len(results)} match(es) for '{symbol_name}':")
@@ -739,13 +776,21 @@ def _interactive_confirm(results: List[SearchResult], symbol_name: str) -> Optio
     except (ValueError, EOFError, KeyboardInterrupt):
         print("\nCancelled.")
         return None
+    except OSError:
+        # OSError can occur in some non-interactive environments
+        if _DEBUG_MODE:
+            logging.debug(
+                f"[laziest-import] OSError during interactive confirm, "
+                f"auto-selecting '{results[0].module_name}'"
+            )
+        return results[0].module_name
 
 
 def _handle_symbol_not_found(name: str) -> Optional[str]:
     """Handle a symbol not found error by searching and prompting user."""
     from ._alias import register_alias
     
-    if not _INITIALIZED:
+    if not is_initialized():
         return None
     
     if name in _CONFIRMED_MAPPINGS:

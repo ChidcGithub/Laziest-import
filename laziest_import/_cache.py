@@ -540,9 +540,9 @@ def _init_file_cache() -> None:
 
 def _start_background_preload(modules: List[str]) -> None:
     """Start background thread to preload modules in parallel."""
-    from ._config import _INITIALIZED
+    from ._config import is_initialized
     
-    if not _INITIALIZED:
+    if not is_initialized():
         return
     
     if not modules:
@@ -569,7 +569,7 @@ def _start_background_preload(modules: List[str]) -> None:
     
     def _preload_parallel():
         """Parallel preload worker."""
-        if not _INITIALIZED:
+        if not is_initialized():
             return
         
         max_workers = min(4, len(modules_to_load))

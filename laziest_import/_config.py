@@ -73,8 +73,40 @@ def _load_priorities_from_file() -> Dict[str, int]:
 # ============== Initialization State ==============
 _INITIALIZING: bool = False
 _INITIALIZED: bool = False
+_INIT_FAILED: bool = False
+_INIT_ERROR: Optional[str] = None
 _INIT_LOCK: Optional[threading.RLock] = None
 _INIT_LOCK_CREATION_LOCK: threading.Lock = threading.Lock()
+
+
+def get_init_state() -> Dict[str, Any]:
+    """Get current initialization state (thread-safe read)."""
+    return {
+        "initializing": _INITIALIZING,
+        "initialized": _INITIALIZED,
+        "failed": _INIT_FAILED,
+        "error": _INIT_ERROR,
+    }
+
+
+def is_initializing() -> bool:
+    """Check if currently initializing."""
+    return _INITIALIZING
+
+
+def is_initialized() -> bool:
+    """Check if initialization completed successfully."""
+    return _INITIALIZED
+
+
+def is_init_failed() -> bool:
+    """Check if initialization failed."""
+    return _INIT_FAILED
+
+
+def get_init_error() -> Optional[str]:
+    """Get initialization error message if any."""
+    return _INIT_ERROR
 
 # ============== Core Configuration ==============
 _AUTO_SEARCH_ENABLED: bool = True

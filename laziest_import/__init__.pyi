@@ -8,6 +8,24 @@ from pathlib import Path
 
 __version__: str
 
+# ============== Initialization State ==============
+
+def is_initializing() -> bool:
+    """Check if currently initializing."""
+    ...
+
+def is_initialized() -> bool:
+    """Check if initialization completed successfully."""
+    ...
+
+def is_init_failed() -> bool:
+    """Check if initialization failed."""
+    ...
+
+def get_init_error() -> Optional[str]:
+    """Get initialization error message if any."""
+    ...
+
 # ============== LazyModule Classes ==============
 
 class LazyModule:
@@ -32,9 +50,11 @@ class LazySymbol:
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
-    def __class__(self) -> type: ...
     def __enter__(self) -> Any: ...
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
+    def get_underlying_class(self) -> type:
+        """Get the underlying class for isinstance checks."""
+        ...
 
 # ============== Alias Management ==============
 

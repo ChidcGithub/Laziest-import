@@ -117,17 +117,19 @@ class LazySymbol:
         obj = self._get_object()
         return str(obj)
     
-    # Note: __class__ cannot be overridden as a method for isinstance/type to work correctly.
-    # Instead, we provide __instancecheck__ and __subclasscheck__ for type checking support.
-    # Users can access the underlying object's class via _get_object().__class__
-    
-    def __instancecheck__(self, instance: Any) -> bool:
+    def get_underlying_class(self) -> type:
+        """Get the underlying class object.
+        
+        Use this for isinstance checks:
+            lazy_class = LazySymbol('DataFrame', 'pandas')
+            df = lazy_class()
+            assert isinstance(df, lazy_class.get_underlying_class())
+        
+        Note: Direct isinstance(obj, lazy_class) won't work because
+        LazySymbol is not a metaclass. Use get_underlying_class() instead.
+        """
         obj = self._get_object()
-        return isinstance(instance, obj)
-    
-    def __subclasscheck__(self, subclass: type) -> bool:
-        obj = self._get_object()
-        return issubclass(subclass, obj)
+        return obj if isinstance(obj, type) else type(obj)
     
     def __origin__(self) -> Any:
         obj = self._get_object()
@@ -256,7 +258,7 @@ class LazyModule:
             start_time = time.perf_counter()
             
             def _do_import(name: str) -> Any:
-                """Internal import function with retry support"""
+                """Internal import function with retry support."""
                 if not _RETRY_CONFIG["enabled"]:
                     return importlib.import_module(name)
                 
@@ -267,12 +269,22 @@ class LazyModule:
                 if retry_modules and name.split('.')[0] not in retry_modules:
                     return importlib.import_module(name)
                 
+                # Check if we're in an async context to avoid blocking
                 in_async_context = False
                 try:
                     loop = asyncio.get_running_loop()
                     in_async_context = loop is not None
                 except RuntimeError:
                     pass
+                
+                # In async context, disable retry with sleep to avoid blocking event loop
+                if in_async_context:
+                    if _DEBUG_MODE:
+                        logging.debug(
+                            f"[laziest-import] In async context, disabling retry for '{name}' "
+                            f"(sleep would block event loop)"
+                        )
+                    return importlib.import_module(name)
                 
                 last_error = None
                 for attempt in range(max_retries + 1):
@@ -283,8 +295,7 @@ class LazyModule:
                         if attempt < max_retries:
                             if _DEBUG_MODE:
                                 logging.info(f"Retry {attempt + 1}/{max_retries} for {name}")
-                            if not in_async_context:
-                                time.sleep(retry_delay)
+                            time.sleep(retry_delay)
                 raise last_error
             
             try:
@@ -395,10 +406,11 @@ class LazyModule:
         
         if isinstance(attr, ModuleType):
             submodule_cache = object.__getattribute__(self, '_submodule_cache')
-            if name not in submodule_cache:
-                full_name = f"{object.__getattribute__(self, '_module_name')}.{name}"
-                submodule_cache[name] = LazySubmodule(full_name, self, name)
-            return submodule_cache[name]
+            # Use full_name as cache key to avoid conflicts between different parent modules
+            full_name = f"{object.__getattribute__(self, '_module_name')}.{name}"
+            if full_name not in submodule_cache:
+                submodule_cache[full_name] = LazySubmodule(full_name, self, name)
+            return submodule_cache[full_name]
         
         return attr
     
@@ -490,10 +502,11 @@ class LazySubmodule:
         
         if isinstance(attr, ModuleType):
             submodule_cache = object.__getattribute__(self, '_submodule_cache')
-            if name not in submodule_cache:
-                full_name = f"{object.__getattribute__(self, '_full_name')}.{name}"
-                submodule_cache[name] = LazySubmodule(full_name, self, name)
-            return submodule_cache[name]
+            # Use full_name as cache key to avoid conflicts
+            full_name = f"{object.__getattribute__(self, '_full_name')}.{name}"
+            if full_name not in submodule_cache:
+                submodule_cache[full_name] = LazySubmodule(full_name, self, name)
+            return submodule_cache[full_name]
         
         return attr
     

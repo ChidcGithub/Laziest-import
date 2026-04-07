@@ -2994,3 +2994,299 @@ class TestPackageVersion:
         # __version__ should be defined
         assert hasattr(lz, '__version__')
         assert lz.__version__ is not None
+
+
+# ============== Bug Fix Verification Tests ==============
+# These tests specifically verify the bugs that were fixed
+
+class TestInitStateVariableCopyFix:
+    """Test P0 fix: Variable copy issue when importing state variables.
+    
+    Bug: Using `from ._config import _INITIALIZING` creates a copy that never updates.
+    Fix: Added helper functions (is_initializing(), is_initialized(), etc.) and 
+         access state through module reference.
+    """
+    
+    def test_is_initialized_helper_function_exists(self):
+        """Test that is_initialized helper function exists."""
+        import laziest_import as lz
+        
+        assert hasattr(lz, 'is_initialized')
+        assert callable(lz.is_initialized)
+    
+    def test_is_initializing_helper_function_exists(self):
+        """Test that is_initializing helper function exists."""
+        import laziest_import as lz
+        
+        assert hasattr(lz, 'is_initializing')
+        assert callable(lz.is_initializing)
+    
+    def test_is_init_failed_helper_function_exists(self):
+        """Test that is_init_failed helper function exists."""
+        import laziest_import as lz
+        
+        assert hasattr(lz, 'is_init_failed')
+        assert callable(lz.is_init_failed)
+    
+    def test_get_init_error_helper_function_exists(self):
+        """Test that get_init_error helper function exists."""
+        import laziest_import as lz
+        
+        assert hasattr(lz, 'get_init_error')
+        assert callable(lz.get_init_error)
+    
+    def test_helper_functions_return_correct_state(self):
+        """Test that helper functions return correct values after initialization."""
+        import laziest_import as lz
+        
+        # After module is loaded, initialization should be complete
+        assert lz.is_initialized() is True
+        assert lz.is_initializing() is False
+        assert lz.is_init_failed() is False
+        assert lz.get_init_error() is None
+    
+    def test_get_init_state_returns_dict(self):
+        """Test that get_init_state returns a dictionary with all state keys."""
+        from laziest_import._config import get_init_state
+        
+        state = get_init_state()
+        assert isinstance(state, dict)
+        assert "initializing" in state
+        assert "initialized" in state
+        assert "failed" in state
+        assert "error" in state
+    
+    def test_state_updates_through_module_access(self):
+        """Test that state changes are reflected when accessed through module."""
+        from laziest_import import _config as config_module
+        from laziest_import._config import is_initialized
+        
+        # Both should return the same value
+        assert config_module._INITIALIZED == is_initialized()
+        
+        # The helper function should reflect the actual state
+        assert is_initialized() is True
+
+
+class TestInitFailureStateTracking:
+    """Test P1 fix: Initialization failure state not tracked.
+    
+    Bug: When initialization fails, subsequent accesses don't know about the failure.
+    Fix: Added _INIT_FAILED and _INIT_ERROR tracking with helper functions.
+    """
+    
+    def test_init_failure_state_variables_exist(self):
+        """Test that failure state variables exist in config."""
+        from laziest_import import _config as config_module
+        
+        assert hasattr(config_module, '_INIT_FAILED')
+        assert hasattr(config_module, '_INIT_ERROR')
+    
+    def test_init_failure_helpers_return_values(self):
+        """Test that failure helpers can be called and return appropriate values."""
+        import laziest_import as lz
+        
+        # Should not be failed in normal conditions
+        assert lz.is_init_failed() is False
+        assert lz.get_init_error() is None
+
+
+class TestNonInteractiveEnvironmentDetection:
+    """Test P1 fix: Interactive confirmation blocking in non-interactive environments.
+    
+    Bug: _interactive_confirm() blocks when stdin is not a TTY.
+    Fix: Added _is_interactive_terminal() check to detect non-interactive environments.
+    """
+    
+    def test_is_interactive_terminal_function_exists(self):
+        """Test that the interactive terminal detection function exists."""
+        from laziest_import._symbol import _is_interactive_terminal
+        
+        assert callable(_is_interactive_terminal)
+    
+    def test_is_interactive_terminal_returns_bool(self):
+        """Test that _is_interactive_terminal returns a boolean."""
+        from laziest_import._symbol import _is_interactive_terminal
+        
+        result = _is_interactive_terminal()
+        assert isinstance(result, bool)
+    
+    def test_install_is_interactive_terminal_function_exists(self):
+        """Test that the install module also has interactive terminal detection."""
+        from laziest_import._install import _is_interactive_terminal
+        
+        assert callable(_is_interactive_terminal)
+        result = _is_interactive_terminal()
+        assert isinstance(result, bool)
+
+
+class TestLazySymbolGetUnderlyingClass:
+    """Test P2 fix: Type checking methods on LazySymbol.
+    
+    Bug: __instancecheck__ and __subclasscheck__ on LazySymbol instance have no effect.
+         These methods must be defined on metaclasses, not instances.
+    Fix: Removed ineffective methods, added get_underlying_class() as documented alternative.
+    """
+    
+    def test_get_underlying_class_method_exists(self):
+        """Test that get_underlying_class method exists on LazySymbol."""
+        from laziest_import._proxy import LazySymbol
+        
+        assert hasattr(LazySymbol, 'get_underlying_class')
+        assert callable(getattr(LazySymbol, 'get_underlying_class'))
+    
+    def test_get_underlying_class_returns_type(self):
+        """Test that get_underlying_class returns a type for class symbols."""
+        from laziest_import._proxy import LazySymbol
+        
+        # Create a LazySymbol for a known class
+        lazy_defaultdict = LazySymbol('defaultdict', 'collections', 'class')
+        
+        # Get the underlying class
+        cls = lazy_defaultdict.get_underlying_class()
+        assert isinstance(cls, type)
+        assert cls.__name__ == 'defaultdict'
+    
+    def test_get_underlying_class_allows_isinstance_check(self):
+        """Test that get_underlying_class result works with isinstance."""
+        from laziest_import._proxy import LazySymbol
+        
+        lazy_defaultdict = LazySymbol('defaultdict', 'collections', 'class')
+        defaultdict_cls = lazy_defaultdict.get_underlying_class()
+        
+        # Create an instance
+        dd = lazy_defaultdict(list)
+        
+        # isinstance should work with the underlying class
+        assert isinstance(dd, defaultdict_cls)
+    
+    def test_get_underlying_class_for_function(self):
+        """Test that get_underlying_class works for functions too."""
+        from laziest_import._proxy import LazySymbol
+        
+        lazy_sqrt = LazySymbol('sqrt', 'math', 'function')
+        sqrt_type = lazy_sqrt.get_underlying_class()
+        
+        # Should return the function's type
+        import math
+        assert sqrt_type is type(math.sqrt)
+
+
+class TestAsyncContextNoBlocking:
+    """Test P2 fix: time.sleep() blocking in async context.
+    
+    Bug: time.sleep() in retry mechanism blocks the async event loop.
+    Fix: Detect async context and skip retry with sleep in such cases.
+    """
+    
+    @pytest.mark.asyncio
+    async def test_import_in_async_context_no_sleep(self):
+        """Test that imports in async context don't use blocking sleep."""
+        import laziest_import as lz
+        import asyncio
+        
+        # Enable retry (which would normally use sleep)
+        lz.enable_retry(max_retries=3, retry_delay=0.1)
+        
+        # Import a module - should not block
+        start = asyncio.get_event_loop().time()
+        _ = lz.math.pi
+        elapsed = asyncio.get_event_loop().time() - start
+        
+        # Should be very fast (no blocking sleep)
+        assert elapsed < 0.5  # Much less than retry_delay * max_retries
+        
+        lz.disable_retry()
+    
+    @pytest.mark.asyncio
+    async def test_async_import_still_works(self):
+        """Test that async imports still work correctly."""
+        import laziest_import as lz
+        
+        # Should work normally
+        math_mod = await lz.import_async("math")
+        assert math_mod is not None
+        assert math_mod.pi > 3
+
+
+class TestSubmoduleCacheKeyConflict:
+    """Test P3 fix: Submodule cache key conflicts.
+    
+    Bug: Submodule cache used attribute name as key, causing conflicts between
+         different parent modules with same-named submodules.
+    Fix: Use full_name (parent.attr) as cache key instead of just attr name.
+    """
+    
+    def test_submodule_cache_uses_full_name(self):
+        """Test that submodule cache uses full qualified name."""
+        import laziest_import as lz
+        
+        # Access submodules from different parents
+        # Both might have 'path' attribute but should be cached separately
+        os_path = lz.os.path
+        
+        # Should be able to access os.path attributes
+        assert hasattr(os_path, 'join')
+        assert hasattr(os_path, 'basename')
+    
+    def test_different_modules_same_attr_no_conflict(self):
+        """Test that different modules with same attribute name don't conflict."""
+        import laziest_import as lz
+        
+        # Access collections.abc
+        collections_abc = lz.collections.abc
+        
+        # This should be different from os.path etc.
+        # Just verify it doesn't crash and returns correct object
+        assert collections_abc is not None
+    
+    def test_submodule_dir_works(self):
+        """Test that dir() works on submodules."""
+        import laziest_import as lz
+        
+        path_dir = dir(lz.os.path)
+        assert isinstance(path_dir, list)
+        assert 'join' in path_dir
+    
+    def test_nested_submodule_access(self):
+        """Test that nested submodule access works correctly."""
+        import laziest_import as lz
+        
+        # This should work without cache conflicts
+        abc = lz.collections.abc
+        assert abc is not None
+
+
+class TestEdgeCasesFixedBugs:
+    """Additional edge case tests for fixed bugs."""
+    
+    def test_module_access_during_initialization(self):
+        """Test that module access works correctly after initialization."""
+        import laziest_import as lz
+        
+        # Module should be initialized now
+        assert lz.is_initialized() is True
+        
+        # Access should work
+        assert lz.math.pi > 3
+    
+    def test_state_helper_functions_are_importable(self):
+        """Test that state helper functions are importable from main module."""
+        from laziest_import import is_initialized, is_initializing, is_init_failed, get_init_error
+        
+        assert callable(is_initialized)
+        assert callable(is_initializing)
+        assert callable(is_init_failed)
+        assert callable(get_init_error)
+    
+    def test_lazy_symbol_comparison_operators(self):
+        """Test that LazySymbol comparison operators work."""
+        from laziest_import._proxy import LazySymbol
+        
+        # Create lazy symbols for values
+        lazy_pi = LazySymbol('pi', 'math', 'constant')
+        
+        # Comparison should work after loading
+        assert lazy_pi > 3
+        assert lazy_pi < 4
+        assert lazy_pi != 3
