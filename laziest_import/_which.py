@@ -67,7 +67,7 @@ def which(
     Find where a symbol is defined, similar to Unix `which` command.
 
     Args:
-        symbol_name: Name of the symbol to find
+        symbol_name: Name of the symbol to find (can be "module.symbol" or just "symbol")
         module_hint: Optional module name to search first
 
     Returns:
@@ -76,24 +76,40 @@ def which(
     Example:
         >>> which("array")           # Find numpy array
         >>> which("DataFrame", "pandas")  # Find specifically in pandas
+        >>> which("math.sin")        # Find sin in math module
     """
+    # Parse dotted paths like "math.sin" or "os.path.join"
+    actual_module_hint = module_hint
+    if module_hint is None and "." in symbol_name:
+        parts = symbol_name.rsplit(".", 1)
+        if len(parts) == 2:
+            potential_module, actual_symbol = parts
+            # Verify the potential module is importable
+            try:
+                importlib.import_module(potential_module)
+                actual_module_hint = potential_module
+                symbol_name = actual_symbol
+            except ImportError:
+                pass
+
     # First check if symbol is in cache
     if symbol_name in _SYMBOL_CACHE:
         locations = _SYMBOL_CACHE[symbol_name]
 
-        # If module_hint provided, try to find in that module first
-        if module_hint:
+        # If module_hint provided (or parsed from dotted path), try to find in that module first
+        effective_hint = actual_module_hint
+        if effective_hint:
             for loc in locations:
-                if loc[0].startswith(module_hint):
+                if loc[0].startswith(effective_hint):
                     return _create_location_from_tuple(symbol_name, loc)
 
             # Also try submodule match
             for loc in locations:
-                if module_hint.split(".")[0] in loc[0].split(".")[0]:
+                if effective_hint.split(".")[0] in loc[0].split(".")[0]:
                     return _create_location_from_tuple(symbol_name, loc)
 
             # Module hint didn't match in cache, try live search
-            live_result = _find_symbol_live(symbol_name, module_hint)
+            live_result = _find_symbol_live(symbol_name, effective_hint)
             if live_result:
                 return live_result
 
@@ -102,7 +118,7 @@ def which(
             return _create_location_from_tuple(symbol_name, locations[0])
 
     # If not in cache, try live search (even if index is built but cache is empty)
-    return _find_symbol_live(symbol_name, module_hint)
+    return _find_symbol_live(symbol_name, actual_module_hint)
 
 
 def which_all(symbol_name: str) -> List[SymbolLocation]:
@@ -182,11 +198,24 @@ def _find_symbol_live(
     symbol_name: str, module_hint: Optional[str]
 ) -> Optional[SymbolLocation]:
     """Find symbol by trying to import modules live."""
+    # Parse dotted paths like "math.sin" or "os.path.join"
+    actual_module_hint = module_hint
+    if module_hint is None and "." in symbol_name:
+        parts = symbol_name.rsplit(".", 1)
+        if len(parts) == 2:
+            potential_module, actual_symbol = parts
+            try:
+                importlib.import_module(potential_module)
+                actual_module_hint = potential_module
+                symbol_name = actual_symbol
+            except ImportError:
+                pass
+
     # Priority modules to search
     priority_modules = []
 
-    if module_hint:
-        priority_modules.append(module_hint)
+    if actual_module_hint:
+        priority_modules.append(actual_module_hint)
 
     # Add common data science modules and stdlib
     priority_modules.extend(

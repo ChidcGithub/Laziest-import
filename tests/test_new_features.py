@@ -90,6 +90,20 @@ class TestWhichFunction:
         loc = lz.which("")
         assert loc is None or hasattr(loc, "symbol_name")
 
+    def test_which_dotted_path(self):
+        """Test which() with dotted paths like 'math.sin'."""
+        import laziest_import as lz
+
+        loc = lz.which("math.sin")
+        assert loc is not None
+        assert loc.symbol_name == "sin"
+        assert "math" in loc.module_name
+
+        loc = lz.which("os.path.join")
+        assert loc is not None
+        assert loc.symbol_name == "join"
+        assert "os.path" in loc.module_name
+
 
 class TestHelpFunction:
     """Test the help() function."""
