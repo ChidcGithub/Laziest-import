@@ -1,7 +1,7 @@
 {
     "_comment": "Version compatibility configuration for laziest-import",
-    "_current_version": "0.0.4-pre1",
-    "_cache_version": "0.0.4-pre1",
+    "_current_version": "0.0.4-pre2",
+    "_cache_version": "0.0.4-pre2",
     "aliases": {
         "_min_version": "0.0.3",
         "_max_version": "0.0.5"
