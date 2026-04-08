@@ -503,6 +503,69 @@ UserWarning: [laziest-import] aliases: Version 0.0.4 is at or above maximum 0.0.
 Some alias features may not work correctly.
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+**Q: Module not found (AttributeError)**
+```
+AttributeError: module 'laziest_import' has no attribute 'mymodule'
+```
+Solution: The module is not registered. Use `lz.enable_auto_search()` to enable auto-discovery, or register it manually:
+```python
+lz.register_alias('mymodule', 'mypackage.mymodule')
+```
+
+**Q: Slow first import**
+The symbol index may be building. Check status with:
+```python
+lz.is_index_building()  # True if building
+lz.wait_for_index(30)  # Wait up to 30 seconds
+```
+Enable background build to avoid blocking:
+```python
+lz.enable_background_build()
+```
+
+**Q: Typo correction not working**
+Ensure the module is in the alias list:
+```python
+lz.register_alias('nump', 'numpy')  # Add misspelling
+arr = lz.nump.array([1, 2, 3])  # Now works
+```
+
+**Q: Symbol conflicts (same name in multiple modules)**
+Use module hints or preferences:
+```python
+lz.set_symbol_preference('DataFrame', 'pandas')  # Prefer pandas
+result = lz.DataFrame  # Gets pandas.DataFrame
+```
+
+### Debug Mode
+
+Enable detailed logging:
+```python
+lz.enable_debug_mode()
+import laziest_import as lz
+arr = lz.np.array([1, 2, 3])  # See import details in logs
+```
+
+### Cache Issues
+
+Clear caches if experiencing stale data:
+```python
+lz.clear_cache()       # Clear memory cache
+lz.clear_file_cache()  # Clear disk cache
+lz.rebuild_symbol_index()  # Rebuild symbol index
+```
+
+### Performance Tips
+
+1. **First run**: ~2s to build index
+2. **Cached run**: ~0.003s (700x faster!)
+3. Use `lz.enable_background_build()` to avoid blocking on first import
+4. For CI/CD, set `LAZY_BG_BUILD=1` to pre-build cache
+
 ## How It Works
 
 1. **Proxy objects**: Each alias maps to a `LazyModule` proxy

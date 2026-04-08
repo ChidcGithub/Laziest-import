@@ -594,5 +594,73 @@ class TestLazyFunctions:
         assert callable(search_func)
 
 
+class TestModuleIntrospection:
+    """Test module introspection functions."""
+
+    def test_list_module_symbols_basic(self):
+        """Test listing module symbols."""
+        import laziest_import as lz
+
+        symbols = lz.list_module_symbols("math")
+        assert isinstance(symbols, list)
+        assert len(symbols) > 0
+        assert "sin" in symbols
+
+    def test_list_module_symbols_with_filter(self):
+        """Test listing symbols with type filter."""
+        import laziest_import as lz
+
+        funcs = lz.list_module_symbols("math", filter_types={"function"})
+        assert all(isinstance(s, str) for s in funcs)
+
+    def test_list_module_symbols_exclude_private(self):
+        """Test excluding private symbols."""
+        import laziest_import as lz
+
+        symbols = lz.list_module_symbols("math", include_private=False)
+        assert all(not s.startswith("_") for s in symbols)
+
+    def test_get_module_info(self):
+        """Test getting module info."""
+        import laziest_import as lz
+
+        info = lz.get_module_info("json")
+        assert isinstance(info, dict)
+        assert "name" in info
+        assert info["name"] == "json"
+        assert info["is_package"] is True
+
+    def test_search_in_module(self):
+        """Test searching symbols in module."""
+        import laziest_import as lz
+
+        results = lz.search_in_module("math", "sin")
+        assert isinstance(results, list)
+        assert "sin" in results
+
+
+class TestBackgroundTimeout:
+    """Test background timeout configuration."""
+
+    def test_get_background_timeout(self):
+        """Test getting background timeout."""
+        import laziest_import as lz
+
+        timeout = lz.get_background_timeout()
+        assert isinstance(timeout, float)
+        assert timeout > 0
+
+    def test_set_background_timeout(self):
+        """Test setting background timeout."""
+        import laziest_import as lz
+
+        original = lz.get_background_timeout()
+        lz.set_background_timeout(120.0)
+        assert lz.get_background_timeout() == 120.0
+        lz.set_background_timeout(0)  # No timeout
+        assert lz.get_background_timeout() == 0
+        lz.set_background_timeout(original)  # Restore
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -126,6 +126,7 @@ def rebuild_module_cache() -> None:
 
 class SearchResult:
     """Search result for a symbol."""
+
     module_name: str
     symbol_name: str
     symbol_type: str
@@ -135,6 +136,7 @@ class SearchResult:
 
 class SymbolMatch:
     """Scored symbol match with confidence and source information."""
+
     module_name: str
     symbol_name: str
     symbol_type: str
@@ -148,7 +150,7 @@ def enable_symbol_search(
     exact_params: bool = False,
     max_results: int = 5,
     search_depth: int = 1,
-    skip_stdlib: bool = False
+    skip_stdlib: bool = False,
 ) -> None:
     """Enable symbol search functionality."""
     ...
@@ -165,7 +167,7 @@ def search_symbol(
     name: str,
     symbol_type: Optional[str] = None,
     signature: Optional[str] = None,
-    max_results: Optional[int] = None
+    max_results: Optional[int] = None,
 ) -> List[SearchResult]:
     """Search for a symbol (class/function) by name across installed packages."""
     ...
@@ -216,7 +218,7 @@ def enable_auto_symbol_resolution(
     auto: bool = True,
     threshold: float = 0.7,
     warn_on_conflict: bool = True,
-    context_aware: bool = True
+    context_aware: bool = True,
 ) -> None:
     """Configure automatic symbol resolution behavior."""
     ...
@@ -247,7 +249,9 @@ def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List
     """Validate alias entries."""
     ...
 
-def validate_aliases_importable(aliases: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, Any]]:
+def validate_aliases_importable(
+    aliases: Optional[Dict[str, str]] = None,
+) -> Dict[str, Dict[str, Any]]:
     """Validate that aliases can actually be imported."""
     ...
 
@@ -311,8 +315,9 @@ async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
 
 # ============== Retry Configuration ==============
 
-def enable_retry(max_retries: int = 3, retry_delay: float = 0.5, 
-                 modules: Optional[Set[str]] = None) -> None:
+def enable_retry(
+    max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[Set[str]] = None
+) -> None:
     """Enable automatic retry for module imports."""
     ...
 
@@ -369,7 +374,7 @@ def enable_auto_install(
     index: Optional[str] = None,
     extra_args: Optional[List[str]] = None,
     prefer_uv: bool = False,
-    silent: bool = False
+    silent: bool = False,
 ) -> None:
     """Enable automatic installation of missing packages."""
     ...
@@ -386,7 +391,7 @@ def install_package(
     package_name: str,
     index: Optional[str] = None,
     extra_args: Optional[List[str]] = None,
-    interactive: Optional[bool] = None
+    interactive: Optional[bool] = None,
 ) -> bool:
     """Install a package manually."""
     ...
@@ -443,7 +448,7 @@ def get_preheat_config() -> Dict[str, Any]:
 
 def easter_egg(name: str = "default") -> str:
     """Get a fun easter egg message!
-    
+
     Args:
         name: The easter egg name. Available options:
             - "default": A random fun fact about lazy imports
@@ -452,7 +457,7 @@ def easter_egg(name: str = "default") -> str:
             - "tip": A lazy import tip
             - "secret": A secret message (shhh!)
             - "thanks": Special thanks
-    
+
     Returns:
         A fun message string.
     """
@@ -460,7 +465,7 @@ def easter_egg(name: str = "default") -> str:
 
 def help(topic: Optional[str] = None) -> str:
     """Get help on laziest-import topics.
-    
+
     Args:
         topic: Optional topic to get help on. Available topics:
             - None: General overview
@@ -473,10 +478,104 @@ def help(topic: Optional[str] = None) -> str:
             - "async": Async imports
             - "hooks": Import hooks
             - "api": Full API reference
-    
+
     Returns:
         Help text for the requested topic.
     """
+    ...
+
+# ============== Module Introspection ==============
+
+def list_module_symbols(
+    module_name: str,
+    include_private: bool = False,
+    include_submodules: bool = True,
+    filter_types: Optional[Set[str]] = None,
+) -> List[str]:
+    """List symbols in a module without fully importing it."""
+    ...
+
+def get_module_info(module_name: str) -> Dict[str, Any]:
+    """Get information about a module."""
+    ...
+
+def search_in_module(module_name: str, pattern: str) -> List[str]:
+    """Search for symbols matching a pattern in a module."""
+    ...
+
+# ============== Symbol Location ==============
+
+class SymbolLocation:
+    """Represents a symbol's definition location."""
+
+    module_name: str
+    symbol_name: str
+    symbol_type: str
+    file_path: Optional[str]
+    line_number: Optional[int]
+    doc: Optional[str]
+    signature: Optional[str]
+
+    def __init__(
+        self,
+        module_name: str,
+        symbol_name: str,
+        symbol_type: str,
+        file_path: Optional[str] = None,
+        line_number: Optional[int] = None,
+        doc: Optional[str] = None,
+        signature: Optional[str] = None,
+    ): ...
+    def __repr__(self) -> str: ...
+    def __str__(self) -> str: ...
+    def to_dict(self) -> Dict[str, Any]: ...
+
+def which(
+    symbol_name: str, module_hint: Optional[str] = None
+) -> Optional[SymbolLocation]:
+    """Find where a symbol is defined."""
+    ...
+
+def which_all(symbol_name: str) -> List[SymbolLocation]:
+    """Find all locations where a symbol is defined."""
+    ...
+
+# ============== Background Index ==============
+
+def start_background_index_build(
+    callback: Optional[Callable[[bool, Optional[str]], None]] = None,
+) -> None:
+    """Start building the symbol index in a background thread."""
+    ...
+
+def is_index_building() -> bool:
+    """Check if background index build is in progress."""
+    ...
+
+def wait_for_index(timeout: Optional[float] = None) -> bool:
+    """Wait for background index build to complete."""
+    ...
+
+# ============== RC Config ==============
+
+def load_rc_config() -> Dict[str, Any]:
+    """Load configuration from .laziestrc file."""
+    ...
+
+def get_rc_value(key: str, default: Any = None) -> Any:
+    """Get a value from RC config."""
+    ...
+
+def create_rc_file(path: Optional[str] = None, template: bool = True) -> str:
+    """Create a new .laziestrc file."""
+    ...
+
+def get_rc_info() -> Dict[str, Any]:
+    """Get information about RC config files."""
+    ...
+
+def reload_rc_config() -> None:
+    """Reload RC config from file."""
     ...
 
 # ============== Module-level attributes ==============

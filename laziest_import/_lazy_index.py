@@ -10,6 +10,9 @@ from typing import Optional, Callable
 from ._config import _DEBUG_MODE, _SYMBOL_INDEX_BUILT, _INCREMENTAL_INDEX_CONFIG
 
 
+_BACKGROUND_TIMEOUT: float = 60.0
+
+
 class BackgroundIndexBuilder:
     """Background thread for building symbol index."""
 
@@ -133,12 +136,19 @@ def get_background_builder() -> BackgroundIndexBuilder:
 
 def start_background_index_build(
     progress_callback: Optional[Callable[[str, float], None]] = None,
+    timeout: Optional[float] = None,
 ) -> None:
-    """Start background index building with default settings."""
+    """Start background index building with default settings.
+
+    Args:
+        progress_callback: Optional callback(completed: bool, error: str)
+        timeout: Optional timeout override (uses set value if not specified)
+    """
     builder = get_background_builder()
+    effective_timeout = timeout if timeout is not None else _BACKGROUND_TIMEOUT
     builder.start(
         _build_index_background,
-        timeout=_INCREMENTAL_INDEX_CONFIG.get("background_timeout", 60.0),
+        timeout=effective_timeout,
         progress_callback=progress_callback,
     )
 
@@ -153,3 +163,23 @@ def wait_for_index(timeout: Optional[float] = None) -> bool:
     """Wait for background index build to complete."""
     builder = get_background_builder()
     return builder.wait_for_completion(timeout=timeout)
+
+
+def set_background_timeout(timeout: float) -> None:
+    """Set timeout for background index building.
+
+    Args:
+        timeout: Timeout in seconds (default: 60.0)
+                 Set to 0 to disable timeout (wait indefinitely)
+
+    Example:
+        >>> set_background_timeout(120.0)  # 2 minute timeout
+        >>> set_background_timeout(0)     # No timeout
+    """
+    global _BACKGROUND_TIMEOUT
+    _BACKGROUND_TIMEOUT = max(0.0, timeout)
+
+
+def get_background_timeout() -> float:
+    """Get current background timeout setting."""
+    return _BACKGROUND_TIMEOUT

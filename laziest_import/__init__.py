@@ -489,11 +489,18 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         _SYMBOL_FUNCTIONS["help"] = help_func
         return help_func
 
-    # 4. Check for new module functions
-    if name in ("start_background_index_build", "is_index_building", "wait_for_index"):
-        from . import _lazy_index
+    # 4. Check for background index functions
+    if name in (
+        "start_background_index_build",
+        "is_index_building",
+        "wait_for_index",
+        "set_background_timeout",
+        "get_background_timeout",
+    ):
+        import importlib
 
-        _SYMBOL_FUNCTIONS[name] = getattr(_lazy_index, name)
+        _lazy_index_mod = importlib.import_module("laziest_import._lazy_index")
+        _SYMBOL_FUNCTIONS[name] = getattr(_lazy_index_mod, name)
         return _SYMBOL_FUNCTIONS[name]
 
     # 5. Check for RC config functions
@@ -504,14 +511,21 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         "get_rc_info",
         "reload_rc_config",
     ):
-        # Use importlib to avoid lazy module system
         import importlib
 
         _rcconfig_mod = importlib.import_module("laziest_import._rcconfig")
         _SYMBOL_FUNCTIONS[name] = getattr(_rcconfig_mod, name)
         return _SYMBOL_FUNCTIONS[name]
 
-    # 6. Check for which function
+    # 6. Check for introspect functions
+    if name in ("list_module_symbols", "get_module_info", "search_in_module"):
+        import importlib
+
+        _introspect_mod = importlib.import_module("laziest_import._introspect")
+        _SYMBOL_FUNCTIONS[name] = getattr(_introspect_mod, name)
+        return _SYMBOL_FUNCTIONS[name]
+
+    # 7. Check for which function
     if name == "which":
         import importlib
 
@@ -520,21 +534,13 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         _SYMBOL_FUNCTIONS["which_all"] = _which_mod.which_all
         return _which_mod.which
 
-    # 7. Check for help function
+    # 8. Check for help function
     if name == "help":
         import importlib
 
         _help_mod = importlib.import_module("laziest_import._help")
         _SYMBOL_FUNCTIONS["help"] = _help_mod.help
         return _help_mod.help
-
-    # 8. Check for new module functions
-    if name in ("start_background_index_build", "is_index_building", "wait_for_index"):
-        import importlib
-
-        _lazy_index_mod = importlib.import_module("laziest_import._lazy_index")
-        _SYMBOL_FUNCTIONS[name] = getattr(_lazy_index_mod, name)
-        return _SYMBOL_FUNCTIONS[name]
 
     # 9. Check alias map
     if name in _ALIAS_MAP:
