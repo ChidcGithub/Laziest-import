@@ -930,8 +930,6 @@ def easter_egg(name: str = "default") -> str:
 |  Hope this little tool saves you as much time as it          |
 |  saved me. Happy coding!                                     |
 |                                                              |
-|  Still reading? This is not an Easter egg.   :)              |
-|                                                              |
 |  -- Chidc (Author of laziest-import)                         |
 +--------------------------------------------------------------+""",
         ],
