@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-222_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-335_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
