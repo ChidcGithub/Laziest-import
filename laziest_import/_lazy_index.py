@@ -137,20 +137,32 @@ def get_background_builder() -> BackgroundIndexBuilder:
 def start_background_index_build(
     progress_callback: Optional[Callable[[str, float], None]] = None,
     timeout: Optional[float] = None,
-) -> None:
+) -> bool:
     """Start background index building with default settings.
 
     Args:
         progress_callback: Optional callback(completed: bool, error: str)
         timeout: Optional timeout override (uses set value if not specified)
+    
+    Returns:
+        True if background build started, False if already building or already built
     """
     builder = get_background_builder()
     effective_timeout = timeout if timeout is not None else _BACKGROUND_TIMEOUT
+    
+    # Check if already building or already built
+    if builder.is_building():
+        return False
+    
+    if _SYMBOL_INDEX_BUILT:
+        return False
+    
     builder.start(
         _build_index_background,
         timeout=effective_timeout,
         progress_callback=progress_callback,
     )
+    return True
 
 
 def is_index_building() -> bool:

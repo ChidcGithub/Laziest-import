@@ -11,7 +11,6 @@ from laziest_import import *
 print(help())
 print("="*50)
 
-
 # Enable symbol search with non-interactive mode for demo
 enable_symbol_search(interactive=False)
 

@@ -525,24 +525,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         _SYMBOL_FUNCTIONS[name] = getattr(_introspect_mod, name)
         return _SYMBOL_FUNCTIONS[name]
 
-    # 7. Check for which function
-    if name == "which":
-        import importlib
-
-        _which_mod = importlib.import_module("laziest_import._which")
-        _SYMBOL_FUNCTIONS["which"] = _which_mod.which
-        _SYMBOL_FUNCTIONS["which_all"] = _which_mod.which_all
-        return _which_mod.which
-
-    # 8. Check for help function
-    if name == "help":
-        import importlib
-
-        _help_mod = importlib.import_module("laziest_import._help")
-        _SYMBOL_FUNCTIONS["help"] = _help_mod.help
-        return _help_mod.help
-
-    # 9. Check alias map
+    # 7. Check alias map
     if name in _ALIAS_MAP:
         return _get_lazy_module(name)
 

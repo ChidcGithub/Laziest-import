@@ -5,7 +5,7 @@ User-level configuration file support (.laziestrc).
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 from ._config import _DEBUG_MODE
 
@@ -170,12 +170,12 @@ def get_rc_value(key: str, default: Any = None) -> Any:
     return value
 
 
-def create_rc_file(path: Optional[Path] = None, template: bool = True) -> Path:
+def create_rc_file(path: Optional[Union[str, Path]] = None, template: bool = True) -> Path:
     """
     Create a new .laziestrc file.
 
     Args:
-        path: Path to create (defaults to ~/.laziestrc)
+        path: Path to create (defaults to ~/.laziestrc), can be str or Path
         template: If True, creates with default template
 
     Returns:
@@ -183,6 +183,8 @@ def create_rc_file(path: Optional[Path] = None, template: bool = True) -> Path:
     """
     if path is None:
         path = Path.home() / ".laziestrc"
+    elif isinstance(path, str):
+        path = Path(path)
 
     if path.exists():
         raise FileExistsError(f"Config file already exists: {path}")
