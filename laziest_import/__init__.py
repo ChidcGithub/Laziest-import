@@ -828,6 +828,8 @@ _BASE_EXPORTS = [
     "start_background_index_build",
     "is_index_building",
     "wait_for_index",
+    "set_background_timeout",
+    "get_background_timeout",
     # Which function
     "which",
     "which_all",
@@ -837,6 +839,10 @@ _BASE_EXPORTS = [
     "create_rc_file",
     "get_rc_info",
     "reload_rc_config",
+    # Module introspection
+    "list_module_symbols",
+    "get_module_info",
+    "search_in_module",
     # Fun stuff
     "easter_egg",
     "help",
