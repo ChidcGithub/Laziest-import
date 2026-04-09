@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-335_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-454_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
@@ -101,8 +101,14 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 | **Cache persistence** | Symbol index saved to disk with configurable TTL |
 | **Cache statistics** | Track hits/misses and optimize performance |
 | **Version checking** | Automatic compatibility warnings for aliases/mappings |
+| **Type hints support** | `LazySymbol.__class_getitem__` for generic type hints |
+| **Dependency pre-analysis** | Scan code to predict required imports |
+| **Import profiler** | Record module load times and memory usage |
+| **Environment detection** | Detect virtual environments (venv/conda/virtualenv) |
+| **Conflict visualization** | Find and display symbol conflicts across modules |
+| **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **285+ tests** | Comprehensive test coverage |
+| **454+ tests** | Comprehensive test coverage |
 
 ## What's New in v0.0.4
 
@@ -113,7 +119,13 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 - **Interactive Help**: `lz.help()` - comprehensive help system with topics
 - **Jupyter Magics**: `%%lazy`, `%lazyimport`, `%lazylist`, `%lazysearch`
 - **User Config File**: `~/.laziestrc` for persistent configuration
-- **285+ tests**: Comprehensive test coverage
+- **Type Hints Support**: `LazySymbol.__class_getitem__` for generic type hints
+- **Dependency Pre-Analysis**: Scan code to predict required imports
+- **Import Profiler**: Record module load times and memory usage
+- **Environment Detection**: Detect virtual environments (venv/conda/virtualenv)
+- **Conflict Visualization**: Find and display symbol conflicts across modules
+- **Persistent Preferences**: Save/load user preferences to `~/.laziestrc`
+- **454+ tests**: Comprehensive test coverage
 
 ## Auto-Install
 
@@ -378,6 +390,135 @@ register_aliases({
 
 </details>
 
+<details>
+<summary>Dependency Pre-Analysis</summary>
+
+Scan Python code to predict required imports before execution:
+
+```python
+import laziest_import as lz
+
+# Analyze a file
+result = lz.analyze_file('my_script.py')
+print(result.predicted_imports)  # {'numpy', 'pandas', ...}
+
+# Analyze source code directly
+code = '''
+import numpy as np
+import pandas as pd
+'''
+result = lz.analyze_source(code)
+print(result.used_symbols)  # {'np', 'pd'}
+
+# Analyze a directory
+results = lz.analyze_directory('./src', recursive=True)
+for r in results:
+    print(f"{r.file_path}: {r.predicted_imports}")
+```
+
+</details>
+
+<details>
+<summary>Import Profiler</summary>
+
+Record module load times and memory usage:
+
+```python
+import laziest_import as lz
+
+# Start profiling
+lz.start_profiling()
+
+# Your code here
+import numpy as np
+import pandas as pd
+
+# Stop profiling
+lz.stop_profiling()
+
+# Get report
+report = lz.get_profile_report()
+for name, profile in report.modules.items():
+    print(f"{name}: {profile.load_time_ms:.2f}ms, {profile.memory_kb:.1f}KB")
+
+# Print formatted report
+lz.print_profile_report()
+```
+
+</details>
+
+<details>
+<summary>Environment Detection</summary>
+
+Detect the current Python environment:
+
+```python
+import laziest_import as lz
+
+# Get environment info
+env = lz.detect_environment()
+print(f"Python: {env.python_version}")
+print(f"Executable: {env.executable}")
+print(f"Virtual env: {env.virtual_env}")
+print(f"Venv type: {env.venv_type}")  # 'venv', 'conda', 'virtualenv', None
+print(f"Site packages: {env.site_packages}")
+
+# Show formatted info
+lz.show_environment()
+```
+
+</details>
+
+<details>
+<summary>Conflict Visualization</summary>
+
+Find symbols that exist in multiple modules:
+
+```python
+import laziest_import as lz
+
+# Find all symbol conflicts
+conflicts = lz.find_symbol_conflicts()
+for symbol, conflict in conflicts.items():
+    print(f"{symbol}: {conflict.modules}")
+
+# Show formatted table
+lz.show_conflicts()
+
+# Get summary
+summary = lz.get_conflicts_summary()
+print(f"Total conflicts: {summary['total_conflicts']}")
+```
+
+</details>
+
+<details>
+<summary>Persistent Preferences</summary>
+
+Save and load user preferences:
+
+```python
+import laziest_import as lz
+
+# Set symbol preference
+lz.set_symbol_preference('DataFrame', 'pandas')
+lz.set_symbol_preference('sqrt', 'math')
+
+# Save to ~/.laziestrc
+lz.save_preferences()
+
+# Load preferences
+prefs = lz.load_preferences()
+
+# Apply loaded preferences
+lz.apply_preferences(prefs)
+
+# Clear preferences
+lz.clear_preferences()
+```
+
+</details>
+
 ## API Reference
 
 <details>
@@ -444,6 +585,42 @@ register_aliases({
 | `get_file_cache_info()` | Get file cache info |
 | `clear_file_cache()` | Clear file cache |
 | `set_cache_dir(path)` | Set cache directory |
+
+### Analysis & Profiling
+
+| Function | Description |
+|----------|-------------|
+| `analyze_file(path)` | Analyze Python file for imports |
+| `analyze_source(code)` | Analyze source code string |
+| `analyze_directory(path)` | Analyze all files in directory |
+| `start_profiling()` | Start import profiler |
+| `stop_profiling()` | Stop import profiler |
+| `get_profile_report()` | Get profiling report |
+| `print_profile_report()` | Print formatted report |
+
+### Environment Detection
+
+| Function | Description |
+|----------|-------------|
+| `detect_environment()` | Detect Python environment |
+| `show_environment()` | Display environment info |
+
+### Conflict Detection
+
+| Function | Description |
+|----------|-------------|
+| `find_symbol_conflicts()` | Find symbol conflicts |
+| `show_conflicts()` | Display conflicts table |
+| `get_conflicts_summary()` | Get conflicts summary |
+
+### Preferences
+
+| Function | Description |
+|----------|-------------|
+| `save_preferences()` | Save preferences to file |
+| `load_preferences()` | Load preferences from file |
+| `apply_preferences(prefs)` | Apply loaded preferences |
+| `clear_preferences()` | Clear saved preferences |
 
 </details>
 
