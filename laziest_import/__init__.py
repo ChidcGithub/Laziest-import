@@ -139,6 +139,29 @@ from ._config import (
     _CACHE_STATS,
 )
 
+# Import analysis and profiling tools
+from ._analysis import (
+    DependencyPreAnalyzer,
+    ImportProfiler,
+    PreAnalysisResult,
+    ModuleProfile,
+    ProfileReport,
+    EnvironmentInfo,
+    start_profiling,
+    stop_profiling,
+    get_profile_report,
+    print_profile_report,
+    find_symbol_conflicts,
+    show_conflicts,
+    get_conflicts_summary,
+    detect_environment,
+    show_environment,
+    save_preferences,
+    load_preferences,
+    apply_preferences,
+    clear_preferences,
+)
+
 
 # ============== Additional Public API ==============
 
@@ -268,6 +291,71 @@ def search_module(name: str) -> Optional[str]:
 def search_class(class_name: str) -> Optional[tuple]:
     """Search for a class in loaded modules."""
     return _search_class_in_modules(class_name)
+
+
+# ============== Analysis Convenience Functions ==============
+
+# Global analyzer instance
+_analyzer: Optional[DependencyPreAnalyzer] = None
+
+
+def _get_analyzer() -> DependencyPreAnalyzer:
+    """Get or create the global analyzer instance."""
+    global _analyzer
+    if _analyzer is None:
+        _analyzer = DependencyPreAnalyzer()
+    return _analyzer
+
+
+def analyze_file(file_path: str) -> PreAnalysisResult:
+    """
+    Analyze a Python file to predict required imports.
+    
+    Args:
+        file_path: Path to the Python file
+        
+    Returns:
+        PreAnalysisResult with predicted imports
+        
+    Example:
+        >>> result = analyze_file('my_script.py')
+        >>> print(result.predicted_imports)
+        {'numpy', 'pandas', ...}
+    """
+    return _get_analyzer().analyze_file(file_path)
+
+
+def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult:
+    """
+    Analyze source code to predict required imports.
+    
+    Args:
+        source: Python source code
+        file_path: Optional file path for reference
+        
+    Returns:
+        PreAnalysisResult with predicted imports
+    """
+    return _get_analyzer().analyze_source(source, file_path)
+
+
+def analyze_directory(
+    dir_path: str, 
+    recursive: bool = True,
+    exclude: Optional[Set[str]] = None
+) -> List[PreAnalysisResult]:
+    """
+    Analyze all Python files in a directory.
+    
+    Args:
+        dir_path: Directory path
+        recursive: Include subdirectories
+        exclude: Set of directory/file names to exclude
+        
+    Returns:
+        List of PreAnalysisResult for each file
+    """
+    return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
 
 
 def enable_debug_mode() -> None:
@@ -684,6 +772,24 @@ def __dir__() -> List[str]:
             "which_all",
             # Help
             "help",
+            # Analysis and profiling
+            "DependencyPreAnalyzer",
+            "ImportProfiler",
+            "analyze_file",
+            "analyze_source",
+            "analyze_directory",
+            "start_profiling",
+            "stop_profiling",
+            "get_profile_report",
+            "print_profile_report",
+            "show_conflicts",
+            "get_conflicts_summary",
+            "show_environment",
+            "detect_environment",
+            "save_preferences",
+            "load_preferences",
+            "apply_preferences",
+            "clear_preferences",
         ]
     )
     return sorted(result)
@@ -829,6 +935,25 @@ _BASE_EXPORTS = [
     # Fun stuff
     "easter_egg",
     "help",
+    # Analysis and profiling
+    "DependencyPreAnalyzer",
+    "ImportProfiler",
+    "PreAnalysisResult",
+    "ModuleProfile",
+    "ProfileReport",
+    "EnvironmentInfo",
+    "start_profiling",
+    "stop_profiling",
+    "get_profile_report",
+    "print_profile_report",
+    "show_conflicts",
+    "get_conflicts_summary",
+    "show_environment",
+    "detect_environment",
+    "save_preferences",
+    "load_preferences",
+    "apply_preferences",
+    "clear_preferences",
 ]
 
 # __all__ will be updated after initialization

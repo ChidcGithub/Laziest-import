@@ -208,6 +208,33 @@ class LazySymbol:
     
     # Hash
     def __hash__(self): return hash(self._get_object())
+    
+    # Generic type support (PEP 560)
+    @classmethod
+    def __class_getitem__(cls, item):
+        """Support for generic type hints like List[LazySymbol].
+        
+        This allows LazySymbol to be used in type annotations:
+            from typing import List
+            df_list: List[DataFrame] = []  # Where DataFrame is a LazySymbol
+        """
+        # Return a GenericAlias-like object for type hint purposes
+        # This delegates to the underlying class if it supports generics
+        try:
+            from types import GenericAlias
+            return GenericAlias(cls, item if isinstance(item, tuple) else (item,))
+        except ImportError:
+            # Fallback for Python < 3.9
+            class _LazyGenericAlias:
+                __slots__ = ('_origin', '_args')
+                def __init__(self, origin, args):
+                    self._origin = origin
+                    self._args = args
+                def __repr__(self):
+                    return f"{self._origin.__name__}[{self._args}]"
+                def __getitem__(self, item):
+                    return _LazyGenericAlias(self._origin, item if isinstance(item, tuple) else (item,))
+            return _LazyGenericAlias(cls, item if isinstance(item, tuple) else (item,))
 
 
 class LazyModule:
