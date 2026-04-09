@@ -66,19 +66,20 @@ def _create_lazy_magics():
 
                 import laziest_import as lz
 
+                # Get IPython shell's user namespace as base
+                shell = get_ipython()
+                cell_locals = dict(shell.user_ns) if shell else {}
+
+                # Import modules lazily into the local namespace
                 for module in modules:
                     if module in lz.list_available():
-                        exec(f"{module} = lz.{module}", cell_locals := {})
+                        cell_locals[module] = getattr(lz, module)
                     elif "." in module:
                         alias = module.split(".")[0]
-                        exec(f"{alias} = lz.{alias}", cell_locals := {})
+                        cell_locals[alias] = getattr(lz, alias, None)
 
                 try:
-                    exec(
-                        cell,
-                        cell_locals if "cell_locals" in dir() else {},
-                        cell_locals if "cell_locals" in dir() else {},
-                    )
+                    exec(cell, cell_locals, cell_locals)
                 except Exception as e:
                     raise e
 

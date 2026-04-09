@@ -5,9 +5,57 @@ Interactive help system for laziest-import.
 from typing import Optional, Dict, Any, List, Tuple
 import inspect
 import importlib
+import sys
+import locale
 
 from ._which import which, which_all, SymbolLocation
 from ._config import _SYMBOL_CACHE, _ALIAS_MAP
+
+
+def _supports_unicode() -> bool:
+    """Check if the terminal supports Unicode characters."""
+    try:
+        # Check if stdout supports unicode
+        if hasattr(sys.stdout, 'encoding') and sys.stdout.encoding:
+            encoding = sys.stdout.encoding.lower()
+            if encoding in ('utf-8', 'utf8', 'utf-16', 'utf16', 'utf-32', 'utf32'):
+                return True
+        
+        # Check locale
+        preferred_encoding = locale.getpreferredencoding()
+        if preferred_encoding and preferred_encoding.lower() in ('utf-8', 'utf8'):
+            return True
+        
+        # Windows with proper code page
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                code_page = ctypes.windll.kernel32.GetConsoleOutputCP()
+                if code_page == 65001:  # UTF-8 code page
+                    return True
+            except Exception:
+                pass
+        
+        return False
+    except Exception:
+        return False
+
+
+# Box drawing characters (Unicode and ASCII fallback)
+if _supports_unicode():
+    _BOX_TOP_LEFT = "╔"
+    _BOX_TOP_RIGHT = "╗"
+    _BOX_BOTTOM_LEFT = "╚"
+    _BOX_BOTTOM_RIGHT = "╝"
+    _BOX_HORIZONTAL = "═"
+    _BOX_VERTICAL = "║"
+else:
+    _BOX_TOP_LEFT = "+"
+    _BOX_TOP_RIGHT = "+"
+    _BOX_BOTTOM_LEFT = "+"
+    _BOX_BOTTOM_RIGHT = "+"
+    _BOX_HORIZONTAL = "-"
+    _BOX_VERTICAL = "|"
 
 
 class HelpTopic:
@@ -29,9 +77,9 @@ class HelpTopic:
 
     def __str__(self) -> str:
         lines = [
-            f"╔{'═' * 58}╗",
-            f"║ {self.name:<56} ║",
-            f"╚{'═' * 58}╝",
+            f"{_BOX_TOP_LEFT}{_BOX_HORIZONTAL * 58}{_BOX_TOP_RIGHT}",
+            f"{_BOX_VERTICAL} {self.name:<56} {_BOX_VERTICAL}",
+            f"{_BOX_BOTTOM_LEFT}{_BOX_HORIZONTAL * 58}{_BOX_BOTTOM_RIGHT}",
             "",
             self.description,
             "",
@@ -292,9 +340,9 @@ def _get_overview() -> str:
         for name, topic in _TOPICS.items()
     )
 
-    return f"""╔{"═" * 58}╗
-║ laziest-import: Lazy Import Library{" " * 26}║
-╚{"═" * 58}╝
+    return f"""{_BOX_TOP_LEFT}{_BOX_HORIZONTAL * 58}{_BOX_TOP_RIGHT}
+{_BOX_VERTICAL} laziest-import: Lazy Import Library{" " * 26}{_BOX_VERTICAL}
+{_BOX_BOTTOM_LEFT}{_BOX_HORIZONTAL * 58}{_BOX_BOTTOM_RIGHT}
 
 Quick Start:
   from laziest_import import *

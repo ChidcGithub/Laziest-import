@@ -60,6 +60,45 @@ class SymbolLocation:
         }
 
 
+def _parse_dotted_symbol(symbol_name: str, module_hint: Optional[str] = None) -> Tuple[str, Optional[str]]:
+    """
+    Parse a potentially dotted symbol name into (symbol_name, module_hint).
+    
+    Handles cases like:
+        - "sqrt" -> ("sqrt", None)
+        - "math.sin" -> ("sin", "math")
+        - "os.path.join" -> ("join", "os.path")
+    
+    Args:
+        symbol_name: The symbol name, possibly with module prefix
+        module_hint: Optional explicit module hint
+        
+    Returns:
+        Tuple of (actual_symbol_name, inferred_module_hint)
+    """
+    # If explicit module hint is provided, use it
+    if module_hint is not None:
+        return (symbol_name, module_hint)
+    
+    # Try to parse dotted path
+    if "." not in symbol_name:
+        return (symbol_name, None)
+    
+    parts = symbol_name.rsplit(".", 1)
+    if len(parts) != 2:
+        return (symbol_name, None)
+    
+    potential_module, actual_symbol = parts
+    
+    # Verify the potential module is importable
+    try:
+        importlib.import_module(potential_module)
+        return (actual_symbol, potential_module)
+    except ImportError:
+        # Not a valid module path, return as-is
+        return (symbol_name, None)
+
+
 def which(
     symbol_name: str, module_hint: Optional[str] = None
 ) -> Optional[SymbolLocation]:
@@ -78,38 +117,29 @@ def which(
         >>> which("DataFrame", "pandas")  # Find specifically in pandas
         >>> which("math.sin")        # Find sin in math module
     """
-    # Parse dotted paths like "math.sin" or "os.path.join"
-    actual_module_hint = module_hint
-    if module_hint is None and "." in symbol_name:
-        parts = symbol_name.rsplit(".", 1)
-        if len(parts) == 2:
-            potential_module, actual_symbol = parts
-            # Verify the potential module is importable
-            try:
-                importlib.import_module(potential_module)
-                actual_module_hint = potential_module
-                symbol_name = actual_symbol
-            except ImportError:
-                pass
+    # Parse dotted paths using shared function
+    actual_symbol, actual_module_hint = _parse_dotted_symbol(symbol_name, module_hint)
+    
+    # Use actual_symbol for all lookups
+    symbol_name = actual_symbol
 
     # First check if symbol is in cache
     if symbol_name in _SYMBOL_CACHE:
         locations = _SYMBOL_CACHE[symbol_name]
 
         # If module_hint provided (or parsed from dotted path), try to find in that module first
-        effective_hint = actual_module_hint
-        if effective_hint:
+        if actual_module_hint:
             for loc in locations:
-                if loc[0].startswith(effective_hint):
+                if loc[0].startswith(actual_module_hint):
                     return _create_location_from_tuple(symbol_name, loc)
 
             # Also try submodule match
             for loc in locations:
-                if effective_hint.split(".")[0] in loc[0].split(".")[0]:
+                if actual_module_hint.split(".")[0] in loc[0].split(".")[0]:
                     return _create_location_from_tuple(symbol_name, loc)
 
             # Module hint didn't match in cache, try live search
-            live_result = _find_symbol_live(symbol_name, effective_hint)
+            live_result = _find_symbol_live(symbol_name, actual_module_hint)
             if live_result:
                 return live_result
 
@@ -198,18 +228,9 @@ def _find_symbol_live(
     symbol_name: str, module_hint: Optional[str]
 ) -> Optional[SymbolLocation]:
     """Find symbol by trying to import modules live."""
-    # Parse dotted paths like "math.sin" or "os.path.join"
-    actual_module_hint = module_hint
-    if module_hint is None and "." in symbol_name:
-        parts = symbol_name.rsplit(".", 1)
-        if len(parts) == 2:
-            potential_module, actual_symbol = parts
-            try:
-                importlib.import_module(potential_module)
-                actual_module_hint = potential_module
-                symbol_name = actual_symbol
-            except ImportError:
-                pass
+    # Use shared dotted path parser
+    actual_symbol, actual_module_hint = _parse_dotted_symbol(symbol_name, module_hint)
+    symbol_name = actual_symbol
 
     # Priority modules to search
     priority_modules = []

@@ -788,6 +788,10 @@ def force_save_cache() -> bool:
 
 # ============== Background Index Building ==============
 
+# Lock for thread-safe background build state modification
+_BACKGROUND_BUILD_LOCK = threading.Lock()
+
+
 def _start_background_index_build(callback: Optional[Callable[[], None]] = None) -> bool:
     """Start background symbol index build.
     
@@ -797,7 +801,11 @@ def _start_background_index_build(callback: Optional[Callable[[], None]] = None)
     Returns:
         True if background build started, False if already running or disabled
     """
-    from ._config import _BACKGROUND_INDEX_BUILDING, _BACKGROUND_INDEX_THREAD
+    from ._config import (
+        _BACKGROUND_INDEX_BUILDING,
+        _BACKGROUND_INDEX_THREAD,
+        _set_background_index_building,
+    )
     
     if not _PREHEAT_CONFIG.get("enabled", True):
         return False
@@ -805,22 +813,21 @@ def _start_background_index_build(callback: Optional[Callable[[], None]] = None)
     if not _PREHEAT_CONFIG.get("async_index_build", True):
         return False
     
-    if _BACKGROUND_INDEX_BUILDING:
-        return False
-    
-    if _SYMBOL_INDEX_BUILT:
-        return False
+    # Thread-safe check and set
+    with _BACKGROUND_BUILD_LOCK:
+        if _BACKGROUND_INDEX_BUILDING:
+            return False
+        
+        if _SYMBOL_INDEX_BUILT:
+            return False
+        
+        # Set building state before starting thread
+        _set_background_index_building(True)
     
     def _background_build_worker():
-        global _BACKGROUND_INDEX_BUILDING
-        from ._config import _BACKGROUND_INDEX_BUILDING as _bg_flag
         from ._symbol import _build_symbol_index
         
         try:
-            # Import the flag dynamically to get the reference
-            import laziest_import._config as config_module
-            config_module._BACKGROUND_INDEX_BUILDING = True
-            
             timeout = _INCREMENTAL_INDEX_CONFIG.get("background_timeout", 60.0)
             _build_symbol_index(force=False, timeout=timeout)
             
@@ -831,8 +838,8 @@ def _start_background_index_build(callback: Optional[Callable[[], None]] = None)
             if _DEBUG_MODE:
                 logging.warning(f"[laziest-import] Background index build failed: {e}")
         finally:
-            import laziest_import._config as config_module
-            config_module._BACKGROUND_INDEX_BUILDING = False
+            with _BACKGROUND_BUILD_LOCK:
+                _set_background_index_building(False)
     
     thread = threading.Thread(target=_background_build_worker, daemon=True)
     thread.start()
