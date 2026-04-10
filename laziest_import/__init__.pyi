@@ -543,9 +543,18 @@ def which_all(symbol_name: str) -> List[SymbolLocation]:
 # ============== Background Index ==============
 
 def start_background_index_build(
-    callback: Optional[Callable[[bool, Optional[str]], None]] = None,
-) -> None:
-    """Start building the symbol index in a background thread."""
+    progress_callback: Optional[Callable[[str, float], None]] = None,
+    timeout: Optional[float] = None,
+) -> bool:
+    """Start building the symbol index in a background thread.
+    
+    Args:
+        progress_callback: Optional callback(status: str, elapsed: float)
+        timeout: Optional timeout in seconds
+    
+    Returns:
+        True if build started, False if already building or built
+    """
     ...
 
 def is_index_building() -> bool:
@@ -576,6 +585,153 @@ def get_rc_info() -> Dict[str, Any]:
 
 def reload_rc_config() -> None:
     """Reload RC config from file."""
+    ...
+
+# ============== Reset All ==============
+
+def reset_all() -> None:
+    """Reset all state including cache, aliases, and symbol index."""
+    ...
+
+# ============== Analysis & Profiling ==============
+
+class PreAnalysisResult:
+    """Result of pre-analysis scan."""
+    file_path: str
+    predicted_imports: Set[str]
+    used_symbols: Set[str]
+    confidence: Dict[str, float]
+
+class ModuleProfile:
+    """Profile data for a single module."""
+    module_name: str
+    load_time: float
+    memory_before: int
+    memory_after: int
+    memory_delta: int
+    access_count: int
+    first_access: Optional[float]
+    last_access: Optional[float]
+
+class ProfileReport:
+    """Complete profile report."""
+    total_time: float
+    total_memory: int
+    modules: Dict[str, ModuleProfile]
+    heavy_modules: List[str]
+    slow_modules: List[str]
+    recommendations: List[str]
+
+class EnvironmentInfo:
+    """Information about the current Python environment."""
+    python_version: str
+    executable: str
+    virtual_env: Optional[str]
+    venv_type: Optional[str]
+    site_packages: List[str]
+    installed_packages: Dict[str, str]
+
+def analyze_file(file_path: str) -> PreAnalysisResult:
+    """Analyze a Python file to predict required imports."""
+    ...
+
+def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult:
+    """Analyze source code to predict required imports."""
+    ...
+
+def analyze_directory(
+    dir_path: str,
+    recursive: bool = True,
+    exclude: Optional[Set[str]] = None
+) -> List[PreAnalysisResult]:
+    """Analyze all Python files in a directory."""
+    ...
+
+def start_profiling() -> None:
+    """Start import profiling."""
+    ...
+
+def stop_profiling() -> None:
+    """Stop import profiling."""
+    ...
+
+def get_profile_report(top_n: int = 10) -> ProfileReport:
+    """Get profile report."""
+    ...
+
+def print_profile_report(top_n: int = 10) -> None:
+    """Print profile report."""
+    ...
+
+def find_symbol_conflicts() -> Dict[str, Any]:
+    """Find all symbols that exist in multiple modules."""
+    ...
+
+def show_conflicts(
+    symbol_filter: Optional[str] = None,
+    max_results: int = 20
+) -> None:
+    """Display symbol conflicts in a formatted table."""
+    ...
+
+def get_conflicts_summary() -> Dict[str, Any]:
+    """Get a summary of all symbol conflicts."""
+    ...
+
+def detect_environment() -> EnvironmentInfo:
+    """Detect the current Python environment."""
+    ...
+
+def show_environment() -> None:
+    """Display environment information."""
+    ...
+
+def save_preferences() -> bool:
+    """Save current symbol preferences to file."""
+    ...
+
+def load_preferences() -> Dict[str, str]:
+    """Load symbol preferences from file."""
+    ...
+
+def apply_preferences() -> None:
+    """Apply loaded preferences to current session."""
+    ...
+
+def clear_preferences() -> bool:
+    """Clear saved preferences."""
+    ...
+
+# ============== Symbol Sharding ==============
+
+def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[SearchResult]:
+    """Search for symbol using sharded index."""
+    ...
+
+def enable_sharding(enabled: bool = True) -> None:
+    """Enable or disable symbol sharding."""
+    ...
+
+def disable_sharding() -> None:
+    """Disable symbol sharding."""
+    ...
+
+def get_sharding_config() -> Dict[str, Any]:
+    """Get current sharding configuration."""
+    ...
+
+def clear_shard_cache() -> None:
+    """Clear loaded shards from memory."""
+    ...
+
+# ============== Background Timeout ==============
+
+def set_background_timeout(timeout: float) -> None:
+    """Set timeout for background index building."""
+    ...
+
+def get_background_timeout() -> float:
+    """Get current background timeout setting."""
     ...
 
 # ============== Module-level attributes ==============

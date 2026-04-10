@@ -11,6 +11,30 @@ from laziest_import import *
 print(help())
 print("="*50)
 
+import laziest_import as lz
+
+# Start profiling
+lz.start_profiling()
+
+# Use laziest-import for lazy imports (tracked by profiler)
+np = lz.numpy
+pd = lz.pandas
+
+# Trigger actual imports by using them
+_ = np.array([1, 2, 3])
+_ = pd.DataFrame()
+
+# Stop profiling
+lz.stop_profiling()
+
+# Get report
+report = lz.get_profile_report()
+for name, profile in report.modules.items():
+    print(f"{name}: {profile.load_time*1000:.2f}ms, {profile.memory_delta/1024:.1f}KB")
+
+# Print formatted report
+lz.print_profile_report()
+
 # Enable symbol search with non-interactive mode for demo
 enable_symbol_search(interactive=False)
 

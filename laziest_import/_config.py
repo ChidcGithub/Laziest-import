@@ -76,8 +76,10 @@ _INITIALIZING: bool = False
 _INITIALIZED: bool = False
 _INIT_FAILED: bool = False
 _INIT_ERROR: Optional[str] = None
-_INIT_LOCK: Optional[threading.RLock] = None
-_INIT_LOCK_CREATION_LOCK: threading.Lock = threading.Lock()
+
+# Initialize lock directly at module level for thread safety
+# Using RLock to allow reentrant locking within the same thread
+_INIT_LOCK: threading.RLock = threading.RLock()
 
 
 def get_init_state() -> Dict[str, Any]:
@@ -351,12 +353,7 @@ def get_importing_modules() -> Set[str]:
 
 
 def get_init_lock() -> threading.RLock:
-    """Get or create the initialization lock (lazy initialization, thread-safe)."""
-    global _INIT_LOCK
-    if _INIT_LOCK is None:
-        with _INIT_LOCK_CREATION_LOCK:
-            if _INIT_LOCK is None:
-                _INIT_LOCK = threading.RLock()
+    """Get the initialization lock."""
     return _INIT_LOCK
 
 

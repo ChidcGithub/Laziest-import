@@ -386,10 +386,10 @@ def get_symbol_help(symbol_name: str) -> str:
             lines.append(f"    Signature: {loc.symbol_name}{loc.signature}")
 
         if loc.file_path:
-            lines.append(f"    Location: {loc.file_path}", end="")
+            location_str = f"    Location: {loc.file_path}"
             if loc.line_number:
-                lines[-1] += f":{loc.line_number}"
-            lines.append()
+                location_str += f":{loc.line_number}"
+            lines.append(location_str)
 
         if loc.doc:
             doc_lines = loc.doc.split("\n")[:5]

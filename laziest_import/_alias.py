@@ -428,7 +428,11 @@ def get_config_dirs() -> List[str]:
 
 def reload_aliases() -> None:
     """Reload aliases from all configuration sources."""
-    global _ALIAS_MAP
+    global _ALIAS_MAP, _ALIASES_VERSION_CHECKED
+    
+    # Reset version check flag so it will be re-checked on reload
+    _ALIASES_VERSION_CHECKED = False
+    
     _ALIAS_MAP.clear()
     _ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
     _rebuild_global_namespace()
