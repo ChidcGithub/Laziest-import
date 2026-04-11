@@ -165,7 +165,10 @@ def get_import_stats() -> Dict[str, Any]:
 
 def reset_import_stats() -> None:
     """Reset import statistics."""
-    _config._IMPORT_STATS = ImportStats()
+    _IMPORT_STATS.total_imports = 0
+    _IMPORT_STATS.total_time = 0.0
+    _IMPORT_STATS.module_times.clear()
+    _IMPORT_STATS.module_access_counts.clear()
 
 
 def validate_aliases_importable(
