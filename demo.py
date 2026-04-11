@@ -8,104 +8,111 @@ laziest-import to automatically discover and import 3D graphics libraries.
 # Use laziest-import for all imports
 from laziest_import import *
 
-print(help())
-print("="*50)
 
-import laziest_import as lz
+def main():
+    """Run the laziest-import demo."""
+    print(help())
+    print("="*50)
 
-# Start profiling
-lz.start_profiling()
+    import laziest_import as lz
 
-# Use laziest-import for lazy imports (tracked by profiler)
-np = lz.numpy
-pd = lz.pandas
+    # Start profiling
+    lz.start_profiling()
 
-# Trigger actual imports by using them
-_ = np.array([1, 2, 3])
-_ = pd.DataFrame()
+    # Use laziest-import for lazy imports (tracked by profiler)
+    np = lz.numpy
+    pd = lz.pandas
 
-# Stop profiling
-lz.stop_profiling()
+    # Trigger actual imports by using them
+    _ = np.array([1, 2, 3])
+    _ = pd.DataFrame()
 
-# Get report
-report = lz.get_profile_report()
-for name, profile in report.modules.items():
-    print(f"{name}: {profile.load_time*1000:.2f}ms, {profile.memory_delta/1024:.1f}KB")
+    # Stop profiling
+    lz.stop_profiling()
 
-# Print formatted report
-lz.print_profile_report()
+    # Get report
+    report = lz.get_profile_report()
+    for name, profile in report.modules.items():
+        print(f"{name}: {profile.load_time*1000:.2f}ms, {profile.memory_delta/1024:.1f}KB")
 
-# Enable symbol search with non-interactive mode for demo
-enable_symbol_search(interactive=False)
+    # Print formatted report
+    lz.print_profile_report()
 
-# ===== Matplotlib 3D Demo =====
-print("=" * 50)
-print("3D Graphics Demo with laziest-import")
-print("=" * 50)
+    # Enable symbol search with non-interactive mode for demo
+    enable_symbol_search(interactive=False)
 
-# Create figure and 3D axes
-fig = plt.figure(figsize=(12, 5))
+    # ===== Matplotlib 3D Demo =====
+    print("=" * 50)
+    print("3D Graphics Demo with laziest-import")
+    print("=" * 50)
 
-# --- 3D Surface Plot ---
-ax1 = fig.add_subplot(121, projection='3d')
+    # Create figure and 3D axes
+    fig = plt.figure(figsize=(12, 5))
 
-# Create data for surface plot
-x = np.linspace(-5, 5, 100)
-y = np.linspace(-5, 5, 100)
-X, Y = np.meshgrid(x, y)
-Z = np.sin(np.sqrt(X**2 + Y**2))
+    # --- 3D Surface Plot ---
+    ax1 = fig.add_subplot(121, projection='3d')
 
-# Plot surface
-surface = ax1.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
-ax1.set_title('3D Surface: sin(sqrt(x² + y²))')
-ax1.set_xlabel('X')
-ax1.set_ylabel('Y')
-ax1.set_zlabel('Z')
-fig.colorbar(surface, ax=ax1, shrink=0.5, aspect=10)
+    # Create data for surface plot
+    x = np.linspace(-5, 5, 100)
+    y = np.linspace(-5, 5, 100)
+    X, Y = np.meshgrid(x, y)
+    Z = np.sin(np.sqrt(X**2 + Y**2))
 
-# --- 3D Wireframe ---
-ax2 = fig.add_subplot(122, projection='3d')
+    # Plot surface
+    surface = ax1.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
+    ax1.set_title('3D Surface: sin(sqrt(x² + y²))')
+    ax1.set_xlabel('X')
+    ax1.set_ylabel('Y')
+    ax1.set_zlabel('Z')
+    fig.colorbar(surface, ax=ax1, shrink=0.5, aspect=10)
 
-# Create wireframe data
-theta = np.linspace(0, 2*np.pi, 30)
-phi = np.linspace(0, np.pi, 30)
-Theta, Phi = np.meshgrid(theta, phi)
+    # --- 3D Wireframe ---
+    ax2 = fig.add_subplot(122, projection='3d')
 
-# Sphere coordinates
-R = 2
-X_sphere = R * np.sin(Phi) * np.cos(Theta)
-Y_sphere = R * np.sin(Phi) * np.sin(Theta)
-Z_sphere = R * np.cos(Phi)
+    # Create wireframe data
+    theta = np.linspace(0, 2*np.pi, 30)
+    phi = np.linspace(0, np.pi, 30)
+    Theta, Phi = np.meshgrid(theta, phi)
 
-# Plot wireframe sphere
-ax2.plot_wireframe(X_sphere, Y_sphere, Z_sphere, color='cyan', alpha=0.6)
-ax2.set_title('3D Wireframe Sphere')
-ax2.set_xlabel('X')
-ax2.set_ylabel('Y')
-ax2.set_zlabel('Z')
+    # Sphere coordinates
+    R = 2
+    X_sphere = R * np.sin(Phi) * np.cos(Theta)
+    Y_sphere = R * np.sin(Phi) * np.sin(Theta)
+    Z_sphere = R * np.cos(Phi)
 
-# Adjust layout
-plt.tight_layout()
+    # Plot wireframe sphere
+    ax2.plot_wireframe(X_sphere, Y_sphere, Z_sphere, color='cyan', alpha=0.6)
+    ax2.set_title('3D Wireframe Sphere')
+    ax2.set_xlabel('X')
+    ax2.set_ylabel('Y')
+    ax2.set_zlabel('Z')
 
-print("\n✓ All imports handled by laziest-import:")
-print(f"  - np (numpy)")
-print(f"  - plt (matplotlib.pyplot)")
-print()
+    # Adjust layout
+    plt.tight_layout()
 
-# Show statistics
-stats = get_import_stats()
-print(f"Import Statistics:")
-print(f"  - Total imports: {stats['total_imports']}")
-print(f"  - Total time: {stats['total_time']*1000:.2f}ms")
-print()
+    print("\n✓ All imports handled by laziest-import:")
+    print(f"  - np (numpy)")
+    print(f"  - plt (matplotlib.pyplot)")
+    print()
 
-# Show loaded modules
-loaded = list_loaded()
-print(f"Loaded modules: {loaded}")
+    # Show statistics
+    stats = get_import_stats()
+    print(f"Import Statistics:")
+    print(f"  - Total imports: {stats['total_imports']}")
+    print(f"  - Total time: {stats['total_time']*1000:.2f}ms")
+    print()
 
-# Show the plot in a window
-plt.show()
-print("\n✓ Figure displayed in window")
+    # Show loaded modules
+    loaded = list_loaded()
+    print(f"Loaded modules: {loaded}")
 
-print("\n✓ Demo completed successfully!")
+    # Show the plot in a window
+    plt.show()
+    print("\n✓ Figure displayed in window")
+
+    print("\n✓ Demo completed successfully!")
+
+
+if __name__ == "__main__":
+    main()
 

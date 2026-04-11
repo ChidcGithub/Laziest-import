@@ -117,23 +117,29 @@ class LazyModule:
             
             try:
                 # Measure memory before import
+                # Only use tracemalloc if it's already running to avoid
+                # interfering with user's own tracemalloc configuration
                 try:
                     import tracemalloc
-                    if not tracemalloc.is_tracing():
-                        tracemalloc.start()
-                    mem_before = tracemalloc.get_traced_memory()[0]
+                    if tracemalloc.is_tracing():
+                        mem_before = tracemalloc.get_traced_memory()[0]
+                    else:
+                        mem_before = 0
                 except Exception:
                     mem_before = 0
-                
+
                 module = _do_import(module_name)
-                
+
                 elapsed = time.perf_counter() - start_time
-                
+
                 # Measure memory after import
                 try:
                     import tracemalloc
-                    mem_after = tracemalloc.get_traced_memory()[0]
-                    mem_delta = max(0, mem_after - mem_before)
+                    if tracemalloc.is_tracing():
+                        mem_after = tracemalloc.get_traced_memory()[0]
+                        mem_delta = max(0, mem_after - mem_before)
+                    else:
+                        mem_delta = 0
                 except Exception:
                     mem_delta = 0
                 

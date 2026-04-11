@@ -28,6 +28,7 @@ class ProfileReport:
     heavy_modules: List[str] = field(default_factory=list)
     slow_modules: List[str] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
+    tracemalloc_enabled: bool = False  # Whether memory tracking was active
 
 
 class ImportProfiler:
@@ -137,6 +138,20 @@ class ImportProfiler:
             
             # Generate recommendations
             recommendations = []
+            
+            # Check if tracemalloc is running
+            try:
+                import tracemalloc
+                tracemalloc_running = tracemalloc.is_tracing()
+            except Exception:
+                tracemalloc_running = False
+            
+            if not tracemalloc_running:
+                recommendations.append(
+                    "Memory tracking is disabled. Start tracemalloc before imports "
+                    "to measure memory usage: 'import tracemalloc; tracemalloc.start()'"
+                )
+            
             for module, profile in sorted_by_time[:3]:
                 if profile.load_time > 1.0:
                     recommendations.append(
@@ -155,7 +170,8 @@ class ImportProfiler:
                 modules=dict(self._profiles),
                 heavy_modules=heavy_modules,
                 slow_modules=slow_modules,
-                recommendations=recommendations
+                recommendations=recommendations,
+                tracemalloc_enabled=tracemalloc_running,
             )
     
     def print_report(self, top_n: int = 10) -> None:
@@ -167,7 +183,22 @@ class ImportProfiler:
         print("=" * 60)
         
         print(f"\nTotal import time: {report.total_time:.3f}s")
-        print(f"Total memory delta: {report.total_memory / (1024*1024):.2f}MB")
+        
+        # Check if tracemalloc is running to explain memory stats
+        try:
+            import tracemalloc
+            tracemalloc_running = tracemalloc.is_tracing()
+        except Exception:
+            tracemalloc_running = False
+        
+        if tracemalloc_running:
+            print(f"Total memory delta: {report.total_memory / (1024*1024):.2f}MB")
+        else:
+            print(f"Total memory delta: {report.total_memory / (1024*1024):.2f}MB (tracemalloc not enabled)")
+            if report.total_memory == 0:
+                print("  Note: Memory tracking requires tracemalloc.")
+                print("  To enable: import tracemalloc; tracemalloc.start()")
+                print("  Or start profiling before any imports for automatic tracking.")
         
         if report.slow_modules:
             print(f"\nTop {len(report.slow_modules)} slowest modules:")

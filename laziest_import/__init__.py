@@ -43,6 +43,7 @@ from ._config import (
     is_initialized,
     is_init_failed,
     get_init_error,
+    reset_init_state,
     _PRE_IMPORT_HOOKS,
     _POST_IMPORT_HOOKS,
     _IMPORT_STATS,
@@ -433,7 +434,10 @@ _DIR_NAMES = [
     "is_auto_search_enabled", "search_module", "search_class", "rebuild_module_cache",
     "reload_aliases", "export_aliases", "validate_aliases", "get_config_paths",
     "get_config_dirs", "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
-    "get_import_stats", "reset_import_stats", "add_pre_import_hook", "add_post_import_hook",
+    "get_import_stats", "reset_import_stats",
+    "get_init_lock", "is_initializing", "is_initialized", "is_init_failed",
+    "get_init_error", "reset_init_state",
+    "add_pre_import_hook", "add_post_import_hook",
     "remove_pre_import_hook", "remove_post_import_hook", "clear_import_hooks",
     "import_async", "import_multiple_async", "enable_retry", "disable_retry",
     "is_retry_enabled", "enable_file_cache", "disable_file_cache", "is_file_cache_enabled",
@@ -482,6 +486,8 @@ _BASE_EXPORTS = [
     "validate_aliases_importable", "get_config_paths", "get_config_dirs",
     "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
     "get_import_stats", "reset_import_stats",
+    "get_init_lock", "is_initializing", "is_initialized", "is_init_failed",
+    "get_init_error", "reset_init_state",
     "add_pre_import_hook", "add_post_import_hook",
     "remove_pre_import_hook", "remove_post_import_hook", "clear_import_hooks",
     "import_async", "import_multiple_async", "enable_retry", "disable_retry",
@@ -516,6 +522,7 @@ _BASE_EXPORTS = [
     "start_profiling", "stop_profiling", "get_profile_report", "print_profile_report",
     "show_conflicts", "get_conflicts_summary", "show_environment", "detect_environment",
     "save_preferences", "load_preferences", "apply_preferences", "clear_preferences",
+    "analyze_file", "analyze_source", "analyze_directory",
 ]
 
 __all__ = sorted(_BASE_EXPORTS)

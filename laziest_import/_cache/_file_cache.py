@@ -16,9 +16,10 @@ import importlib.util
 
 from .._config import (
     _DEBUG_MODE,
-    _FILE_CACHE_ENABLED,
     _CACHE_STATS,
 )
+# Import config module directly to modify its global variables
+from .. import _config
 
 from ._dir import _get_cache_dir, _cleanup_cache_if_needed, _get_cache_size
 
@@ -127,7 +128,7 @@ def _init_file_cache() -> None:
     """Initialize file cache for the current caller file."""
     global _CALLER_FILE_PATH, _CALLER_FILE_SHA, _CALLER_LOADED_MODULES
     
-    if not _FILE_CACHE_ENABLED:
+    if not _config._FILE_CACHE_ENABLED:
         return
     
     caller_path = _get_caller_file_path()
@@ -222,7 +223,7 @@ def _record_module_load(module_name: str) -> None:
 
 def _save_current_cache() -> None:
     """Save cache for the current caller file (called at exit)."""
-    if not _FILE_CACHE_ENABLED:
+    if not _config._FILE_CACHE_ENABLED:
         return
     
     modules_copy = None
@@ -233,7 +234,7 @@ def _save_current_cache() -> None:
             modules_copy = set(_CALLER_LOADED_MODULES)
     
     # Save outside the lock to avoid holding it during I/O
-    if _FILE_CACHE_ENABLED and _CALLER_FILE_PATH and _CALLER_FILE_SHA and modules_copy:
+    if _config._FILE_CACHE_ENABLED and _CALLER_FILE_PATH and _CALLER_FILE_SHA and modules_copy:
         _save_file_cache(
             _CALLER_FILE_PATH,
             _CALLER_FILE_SHA,
@@ -253,19 +254,17 @@ import time
 
 def enable_file_cache() -> None:
     """Enable file cache."""
-    global _FILE_CACHE_ENABLED
-    _FILE_CACHE_ENABLED = True
+    _config._FILE_CACHE_ENABLED = True
 
 
 def disable_file_cache() -> None:
     """Disable file cache."""
-    global _FILE_CACHE_ENABLED
-    _FILE_CACHE_ENABLED = False
+    _config._FILE_CACHE_ENABLED = False
 
 
 def is_file_cache_enabled() -> bool:
     """Check if file cache is enabled."""
-    return _FILE_CACHE_ENABLED
+    return _config._FILE_CACHE_ENABLED
 
 
 def clear_file_cache(file_path: Optional[str] = None) -> int:
@@ -293,7 +292,7 @@ def clear_file_cache(file_path: Optional[str] = None) -> int:
 def get_file_cache_info() -> Dict[str, Any]:
     """Get file cache information."""
     return {
-        "enabled": _FILE_CACHE_ENABLED,
+        "enabled": _config._FILE_CACHE_ENABLED,
         "caller_file": _CALLER_FILE_PATH,
         "caller_sha": _CALLER_FILE_SHA,
         "loaded_modules_count": len(_CALLER_LOADED_MODULES),

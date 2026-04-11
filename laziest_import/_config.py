@@ -24,7 +24,7 @@ def _load_version_config() -> Dict[str, Any]:
 
 
 _VERSION_CONFIG = _load_version_config()
-__version__ = _VERSION_CONFIG.get("_current_version", "0.0.3-pre6")
+__version__ = _VERSION_CONFIG.get("_current_version", "0.0.4.4")
 
 
 def get_version_range(target: str) -> Tuple[Optional[str], Optional[str]]:
@@ -110,6 +110,19 @@ def is_init_failed() -> bool:
 def get_init_error() -> Optional[str]:
     """Get initialization error message if any."""
     return _INIT_ERROR
+
+
+def reset_init_state() -> None:
+    """Reset initialization state to allow retry after failure.
+
+    This allows the library to re-initialize after a previous failure
+    without requiring a Python restart.
+    """
+    global _INITIALIZING, _INITIALIZED, _INIT_FAILED, _INIT_ERROR
+    _INITIALIZING = False
+    _INITIALIZED = False
+    _INIT_FAILED = False
+    _INIT_ERROR = None
 
 
 # ============== Core Configuration ==============

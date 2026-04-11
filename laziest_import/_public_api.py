@@ -10,13 +10,13 @@ import importlib
 from ._config import (
     _LAZY_MODULES,
     _ALIAS_MAP,
-    _AUTO_SEARCH_ENABLED,
-    _DEBUG_MODE,
     _PRE_IMPORT_HOOKS,
     _POST_IMPORT_HOOKS,
     _IMPORT_STATS,
     ImportStats,
 )
+# Import config module directly to modify its global variables
+from . import _config
 from ._proxy import _get_lazy_module
 from ._fuzzy import _search_module, _search_class_in_modules
 
@@ -45,12 +45,15 @@ def get_module(alias: str) -> Optional[Any]:
 def clear_cache() -> None:
     """Clear the module cache.
 
-    This clears all cached module instances, but keeps alias mappings intact.
-    Use reload_aliases() to reset aliases, or reset_all() to reset everything.
+    This clears all cached module instances and removes them from tracking,
+    but keeps alias mappings intact. Use reload_aliases() to reset aliases,
+    or reset_all() to reset everything.
     """
+    # Clear cached modules and submodule caches before removing from tracking
     for lm in _LAZY_MODULES.values():
         object.__setattr__(lm, "_cached_module", None)
         object.__setattr__(lm, "_submodule_cache", {})
+    # Remove from tracking so list_loaded() returns empty after clear
     _LAZY_MODULES.clear()
 
 
@@ -106,19 +109,17 @@ def reload_module(alias: str) -> bool:
 
 def enable_auto_search() -> None:
     """Enable auto-search for unregistered modules."""
-    global _AUTO_SEARCH_ENABLED
-    _AUTO_SEARCH_ENABLED = True
+    _config._AUTO_SEARCH_ENABLED = True
 
 
 def disable_auto_search() -> None:
     """Disable auto-search for unregistered modules."""
-    global _AUTO_SEARCH_ENABLED
-    _AUTO_SEARCH_ENABLED = False
+    _config._AUTO_SEARCH_ENABLED = False
 
 
 def is_auto_search_enabled() -> bool:
     """Check if auto-search is enabled."""
-    return _AUTO_SEARCH_ENABLED
+    return _config._AUTO_SEARCH_ENABLED
 
 
 def search_module(name: str) -> Optional[str]:
@@ -133,19 +134,17 @@ def search_class(class_name: str) -> Optional[tuple]:
 
 def enable_debug_mode() -> None:
     """Enable debug mode."""
-    global _DEBUG_MODE
-    _DEBUG_MODE = True
+    _config._DEBUG_MODE = True
 
 
 def disable_debug_mode() -> None:
     """Disable debug mode."""
-    global _DEBUG_MODE
-    _DEBUG_MODE = False
+    _config._DEBUG_MODE = False
 
 
 def is_debug_mode() -> bool:
     """Check if debug mode is enabled."""
-    return _DEBUG_MODE
+    return _config._DEBUG_MODE
 
 
 def get_import_stats() -> Dict[str, Any]:
@@ -166,9 +165,7 @@ def get_import_stats() -> Dict[str, Any]:
 
 def reset_import_stats() -> None:
     """Reset import statistics."""
-    global _IMPORT_STATS
-    from ._config import ImportStats
-    _IMPORT_STATS = ImportStats()
+    _config._IMPORT_STATS = ImportStats()
 
 
 def validate_aliases_importable(

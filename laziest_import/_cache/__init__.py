@@ -96,6 +96,9 @@ from ._api import (
     enable_cache_compression,
 )
 
+# Re-export _FILE_CACHE_ENABLED from config for backward compatibility
+from .._config import _FILE_CACHE_ENABLED
+
 
 # Public API - what users typically import
 __all__ = [
@@ -137,6 +140,7 @@ __all__ = [
     "_CALLER_FILE_SHA",
     "_CALLER_LOADED_MODULES",
     "_BACKGROUND_BUILD_LOCK",
+    "_FILE_CACHE_ENABLED",
     "_get_cache_dir",
     "_get_cache_size",
     "_cleanup_cache_if_needed",
