@@ -5,6 +5,8 @@ Features:
 - Pre-analysis: Scan code files to predict imports
 - Profiler: Record module load times and memory usage
 - Conflict visualization: Show symbol conflicts
+- Dependency tree: Analyze module dependencies
+- Benchmark: Performance benchmarking
 
 This module re-exports all public API from the _analysis subpackage for backward compatibility.
 """
@@ -38,6 +40,20 @@ from ._analysis import (
     apply_preferences,
     clear_preferences,
     get_preferences_path,
+    # Dependency tree
+    DependencyNode,
+    DependencyTree,
+    DependencyAnalyzer,
+    dependency_tree,
+    print_dependency_tree,
+    # Benchmark
+    BenchmarkResult,
+    BenchmarkReport,
+    ImportComparison,
+    BenchmarkRunner,
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
     # Internal
     _profiler,
 )
@@ -70,4 +86,18 @@ __all__ = [
     "apply_preferences",
     "clear_preferences",
     "get_preferences_path",
+    # Dependency tree
+    "DependencyNode",
+    "DependencyTree",
+    "DependencyAnalyzer",
+    "dependency_tree",
+    "print_dependency_tree",
+    # Benchmark
+    "BenchmarkResult",
+    "BenchmarkReport",
+    "ImportComparison",
+    "BenchmarkRunner",
+    "benchmark",
+    "benchmark_imports",
+    "print_benchmark_report",
 ]

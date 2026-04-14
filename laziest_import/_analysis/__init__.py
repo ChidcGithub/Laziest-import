@@ -7,6 +7,8 @@ Provides:
 - Conflict visualization: Show symbol conflicts
 - Environment detection: Detect Python environment
 - Preferences persistence: Save/load user preferences
+- Dependency tree: Analyze module dependencies
+- Benchmark: Performance benchmarking
 """
 
 # Pre-analysis
@@ -51,6 +53,26 @@ from ._preferences import (
     get_preferences_path,
 )
 
+# Dependency tree analysis
+from ._dependency import (
+    DependencyNode,
+    DependencyTree,
+    DependencyAnalyzer,
+    dependency_tree,
+    print_dependency_tree,
+)
+
+# Benchmark
+from ._benchmark import (
+    BenchmarkResult,
+    BenchmarkReport,
+    ImportComparison,
+    BenchmarkRunner,
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
+)
+
 # Internal profiler instance (for internal use)
 from ._profiler import _profiler
 
@@ -82,4 +104,18 @@ __all__ = [
     "apply_preferences",
     "clear_preferences",
     "get_preferences_path",
+    # Dependency tree
+    "DependencyNode",
+    "DependencyTree",
+    "DependencyAnalyzer",
+    "dependency_tree",
+    "print_dependency_tree",
+    # Benchmark
+    "BenchmarkResult",
+    "BenchmarkReport",
+    "ImportComparison",
+    "BenchmarkRunner",
+    "benchmark",
+    "benchmark_imports",
+    "print_benchmark_report",
 ]

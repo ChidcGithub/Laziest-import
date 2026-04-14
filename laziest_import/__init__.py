@@ -139,6 +139,17 @@ from ._analysis import (
     load_preferences,
     apply_preferences,
     clear_preferences,
+    # Dependency tree
+    DependencyNode,
+    DependencyTree,
+    dependency_tree,
+    print_dependency_tree,
+    # Benchmark
+    BenchmarkResult,
+    BenchmarkReport,
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
 )
 
 # Import public API functions
@@ -463,6 +474,11 @@ _DIR_NAMES = [
     "stop_profiling", "get_profile_report", "print_profile_report", "show_conflicts",
     "get_conflicts_summary", "show_environment", "detect_environment",
     "save_preferences", "load_preferences", "apply_preferences", "clear_preferences",
+    # Dependency tree
+    "dependency_tree", "print_dependency_tree", "DependencyNode", "DependencyTree",
+    # Benchmark
+    "benchmark", "benchmark_imports", "print_benchmark_report",
+    "BenchmarkResult", "BenchmarkReport",
 ]
 
 
@@ -523,6 +539,11 @@ _BASE_EXPORTS = [
     "show_conflicts", "get_conflicts_summary", "show_environment", "detect_environment",
     "save_preferences", "load_preferences", "apply_preferences", "clear_preferences",
     "analyze_file", "analyze_source", "analyze_directory",
+    # Dependency tree
+    "dependency_tree", "print_dependency_tree", "DependencyNode", "DependencyTree",
+    # Benchmark
+    "benchmark", "benchmark_imports", "print_benchmark_report",
+    "BenchmarkResult", "BenchmarkReport",
 ]
 
 __all__ = sorted(_BASE_EXPORTS)
