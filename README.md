@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-454_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-820+_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 
 A zero-configuration lazy import library. Import and use any installed module with a single line.
 
@@ -102,13 +102,21 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 | **Cache statistics** | Track hits/misses and optimize performance |
 | **Version checking** | Automatic compatibility warnings for aliases/mappings |
 | **Type hints support** | `LazySymbol.__class_getitem__` for generic type hints |
+| **Dependency tree analysis** | `lz.dependency_tree()` - analyze module dependencies |
+| **Performance benchmarking** | `lz.benchmark()` - benchmark functions and imports |
 | **Dependency pre-analysis** | Scan code to predict required imports |
 | **Import profiler** | Record module load times and memory usage |
 | **Environment detection** | Detect virtual environments (venv/conda/virtualenv) |
 | **Conflict visualization** | Find and display symbol conflicts across modules |
 | **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **454+ tests** | Comprehensive test coverage |
+| **820+ tests** | Comprehensive test coverage |
+
+## What's New in v0.0.5-pre1
+
+- **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
+- **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
+- **820+ tests**: Comprehensive test coverage across 17+ test files
 
 ## What's New in v0.0.4
 
@@ -125,7 +133,6 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 - **Environment Detection**: Detect virtual environments (venv/conda/virtualenv)
 - **Conflict Visualization**: Find and display symbol conflicts across modules
 - **Persistent Preferences**: Save/load user preferences to `~/.laziestrc`
-- **454+ tests**: Comprehensive test coverage
 
 ## Auto-Install
 
@@ -180,6 +187,66 @@ arr = np.array([1, 2, 3])  # If numpy is missing, prompts to install
 </details>
 
 ## Advanced Features
+
+<details>
+<summary>Dependency Tree Analysis</summary>
+
+Analyze module dependencies and visualize import relationships:
+
+```python
+import laziest_import as lz
+
+# Analyze a module's dependency tree
+tree = lz.dependency_tree('numpy', max_depth=2)
+print(f"Total modules: {tree.total_modules}")
+print(f"Stdlib: {tree.stdlib_count}, Third-party: {tree.third_party_count}")
+
+# Print formatted tree
+lz.print_dependency_tree(tree)
+
+# Exclude certain module types
+tree = lz.dependency_tree(
+    'pandas',
+    max_depth=3,
+    include_stdlib=False,      # Exclude stdlib
+    include_third_party=True,  # Include third-party
+    include_local=True         # Include local modules
+)
+```
+
+</details>
+
+<details>
+<summary>Performance Benchmarking</summary>
+
+Benchmark function execution and import performance:
+
+```python
+import laziest_import as lz
+
+# Benchmark a function
+result = lz.benchmark(
+    lambda: sum(range(10000)),
+    name="sum_test",
+    iterations=100,
+    warmup=10
+)
+print(f"Avg: {result.avg_time*1000:.4f}ms")
+print(f"Min: {result.min_time*1000:.4f}ms")
+print(f"Max: {result.max_time*1000:.4f}ms")
+print(f"Std dev: {result.std_dev*1000:.4f}ms")
+
+# Benchmark module imports
+report = lz.benchmark_imports(['numpy', 'pandas', 'matplotlib'])
+lz.print_benchmark_report(report)
+
+# Compare lazy vs regular imports
+report = lz.benchmark_imports(['numpy'], compare_lazy=True)
+for result in report.results:
+    print(f"{result.name}: {result.avg_time*1000:.2f}ms")
+```
+
+</details>
 
 <details>
 <summary>File-based cache</summary>
@@ -597,6 +664,21 @@ lz.clear_preferences()
 | `stop_profiling()` | Stop import profiler |
 | `get_profile_report()` | Get profiling report |
 | `print_profile_report()` | Print formatted report |
+
+### Dependency Tree
+
+| Function | Description |
+|----------|-------------|
+| `dependency_tree(module, max_depth=3)` | Analyze module dependency tree |
+| `print_dependency_tree(tree)` | Print formatted dependency tree |
+
+### Benchmarking
+
+| Function | Description |
+|----------|-------------|
+| `benchmark(func, name, iterations=10)` | Benchmark a function |
+| `benchmark_imports(modules, iterations=5)` | Benchmark module imports |
+| `print_benchmark_report(report)` | Print formatted benchmark report |
 
 ### Environment Detection
 
