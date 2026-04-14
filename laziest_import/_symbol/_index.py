@@ -167,6 +167,13 @@ def _build_symbol_index(
         "functools",
         "contextlib",
         "dataclasses",
+        # Standard library modules with commonly used symbols
+        "math",
+        "cmath",
+        "statistics",
+        "random",
+        "decimal",
+        "fractions",
     }
 
     sorted_modules = sorted(
