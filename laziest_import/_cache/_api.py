@@ -56,6 +56,7 @@ from ._symbol_index import _save_tracked_packages
 
 # ============== Cache Configuration API ==============
 
+
 def set_cache_config(
     symbol_index_ttl: Optional[int] = None,
     stdlib_cache_ttl: Optional[int] = None,
@@ -87,7 +88,7 @@ def get_cache_stats() -> Dict[str, Any]:
     total_misses = _CACHE_STATS["symbol_misses"] + _CACHE_STATS["module_misses"]
     total_requests = total_hits + total_misses
     hit_rate = total_hits / total_requests if total_requests > 0 else 0.0
-    
+
     return {
         **_CACHE_STATS,
         "hit_rate": hit_rate,
@@ -111,37 +112,37 @@ def reset_cache_stats() -> None:
 def invalidate_package_cache(package_name: str) -> bool:
     """Invalidate cache for a specific package."""
     global _TRACKED_PACKAGES, _THIRD_PARTY_CACHE_BUILT
-    
+
     # Return False if package not tracked
     if package_name not in _TRACKED_PACKAGES:
         return False
-    
+
     del _TRACKED_PACKAGES[package_name]
-    
+
     # Remove symbols from cache
     to_remove = []
-    for symbol, locations in _SYMBOL_CACHE.items():
-        locations = [loc for loc in locations if not loc[0].startswith(package_name)]
-        if locations:
-            _SYMBOL_CACHE[symbol] = locations
+    for symbol, locations in list(_SYMBOL_CACHE.items()):
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
+        if filtered:
+            _SYMBOL_CACHE[symbol] = filtered
         else:
             to_remove.append(symbol)
-    
+
     for symbol in to_remove:
-        del _SYMBOL_CACHE[symbol]
-    
+        _SYMBOL_CACHE.pop(symbol, None)
+
     # Also check third-party cache
     to_remove = []
-    for symbol, locations in _THIRD_PARTY_SYMBOL_CACHE.items():
-        locations = [loc for loc in locations if not loc[0].startswith(package_name)]
-        if locations:
-            _THIRD_PARTY_SYMBOL_CACHE[symbol] = locations
+    for symbol, locations in list(_THIRD_PARTY_SYMBOL_CACHE.items()):
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
+        if filtered:
+            _THIRD_PARTY_SYMBOL_CACHE[symbol] = filtered
         else:
             to_remove.append(symbol)
-    
+
     for symbol in to_remove:
-        del _THIRD_PARTY_SYMBOL_CACHE[symbol]
-    
+        _THIRD_PARTY_SYMBOL_CACHE.pop(symbol, None)
+
     _save_tracked_packages()
     return True
 
@@ -153,12 +154,12 @@ def clear_symbol_cache() -> None:
         _STDLIB_CACHE_BUILT as config_stdlib_built,
         _THIRD_PARTY_CACHE_BUILT as config_third_party_built,
     )
-    
+
     _SYMBOL_CACHE.clear()
     _STDLIB_SYMBOL_CACHE.clear()
     _THIRD_PARTY_SYMBOL_CACHE.clear()
     _CONFIRMED_MAPPINGS.clear()
-    
+
     # Modify the config module variables using setters
     _set_symbol_index_built(False)
     _set_stdlib_cache_built(False)

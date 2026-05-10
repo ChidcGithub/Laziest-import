@@ -136,6 +136,10 @@ _KNOWN_MODULES_CACHE_TTL: float = 300.0  # 5 minutes
 # Class name to module mapping
 _CLASS_TO_MODULE_CACHE: Dict[str, str] = {}
 
+# Negative cache for names that don't exist (avoids repeated expensive searches)
+_NEGATIVE_CACHE: Set[str] = set()
+_NEGATIVE_CACHE_LOCK: threading.Lock = threading.Lock()
+
 # Module alias mapping
 _ALIAS_MAP: Dict[str, str] = {}
 
@@ -206,6 +210,9 @@ _THIRD_PARTY_CACHE_BUILT: bool = False
 
 # User confirmed mappings
 _CONFIRMED_MAPPINGS: Dict[str, str] = {}
+
+# Lock for symbol cache thread safety
+_SYMBOL_CACHE_LOCK: threading.Lock = threading.Lock()
 
 # ============== Module Priority Configuration ==============
 # Loaded from mappings/priorities.json

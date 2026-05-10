@@ -42,18 +42,18 @@ def _get_mappings_dir() -> Path:
 
 def _load_mapping_file(filename: str) -> Dict[str, Any]:
     """Load a mapping JSON file, removing metadata keys.
-    
+
     Checks version range from version.json for the 'mappings' target (only once).
     """
     global _MAPPINGS_VERSION_CHECKED
     mappings_dir = _get_mappings_dir()
     file_path = mappings_dir / filename
-    
+
     if not file_path.exists():
         if _DEBUG_MODE:
             logging.warning(f"[laziest-import] Mapping file not found: {file_path}")
         return {}
-    
+
     # Check version range from version.json (only check once for all mappings)
     if not _MAPPINGS_VERSION_CHECKED:
         _MAPPINGS_VERSION_CHECKED = True
@@ -66,14 +66,14 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
                 warnings.warn(
                     f"[laziest-import] {warning_msg}. Some mapping features may not work correctly.",
                     UserWarning,
-                    stacklevel=3
+                    stacklevel=3,
                 )
-    
+
     try:
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
-        
-        # Remove metadata keys
+
+        # Remove metadata keys and flatten categorized structure
         result = {}
         for key, value in data.items():
             if key.startswith("_"):
@@ -85,23 +85,25 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
         return result
     except (json.JSONDecodeError, OSError) as e:
         if _DEBUG_MODE:
-            logging.warning(f"[laziest-import] Failed to load mapping file {filename}: {e}")
+            logging.warning(
+                f"[laziest-import] Failed to load mapping file {filename}: {e}"
+            )
         return {}
 
 
 def _load_all_mappings() -> None:
     """Load all mapping files into cache."""
     global _MAPPING_CACHE, _MAPPINGS_LOADED
-    
+
     # Quick check without lock for performance
     if _MAPPINGS_LOADED:
         return
-    
+
     with _MAPPINGS_LOCK:
         # Double-check after acquiring lock
         if _MAPPINGS_LOADED:
             return
-        
+
         _MAPPING_CACHE = {
             "abbreviations": _load_mapping_file("abbreviations.json"),
             "misspellings": _load_mapping_file("misspellings.json"),
@@ -125,10 +127,10 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     """Calculate Levenshtein distance between two strings."""
     if len(s1) < len(s2):
         return _levenshtein_distance(s2, s1)
-    
+
     if len(s2) == 0:
         return len(s1)
-    
+
     previous_row = range(len(s2) + 1)
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
@@ -138,7 +140,7 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
             substitutions = previous_row[j] + (c1 != c2)
             current_row.append(min(insertions, deletions, substitutions))
         previous_row = current_row
-    
+
     return previous_row[-1]
 
 
@@ -181,71 +183,103 @@ def _get_common_symbol_misspellings() -> Dict[str, str]:
 def _infer_context() -> Set[str]:
     """Infer the current context by examining loaded modules."""
     loaded = set()
-    
+
     # Check already loaded lazy modules
     for alias, lazy_mod in _LAZY_MODULES.items():
-        cached = object.__getattribute__(lazy_mod, '_cached_module')
+        cached = object.__getattribute__(lazy_mod, "_cached_module")
         if cached is not None:
-            module_name = object.__getattribute__(lazy_mod, '_module_name')
-            base_module = module_name.split('.')[0]
+            module_name = object.__getattribute__(lazy_mod, "_module_name")
+            base_module = module_name.split(".")[0]
             loaded.add(base_module)
-    
+
     # Check sys.modules for already imported modules
     for mod_name in sys.modules.keys():
-        if mod_name and not mod_name.startswith('_'):
-            base_module = mod_name.split('.')[0]
+        if mod_name and not mod_name.startswith("_"):
+            base_module = mod_name.split(".")[0]
             if base_module in _MODULE_PRIORITY or base_module in _ALIAS_MAP.values():
                 loaded.add(base_module)
-    
+
     return loaded
 
 
 def _check_common_suffix_match(name: str, module: str) -> bool:
     """Check if name matches module with common suffix patterns."""
     suffixes = [
-        'py', 'python', 'lib', 'library', 'api', 'client', 'sdk',
-        'core', 'utils', 'tools', 'helper', 'wrapper', 'handler',
-        'db', 'sql', 'io', 'cli', 'gui', 'ui', 'web', 'http',
-        'async', 'sync', 'multi', 'base', 'simple', 'easy', 'fast',
-        'ml', 'ai', 'dl', 'nn', 'cv', 'nlp', 'data', 'geo', 'sci',
+        "py",
+        "python",
+        "lib",
+        "library",
+        "api",
+        "client",
+        "sdk",
+        "core",
+        "utils",
+        "tools",
+        "helper",
+        "wrapper",
+        "handler",
+        "db",
+        "sql",
+        "io",
+        "cli",
+        "gui",
+        "ui",
+        "web",
+        "http",
+        "async",
+        "sync",
+        "multi",
+        "base",
+        "simple",
+        "easy",
+        "fast",
+        "ml",
+        "ai",
+        "dl",
+        "nn",
+        "cv",
+        "nlp",
+        "data",
+        "geo",
+        "sci",
     ]
-    
+
     for suffix in suffixes:
         if module == f"{name}{suffix}" or module == f"{name}_{suffix}":
             return True
         if name == f"{module}{suffix}" or name == f"{module}_{suffix}":
             return True
-    
+
     patterns = [
-        lambda n, m: m == n.replace('-', '').replace('_', ''),
-        lambda n, m: n == 'pillow' and m == 'pil',
-        lambda n, m: n == 'pil' and m == 'pillow',
-        lambda n, m: n == 'opencv' and m.startswith('cv'),
-        lambda n, m: m == 'opencv' and n.startswith('cv'),
-        lambda n, m: 'beautiful' in n and m == 'bs4',
-        lambda n, m: n == 'bs4' and 'beautiful' in m,
-        lambda n, m: n == 'pytorch' and m == 'torch',
-        lambda n, m: m == 'pytorch' and n == 'torch',
-        lambda n, m: n == 'tf' and m == 'tensorflow',
-        lambda n, m: m == 'tf' and n == 'tensorflow',
-        lambda n, m: n.startswith('sk') and m.startswith('scikit'),
-        lambda n, m: m.startswith('sk') and n.startswith('scikit'),
+        lambda n, m: m == n.replace("-", "").replace("_", ""),
+        lambda n, m: n == "pillow" and m == "pil",
+        lambda n, m: n == "pil" and m == "pillow",
+        lambda n, m: n == "opencv" and m.startswith("cv"),
+        lambda n, m: m == "opencv" and n.startswith("cv"),
+        lambda n, m: "beautiful" in n and m == "bs4",
+        lambda n, m: n == "bs4" and "beautiful" in m,
+        lambda n, m: n == "pytorch" and m == "torch",
+        lambda n, m: m == "pytorch" and n == "torch",
+        lambda n, m: n == "tf" and m == "tensorflow",
+        lambda n, m: m == "tf" and n == "tensorflow",
+        lambda n, m: n.startswith("sk") and m.startswith("scikit"),
+        lambda n, m: m.startswith("sk") and n.startswith("scikit"),
     ]
-    
+
     for pattern in patterns:
         try:
             if pattern(name, module):
                 return True
         except Exception:
             continue
-    
+
     return False
 
 
 def _search_module(name: str) -> Optional[str]:
     """
     Search for a matching module name with enhanced fuzzy matching.
-    
+
     Matching priority:
     1. Exact match in known modules
     2. Direct import test
@@ -259,18 +293,18 @@ def _search_module(name: str) -> Optional[str]:
     10. Levenshtein distance fuzzy match
     """
     from ._alias import _build_known_modules_cache
-    
+
     if not _AUTO_SEARCH_ENABLED:
         return None
-    
+
     known_modules = _build_known_modules_cache()
     name_lower = name.lower()
-    name_stripped = name_lower.replace('_', '').replace('-', '')
-    
+    name_stripped = name_lower.replace("_", "").replace("-", "")
+
     # 1. Exact match
     if name in known_modules:
         return name
-    
+
     # 2. Try direct import
     try:
         spec = importlib.util.find_spec(name)
@@ -278,7 +312,7 @@ def _search_module(name: str) -> Optional[str]:
             return name
     except (ImportError, ModuleNotFoundError, ValueError):
         pass
-    
+
     # 3. Check abbreviations
     abbrev_map = _get_module_abbreviations()
     if name_lower in abbrev_map:
@@ -291,7 +325,7 @@ def _search_module(name: str) -> Optional[str]:
                 return target
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
-    
+
     # 4. Check submodule mappings
     submodule_map = _get_common_submodules()
     if name in submodule_map:
@@ -304,14 +338,16 @@ def _search_module(name: str) -> Optional[str]:
                 return submodule_path
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
-    
+
     # 5. Check common misspellings
     misspellings = _get_common_misspellings()
     if name_lower in misspellings:
         corrected = misspellings[name_lower]
         if corrected in known_modules:
             if _DEBUG_MODE:
-                logging.debug(f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'")
+                logging.debug(
+                    f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'"
+                )
             return corrected
         try:
             spec = importlib.util.find_spec(corrected)
@@ -319,14 +355,14 @@ def _search_module(name: str) -> Optional[str]:
                 return corrected
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
-    
+
     # Collect candidates with priority scores
     candidates: List[Tuple[int, int, str]] = []
-    
+
     for mod_name in known_modules:
         mod_lower = mod_name.lower()
-        mod_stripped = mod_lower.replace('_', '').replace('-', '')
-        
+        mod_stripped = mod_lower.replace("_", "").replace("-", "")
+
         # Priority 0: Case-insensitive exact match
         if mod_lower == name_lower:
             candidates.append((0, 0, mod_name))
@@ -359,26 +395,26 @@ def _search_module(name: str) -> Optional[str]:
                 max_distance = min(3, max(len(name_lower), len(mod_lower)) // 3)
                 if distance <= max_distance:
                     candidates.append((7, distance, mod_name))
-    
+
     if candidates:
         candidates.sort(key=lambda x: (x[0], x[1]))
         best = candidates[0]
-        
+
         if _DEBUG_MODE:
             logging.debug(
                 f"[laziest-import] Fuzzy match: '{name}' -> '{best[2]}' "
                 f"(priority={best[0]}, distance={best[1]})"
             )
-        
+
         return best[2]
-    
+
     return None
 
 
 def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
     """Search for a class in loaded modules."""
     import importlib
-    
+
     # Check cache
     if class_name in _CLASS_TO_MODULE_CACHE:
         mod_name = _CLASS_TO_MODULE_CACHE[class_name]
@@ -388,7 +424,7 @@ def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
                 return (mod_name, getattr(mod, class_name))
         except (ImportError, ModuleNotFoundError):
             pass
-    
+
     # Search in loaded modules
     for mod_name, mod in list(sys.modules.items()):
         if mod is None:
@@ -400,5 +436,5 @@ def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
                 return (mod_name, obj)
         except Exception:
             continue
-    
+
     return None

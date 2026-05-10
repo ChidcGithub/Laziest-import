@@ -15,6 +15,7 @@ from ._config import (
     _IMPORT_STATS,
     ImportStats,
 )
+
 # Import config module directly to modify its global variables
 from . import _config
 from ._proxy import _get_lazy_module
@@ -67,10 +68,12 @@ def reset_all() -> None:
 
     # Reload aliases from configuration
     from ._alias import reload_aliases
+
     reload_aliases()
 
     # Clear symbol cache
     from ._cache import clear_symbol_cache
+
     clear_symbol_cache()
 
     # Reset import stats
@@ -78,6 +81,7 @@ def reset_all() -> None:
 
     # Clear confirmed mappings
     from ._config import _CONFIRMED_MAPPINGS
+
     _CONFIRMED_MAPPINGS.clear()
 
 
@@ -183,9 +187,15 @@ def validate_aliases_importable(
 
     for alias, module_name in aliases.items():
         try:
-            importlib.import_module(module_name)
-            importable[alias] = {"module": module_name, "status": "ok"}
-        except ImportError as e:
+            spec = importlib.util.find_spec(module_name)
+            if spec is not None:
+                importable[alias] = {"module": module_name, "status": "ok"}
+            else:
+                not_importable[alias] = {
+                    "module": module_name,
+                    "error": "Module not found",
+                }
+        except (ImportError, ModuleNotFoundError, ValueError) as e:
             not_importable[alias] = {"module": module_name, "error": str(e)}
 
     return {"importable": importable, "not_importable": not_importable}

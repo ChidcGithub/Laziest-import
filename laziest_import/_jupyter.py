@@ -78,10 +78,7 @@ def _create_lazy_magics():
                         alias = module.split(".")[0]
                         cell_locals[alias] = getattr(lz, alias, None)
 
-                try:
-                    exec(cell, cell_locals, cell_locals)
-                except Exception as e:
-                    raise e
+                exec(cell, cell_locals, cell_locals)
 
             @line_magic
             @magic_arguments()

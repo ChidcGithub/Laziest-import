@@ -36,8 +36,11 @@ from ._config import (
     _LAZY_MODULES,
     _SYMBOL_RESOLUTION_CONFIG,
     _SYMBOL_SEARCH_CONFIG,
+    _SYMBOL_PREFERENCES,
     _DEBUG_MODE,
     _RESERVED_NAMES,
+    _NEGATIVE_CACHE,
+    _NEGATIVE_CACHE_LOCK,
     get_init_lock,
     is_initializing,
     is_initialized,
@@ -234,9 +237,7 @@ def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResul
 
 
 def analyze_directory(
-    dir_path: str, 
-    recursive: bool = True,
-    exclude: Optional[set] = None
+    dir_path: str, recursive: bool = True, exclude: Optional[set] = None
 ) -> List[PreAnalysisResult]:
     """Analyze all Python files in a directory."""
     return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
@@ -282,33 +283,35 @@ def _ensure_symbol_functions_loaded() -> None:
         clear_shard_cache,
     )
 
-    _SYMBOL_FUNCTIONS.update({
-        "search_symbol": search_symbol,
-        "enable_symbol_search": enable_symbol_search,
-        "disable_symbol_search": disable_symbol_search,
-        "is_symbol_search_enabled": is_symbol_search_enabled,
-        "rebuild_symbol_index": rebuild_symbol_index,
-        "get_symbol_search_config": get_symbol_search_config,
-        "get_symbol_cache_info": get_symbol_cache_info,
-        "_search_symbol_enhanced": _search_symbol_enhanced,
-        "_handle_symbol_not_found": _handle_symbol_not_found,
-        "set_symbol_preference": set_symbol_preference,
-        "get_symbol_preference": get_symbol_preference,
-        "clear_symbol_preference": clear_symbol_preference,
-        "list_symbol_conflicts": list_symbol_conflicts,
-        "set_module_priority": set_module_priority,
-        "get_module_priority": get_module_priority,
-        "enable_auto_symbol_resolution": enable_auto_symbol_resolution,
-        "disable_auto_symbol_resolution": disable_auto_symbol_resolution,
-        "get_symbol_resolution_config": get_symbol_resolution_config,
-        "get_loaded_modules_context": get_loaded_modules_context,
-        "build_symbol_index_incremental": build_symbol_index_incremental,
-        "search_with_sharding": search_with_sharding,
-        "enable_sharding": enable_sharding,
-        "disable_sharding": disable_sharding,
-        "get_sharding_config": get_sharding_config,
-        "clear_shard_cache": clear_shard_cache,
-    })
+    _SYMBOL_FUNCTIONS.update(
+        {
+            "search_symbol": search_symbol,
+            "enable_symbol_search": enable_symbol_search,
+            "disable_symbol_search": disable_symbol_search,
+            "is_symbol_search_enabled": is_symbol_search_enabled,
+            "rebuild_symbol_index": rebuild_symbol_index,
+            "get_symbol_search_config": get_symbol_search_config,
+            "get_symbol_cache_info": get_symbol_cache_info,
+            "_search_symbol_enhanced": _search_symbol_enhanced,
+            "_handle_symbol_not_found": _handle_symbol_not_found,
+            "set_symbol_preference": set_symbol_preference,
+            "get_symbol_preference": get_symbol_preference,
+            "clear_symbol_preference": clear_symbol_preference,
+            "list_symbol_conflicts": list_symbol_conflicts,
+            "set_module_priority": set_module_priority,
+            "get_module_priority": get_module_priority,
+            "enable_auto_symbol_resolution": enable_auto_symbol_resolution,
+            "disable_auto_symbol_resolution": disable_auto_symbol_resolution,
+            "get_symbol_resolution_config": get_symbol_resolution_config,
+            "get_loaded_modules_context": get_loaded_modules_context,
+            "build_symbol_index_incremental": build_symbol_index_incremental,
+            "search_with_sharding": search_with_sharding,
+            "enable_sharding": enable_sharding,
+            "disable_sharding": disable_sharding,
+            "get_sharding_config": get_sharding_config,
+            "clear_shard_cache": clear_shard_cache,
+        }
+    )
 
 
 # ============== Module-level __getattr__ ==============
@@ -335,16 +338,48 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
     if name in _RESERVED_NAMES:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
-    # 1. Check for lazy-loaded functions
+    # Check negative cache (names already known not to exist)
+    if name in _NEGATIVE_CACHE:
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+    # 1. Check for lazy-loaded functions (deferred: only when needed)
     global _SYMBOL_FUNCTIONS
-    if not _SYMBOL_FUNCTIONS:
+    if name in (
+        "search_symbol",
+        "enable_symbol_search",
+        "disable_symbol_search",
+        "is_symbol_search_enabled",
+        "rebuild_symbol_index",
+        "get_symbol_search_config",
+        "get_symbol_cache_info",
+        "clear_symbol_cache",
+        "set_symbol_preference",
+        "get_symbol_preference",
+        "clear_symbol_preference",
+        "list_symbol_conflicts",
+        "set_module_priority",
+        "get_module_priority",
+        "enable_auto_symbol_resolution",
+        "disable_auto_symbol_resolution",
+        "get_symbol_resolution_config",
+        "get_loaded_modules_context",
+        "build_symbol_index_incremental",
+        "search_with_sharding",
+        "enable_sharding",
+        "disable_sharding",
+        "get_sharding_config",
+        "clear_shard_cache",
+    ):
         _ensure_symbol_functions_loaded()
-    if name in _SYMBOL_FUNCTIONS:
+        return _SYMBOL_FUNCTIONS[name]
+
+    if _SYMBOL_FUNCTIONS and name in _SYMBOL_FUNCTIONS:
         return _SYMBOL_FUNCTIONS[name]
 
     # 2. Check for which function
     if name == "which":
         from ._which import which, which_all
+
         _SYMBOL_FUNCTIONS["which"] = which
         _SYMBOL_FUNCTIONS["which_all"] = which_all
         return which
@@ -352,6 +387,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
     # 3. Check for help function
     if name == "help":
         from ._help import help as help_func
+
         _SYMBOL_FUNCTIONS["help"] = help_func
         return help_func
 
@@ -364,6 +400,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         "get_background_timeout",
     ):
         import importlib
+
         _lazy_index_mod = importlib.import_module("laziest_import._lazy_index")
         _SYMBOL_FUNCTIONS[name] = getattr(_lazy_index_mod, name)
         return _SYMBOL_FUNCTIONS[name]
@@ -377,6 +414,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         "reload_rc_config",
     ):
         import importlib
+
         _rcconfig_mod = importlib.import_module("laziest_import._rcconfig")
         _SYMBOL_FUNCTIONS[name] = getattr(_rcconfig_mod, name)
         return _SYMBOL_FUNCTIONS[name]
@@ -384,6 +422,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
     # 6. Check for introspect functions
     if name in ("list_module_symbols", "get_module_info", "search_in_module"):
         import importlib
+
         _introspect_mod = importlib.import_module("laziest_import._introspect")
         _SYMBOL_FUNCTIONS[name] = getattr(_introspect_mod, name)
         return _SYMBOL_FUNCTIONS[name]
@@ -401,149 +440,265 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
 
     # 9. Try symbol auto-resolution
     if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
-        from ._config import _SYMBOL_PREFERENCES
         _ensure_symbol_functions_loaded()
 
-        symbol_match = _SYMBOL_FUNCTIONS.get("_search_symbol_enhanced")(name, auto=True)
-        if symbol_match:
-            _SYMBOL_PREFERENCES[name] = symbol_match.module_name
+        _search_enhanced = _SYMBOL_FUNCTIONS.get("_search_symbol_enhanced")
+        if _search_enhanced is not None:
+            symbol_match = _search_enhanced(name, auto=True)
+            if symbol_match:
+                _SYMBOL_PREFERENCES[name] = symbol_match.module_name
 
-            if _DEBUG_MODE:
-                import logging
-                logging.info(
-                    f"[laziest-import] Auto-resolved symbol '{name}' -> "
-                    f"{symbol_match.module_name}.{symbol_match.symbol_name}"
+                if _DEBUG_MODE:
+                    import logging
+
+                    logging.info(
+                        f"[laziest-import] Auto-resolved symbol '{name}' -> "
+                        f"{symbol_match.module_name}.{symbol_match.symbol_name}"
+                    )
+
+                return LazySymbol(
+                    symbol_name=symbol_match.symbol_name,
+                    module_name=symbol_match.module_name,
+                    symbol_type=symbol_match.symbol_type,
                 )
-
-            return LazySymbol(
-                symbol_name=symbol_match.symbol_name,
-                module_name=symbol_match.module_name,
-                symbol_type=symbol_match.symbol_type,
-            )
 
     # 10. Fall back to interactive symbol search
     if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
         _ensure_symbol_functions_loaded()
-        found_module = _SYMBOL_FUNCTIONS.get("_handle_symbol_not_found")(name)
-        if found_module:
+        _handle_not_found = _SYMBOL_FUNCTIONS.get("_handle_symbol_not_found")
+        if _handle_not_found is not None:
+            found_module = _handle_not_found(name)
+            if found_module:
+                return _get_lazy_module(name)
+
+    # 8. Try module auto-search
+    if _AUTO_SEARCH_ENABLED:
+        found = _search_module(name)
+        if found:
+            _ALIAS_MAP[name] = found
             return _get_lazy_module(name)
 
-    # Not found
-    available = list(_ALIAS_MAP.keys())[:10]
+    # 9. Try symbol auto-resolution
+    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
+        _ensure_symbol_functions_loaded()
+
+        _search_enhanced = _SYMBOL_FUNCTIONS.get("_search_symbol_enhanced")
+        if _search_enhanced is not None:
+            symbol_match = _search_enhanced(name, auto=True)
+            if symbol_match:
+                _SYMBOL_PREFERENCES[name] = symbol_match.module_name
+
+                if _DEBUG_MODE:
+                    import logging
+
+                    logging.info(
+                        f"[laziest-import] Auto-resolved symbol '{name}' -> "
+                        f"{symbol_match.module_name}.{symbol_match.symbol_name}"
+                    )
+
+                return LazySymbol(
+                    symbol_name=symbol_match.symbol_name,
+                    module_name=symbol_match.module_name,
+                    symbol_type=symbol_match.symbol_type,
+                )
+
+    # 10. Fall back to interactive symbol search
+    if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
+        _ensure_symbol_functions_loaded()
+        _handle_not_found = _SYMBOL_FUNCTIONS.get("_handle_symbol_not_found")
+        if _handle_not_found is not None:
+            found_module = _handle_not_found(name)
+            if found_module:
+                return _get_lazy_module(name)
+
+    # Add to negative cache so we don't search again
+    with _NEGATIVE_CACHE_LOCK:
+        _NEGATIVE_CACHE.add(name)
+
+    # Not found - show more relevant modules (filter out single-letter stdlib noise)
+    popular = [k for k in _ALIAS_MAP if len(k) > 1][:15]
     msg = f"module '{__name__}' has no attribute '{name}'."
-    if available:
-        msg += f" Available modules: {available}..."
+    if popular:
+        msg += f" Available: {popular}..."
     raise AttributeError(msg)
 
 
 # ============== __dir__ for tab completion ==============
 
-_DIR_NAMES = [
-    "__version__", "lazy", "register_alias", "register_aliases", "unregister_alias",
-    "list_loaded", "list_available", "get_module", "clear_cache", "reset_all",
-    "get_version", "reload_module", "enable_auto_search", "disable_auto_search",
-    "is_auto_search_enabled", "search_module", "search_class", "rebuild_module_cache",
-    "reload_aliases", "export_aliases", "validate_aliases", "get_config_paths",
-    "get_config_dirs", "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
-    "get_import_stats", "reset_import_stats",
-    "get_init_lock", "is_initializing", "is_initialized", "is_init_failed",
-    "get_init_error", "reset_init_state",
-    "add_pre_import_hook", "add_post_import_hook",
-    "remove_pre_import_hook", "remove_post_import_hook", "clear_import_hooks",
-    "import_async", "import_multiple_async", "enable_retry", "disable_retry",
-    "is_retry_enabled", "enable_file_cache", "disable_file_cache", "is_file_cache_enabled",
-    "clear_file_cache", "get_file_cache_info", "force_save_cache", "set_cache_dir",
-    "get_cache_dir", "reset_cache_dir", "enable_symbol_search", "disable_symbol_search",
-    "is_symbol_search_enabled", "search_symbol", "rebuild_symbol_index",
-    "get_symbol_search_config", "get_symbol_cache_info", "clear_symbol_cache",
-    "set_symbol_preference", "get_symbol_preference", "clear_symbol_preference",
-    "list_symbol_conflicts", "set_module_priority", "get_module_priority",
-    "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
-    "get_symbol_resolution_config", "get_loaded_modules_context",
-    "build_symbol_index_incremental", "enable_auto_install", "disable_auto_install",
-    "is_auto_install_enabled", "install_package", "get_auto_install_config",
-    "set_pip_index", "set_pip_extra_args", "set_cache_config", "get_cache_config",
-    "get_cache_stats", "reset_cache_stats", "invalidate_package_cache", "get_cache_version",
-    "get_package_version", "get_all_package_versions", "get_laziest_import_version",
-    "enable_incremental_index", "enable_background_build", "enable_cache_compression",
-    "get_incremental_config", "get_preheat_config", "search_with_sharding",
-    "enable_sharding", "disable_sharding", "get_sharding_config", "clear_shard_cache",
-    "start_background_index_build", "is_index_building", "wait_for_index",
-    "which", "which_all", "help", "DependencyPreAnalyzer", "ImportProfiler",
-    "analyze_file", "analyze_source", "analyze_directory", "start_profiling",
-    "stop_profiling", "get_profile_report", "print_profile_report", "show_conflicts",
-    "get_conflicts_summary", "show_environment", "detect_environment",
-    "save_preferences", "load_preferences", "apply_preferences", "clear_preferences",
-    # Dependency tree
-    "dependency_tree", "print_dependency_tree", "DependencyNode", "DependencyTree",
-    # Benchmark
-    "benchmark", "benchmark_imports", "print_benchmark_report",
-    "BenchmarkResult", "BenchmarkReport",
+# Only names that should appear in __dir__ but NOT in __all__
+_DIR_EXTRAS = [
+    "set_background_timeout",
+    "get_background_timeout",
 ]
 
 
 def __dir__() -> List[str]:
     """Return list of public module attributes for tab completion."""
     result = list(_ALIAS_MAP.keys())
-    result.extend(_DIR_NAMES)
-    return sorted(result)
+    result.extend(_BASE_EXPORTS)
+    result.extend(_DIR_EXTRAS)
+    return sorted(set(result))
 
 
 # ============== __all__ for from import * ==============
 
 _BASE_EXPORTS = [
-    "__version__", "lazy", "ImportStats", "SearchResult", "SymbolMatch",
-    "LazyModule", "LazySymbol", "LazySubmodule", "LazyProxy",
-    "register_alias", "register_aliases", "unregister_alias",
-    "list_loaded", "list_available", "get_module", "clear_cache", "reset_all",
-    "get_version", "reload_module", "enable_auto_search", "disable_auto_search",
-    "is_auto_search_enabled", "search_module", "search_class", "rebuild_module_cache",
-    "reload_aliases", "reload_mappings", "export_aliases", "validate_aliases",
-    "validate_aliases_importable", "get_config_paths", "get_config_dirs",
-    "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
-    "get_import_stats", "reset_import_stats",
-    "get_init_lock", "is_initializing", "is_initialized", "is_init_failed",
-    "get_init_error", "reset_init_state",
-    "add_pre_import_hook", "add_post_import_hook",
-    "remove_pre_import_hook", "remove_post_import_hook", "clear_import_hooks",
-    "import_async", "import_multiple_async", "enable_retry", "disable_retry",
-    "is_retry_enabled", "enable_file_cache", "disable_file_cache",
-    "is_file_cache_enabled", "clear_file_cache", "get_file_cache_info",
-    "force_save_cache", "set_cache_dir", "get_cache_dir", "reset_cache_dir",
-    "enable_symbol_search", "disable_symbol_search", "is_symbol_search_enabled",
-    "search_symbol", "rebuild_symbol_index", "get_symbol_search_config",
-    "get_symbol_cache_info", "clear_symbol_cache",
-    "set_symbol_preference", "get_symbol_preference", "clear_symbol_preference",
-    "list_symbol_conflicts", "set_module_priority", "get_module_priority",
-    "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
-    "get_symbol_resolution_config", "get_loaded_modules_context",
+    "__version__",
+    "lazy",
+    "ImportStats",
+    "SearchResult",
+    "SymbolMatch",
+    "LazyModule",
+    "LazySymbol",
+    "LazySubmodule",
+    "LazyProxy",
+    "register_alias",
+    "register_aliases",
+    "unregister_alias",
+    "list_loaded",
+    "list_available",
+    "get_module",
+    "clear_cache",
+    "reset_all",
+    "get_version",
+    "reload_module",
+    "enable_auto_search",
+    "disable_auto_search",
+    "is_auto_search_enabled",
+    "search_module",
+    "search_class",
+    "rebuild_module_cache",
+    "reload_aliases",
+    "reload_mappings",
+    "export_aliases",
+    "validate_aliases",
+    "validate_aliases_importable",
+    "get_config_paths",
+    "get_config_dirs",
+    "enable_debug_mode",
+    "disable_debug_mode",
+    "is_debug_mode",
+    "get_import_stats",
+    "reset_import_stats",
+    "get_init_lock",
+    "is_initializing",
+    "is_initialized",
+    "is_init_failed",
+    "get_init_error",
+    "reset_init_state",
+    "add_pre_import_hook",
+    "add_post_import_hook",
+    "remove_pre_import_hook",
+    "remove_post_import_hook",
+    "clear_import_hooks",
+    "import_async",
+    "import_multiple_async",
+    "enable_retry",
+    "disable_retry",
+    "is_retry_enabled",
+    "enable_file_cache",
+    "disable_file_cache",
+    "is_file_cache_enabled",
+    "clear_file_cache",
+    "get_file_cache_info",
+    "force_save_cache",
+    "set_cache_dir",
+    "get_cache_dir",
+    "reset_cache_dir",
+    "enable_symbol_search",
+    "disable_symbol_search",
+    "is_symbol_search_enabled",
+    "search_symbol",
+    "rebuild_symbol_index",
+    "get_symbol_search_config",
+    "get_symbol_cache_info",
+    "clear_symbol_cache",
+    "set_symbol_preference",
+    "get_symbol_preference",
+    "clear_symbol_preference",
+    "list_symbol_conflicts",
+    "set_module_priority",
+    "get_module_priority",
+    "enable_auto_symbol_resolution",
+    "disable_auto_symbol_resolution",
+    "get_symbol_resolution_config",
+    "get_loaded_modules_context",
     "build_symbol_index_incremental",
-    "enable_auto_install", "disable_auto_install", "is_auto_install_enabled",
-    "install_package", "get_auto_install_config", "set_pip_index", "set_pip_extra_args",
-    "set_cache_config", "get_cache_config", "get_cache_stats", "reset_cache_stats",
-    "invalidate_package_cache", "get_cache_version",
-    "get_package_version", "get_all_package_versions", "get_laziest_import_version",
-    "enable_incremental_index", "enable_background_build", "enable_cache_compression",
-    "get_incremental_config", "get_preheat_config",
-    "search_with_sharding", "enable_sharding", "disable_sharding",
-    "get_sharding_config", "clear_shard_cache",
-    "start_background_index_build", "is_index_building", "wait_for_index",
-    "set_background_timeout", "get_background_timeout",
-    "which", "which_all",
-    "load_rc_config", "get_rc_value", "create_rc_file", "get_rc_info", "reload_rc_config",
-    "list_module_symbols", "get_module_info", "search_in_module",
-    "easter_egg", "help",
-    "DependencyPreAnalyzer", "ImportProfiler", "PreAnalysisResult",
-    "ModuleProfile", "ProfileReport", "EnvironmentInfo",
-    "start_profiling", "stop_profiling", "get_profile_report", "print_profile_report",
-    "show_conflicts", "get_conflicts_summary", "show_environment", "detect_environment",
-    "save_preferences", "load_preferences", "apply_preferences", "clear_preferences",
-    "analyze_file", "analyze_source", "analyze_directory",
+    "enable_auto_install",
+    "disable_auto_install",
+    "is_auto_install_enabled",
+    "install_package",
+    "get_auto_install_config",
+    "set_pip_index",
+    "set_pip_extra_args",
+    "set_cache_config",
+    "get_cache_config",
+    "get_cache_stats",
+    "reset_cache_stats",
+    "invalidate_package_cache",
+    "get_cache_version",
+    "get_package_version",
+    "get_all_package_versions",
+    "get_laziest_import_version",
+    "enable_incremental_index",
+    "enable_background_build",
+    "enable_cache_compression",
+    "get_incremental_config",
+    "get_preheat_config",
+    "search_with_sharding",
+    "enable_sharding",
+    "disable_sharding",
+    "get_sharding_config",
+    "clear_shard_cache",
+    "start_background_index_build",
+    "is_index_building",
+    "wait_for_index",
+    "set_background_timeout",
+    "get_background_timeout",
+    "which",
+    "which_all",
+    "load_rc_config",
+    "get_rc_value",
+    "create_rc_file",
+    "get_rc_info",
+    "reload_rc_config",
+    "list_module_symbols",
+    "get_module_info",
+    "search_in_module",
+    "easter_egg",
+    "help",
+    "DependencyPreAnalyzer",
+    "ImportProfiler",
+    "PreAnalysisResult",
+    "ModuleProfile",
+    "ProfileReport",
+    "EnvironmentInfo",
+    "start_profiling",
+    "stop_profiling",
+    "get_profile_report",
+    "print_profile_report",
+    "show_conflicts",
+    "get_conflicts_summary",
+    "show_environment",
+    "detect_environment",
+    "save_preferences",
+    "load_preferences",
+    "apply_preferences",
+    "clear_preferences",
+    "analyze_file",
+    "analyze_source",
+    "analyze_directory",
     # Dependency tree
-    "dependency_tree", "print_dependency_tree", "DependencyNode", "DependencyTree",
+    "dependency_tree",
+    "print_dependency_tree",
+    "DependencyNode",
+    "DependencyTree",
     # Benchmark
-    "benchmark", "benchmark_imports", "print_benchmark_report",
-    "BenchmarkResult", "BenchmarkReport",
+    "benchmark",
+    "benchmark_imports",
+    "print_benchmark_report",
+    "BenchmarkResult",
+    "BenchmarkReport",
 ]
 
 __all__ = sorted(_BASE_EXPORTS)
@@ -574,9 +729,11 @@ def _do_initialize() -> None:
 
         try:
             from ._alias import _load_all_aliases
+
             _ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
 
             from ._cache import _init_file_cache
+
             _init_file_cache()
 
             _config_module._INITIALIZED = True
@@ -629,6 +786,7 @@ def easter_egg(name: str = "default") -> str:
 def help(topic: Optional[str] = None) -> str:
     """Get help on laziest-import topics."""
     from ._help import help as _help_func
+
     return _help_func(topic)
 
 

@@ -60,43 +60,46 @@ class SymbolLocation:
         }
 
 
-def _parse_dotted_symbol(symbol_name: str, module_hint: Optional[str] = None) -> Tuple[str, Optional[str]]:
+def _parse_dotted_symbol(
+    symbol_name: str, module_hint: Optional[str] = None
+) -> Tuple[str, Optional[str]]:
     """
     Parse a potentially dotted symbol name into (symbol_name, module_hint).
-    
+
     Handles cases like:
         - "sqrt" -> ("sqrt", None)
         - "math.sin" -> ("sin", "math")
         - "os.path.join" -> ("join", "os.path")
-    
+
     Args:
         symbol_name: The symbol name, possibly with module prefix
         module_hint: Optional explicit module hint
-        
+
     Returns:
         Tuple of (actual_symbol_name, inferred_module_hint)
     """
     # If explicit module hint is provided, use it
     if module_hint is not None:
         return (symbol_name, module_hint)
-    
+
     # Try to parse dotted path
     if "." not in symbol_name:
         return (symbol_name, None)
-    
+
     parts = symbol_name.rsplit(".", 1)
     if len(parts) != 2:
         return (symbol_name, None)
-    
+
     potential_module, actual_symbol = parts
-    
-    # Verify the potential module is importable
+
+    # Verify the potential module exists without importing it
     try:
-        importlib.import_module(potential_module)
-        return (actual_symbol, potential_module)
-    except ImportError:
-        # Not a valid module path, return as-is
-        return (symbol_name, None)
+        spec = importlib.util.find_spec(potential_module)
+        if spec is not None:
+            return (actual_symbol, potential_module)
+    except (ImportError, ValueError, ModuleNotFoundError):
+        pass
+    return (symbol_name, None)
 
 
 def which(
@@ -119,7 +122,7 @@ def which(
     """
     # Parse dotted paths using shared function
     actual_symbol, actual_module_hint = _parse_dotted_symbol(symbol_name, module_hint)
-    
+
     # Use actual_symbol for all lookups
     symbol_name = actual_symbol
 
