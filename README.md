@@ -112,7 +112,7 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 | **1000+ aliases** | Predefined aliases for common packages |
 | **820+ tests** | Comprehensive test coverage |
 
-## What's New in v0.0.5-pre1
+## What's New in v0.0.5-pre8
 
 - **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
