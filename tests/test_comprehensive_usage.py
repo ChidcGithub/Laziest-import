@@ -68,7 +68,8 @@ print(f"  json.dumps({{'a':1}}) = {json_mod.dumps({'a': 1})}")
 
 re_mod = lz.re
 print(f"re = {re_mod}")
-print(f"  re.findall(r'\\d+', 'a1b2c3') = {re_mod.findall(r'\\d+', 'a1b2c3')}")
+_digits_re = r"\d+"
+print(f"  re.findall(r'\\d+', 'a1b2c3') = {re_mod.findall(_digits_re, 'a1b2c3')}")
 
 time_mod = lz.time
 print(f"time = {time_mod}")
