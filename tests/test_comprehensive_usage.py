@@ -48,7 +48,14 @@ lz.clear_cache()
 # Standard library aliases
 np = lz.np
 print(f"np = {np}, type = {type(np).__name__}")
-print(f"  np.array([1,2,3]) = {np.array([1, 2, 3])}")
+_have_numpy = True
+try:
+    _test_arr = np.array([1, 2, 3])
+    print(f"  np.array([1,2,3]) = {_test_arr}")
+except (ImportError, NameError):
+    _have_numpy = False
+    print(f"  np.array([1,2,3]) = (numpy not installed)")
+del _test_arr
 
 os_mod = lz.os
 print(f"os = {os_mod}")
