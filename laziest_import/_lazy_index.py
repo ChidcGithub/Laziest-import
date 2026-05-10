@@ -80,7 +80,9 @@ class BackgroundIndexBuilder:
                     self._progress_callback("started", 0.0)
                 except Exception as e:
                     if _DEBUG_MODE:
-                        logging.warning(f"[laziest-import] Progress callback error: {e}")
+                        logging.warning(
+                            f"[laziest-import] Progress callback error: {e}"
+                        )
 
             success = build_func()
 
@@ -97,7 +99,9 @@ class BackgroundIndexBuilder:
                         self._progress_callback("completed", elapsed)
                     except Exception as e:
                         if _DEBUG_MODE:
-                            logging.warning(f"[laziest-import] Progress callback error: {e}")
+                            logging.warning(
+                                f"[laziest-import] Progress callback error: {e}"
+                            )
             else:
                 if _DEBUG_MODE:
                     logging.info(
@@ -109,7 +113,9 @@ class BackgroundIndexBuilder:
                         self._progress_callback("failed", elapsed)
                     except Exception as e:
                         if _DEBUG_MODE:
-                            logging.warning(f"[laziest-import] Progress callback error: {e}")
+                            logging.warning(
+                                f"[laziest-import] Progress callback error: {e}"
+                            )
 
         except Exception as e:
             error_msg = str(e)
@@ -121,7 +127,9 @@ class BackgroundIndexBuilder:
                     self._progress_callback("error", time.perf_counter() - start_time)
                 except Exception as cb_e:
                     if _DEBUG_MODE:
-                        logging.warning(f"[laziest-import] Progress callback error: {cb_e}")
+                        logging.warning(
+                            f"[laziest-import] Progress callback error: {cb_e}"
+                        )
         finally:
             self._is_building = False
             self._stop_event.set()
@@ -175,20 +183,20 @@ def start_background_index_build(
     Args:
         progress_callback: Optional callback(completed: bool, error: str)
         timeout: Optional timeout override (uses set value if not specified)
-    
+
     Returns:
         True if background build started, False if already building or already built
     """
     builder = get_background_builder()
     effective_timeout = timeout if timeout is not None else _BACKGROUND_TIMEOUT
-    
+
     # Check if already building or already built
     if builder.is_building():
         return False
-    
+
     if _SYMBOL_INDEX_BUILT:
         return False
-    
+
     builder.start(
         _build_index_background,
         timeout=effective_timeout,
@@ -221,7 +229,7 @@ def set_background_timeout(timeout: float) -> None:
         >>> set_background_timeout(0)     # No timeout
     """
     global _BACKGROUND_TIMEOUT
-    _BACKGROUND_TIMEOUT = max(0.0, timeout)
+    _BACKGROUND_TIMEOUT = float(max(0.0, timeout))
 
 
 def get_background_timeout() -> float:

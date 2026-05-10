@@ -149,12 +149,6 @@ def invalidate_package_cache(package_name: str) -> bool:
 
 def clear_symbol_cache() -> None:
     """Clear the symbol cache (memory only)."""
-    from .._config import (
-        _SYMBOL_INDEX_BUILT as config_symbol_built,
-        _STDLIB_CACHE_BUILT as config_stdlib_built,
-        _THIRD_PARTY_CACHE_BUILT as config_third_party_built,
-    )
-
     _SYMBOL_CACHE.clear()
     _STDLIB_SYMBOL_CACHE.clear()
     _THIRD_PARTY_SYMBOL_CACHE.clear()

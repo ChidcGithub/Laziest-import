@@ -45,11 +45,8 @@ def _install_package_sync(
     use_uv = prefer_uv and _check_uv_available()
 
     if use_uv:
-        uv_path = shutil.which("uv")
-        if uv_path is None:
-            cmd = [sys.executable, "-m", "pip", "install", package_name]
-        else:
-            cmd = [uv_path, "pip", "install", package_name]
+        # _check_uv_available() already confirmed uv exists, safe to use directly
+        cmd = ["uv", "pip", "install", package_name]
     else:
         cmd = [sys.executable, "-m", "pip", "install", package_name]
 

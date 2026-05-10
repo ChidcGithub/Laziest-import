@@ -373,16 +373,13 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         _ensure_symbol_functions_loaded()
         return _SYMBOL_FUNCTIONS[name]
 
-    if _SYMBOL_FUNCTIONS and name in _SYMBOL_FUNCTIONS:
-        return _SYMBOL_FUNCTIONS[name]
-
-    # 2. Check for which function
-    if name == "which":
+    # 2. Check for which / which_all functions
+    if name in ("which", "which_all"):
         from ._which import which, which_all
 
         _SYMBOL_FUNCTIONS["which"] = which
         _SYMBOL_FUNCTIONS["which_all"] = which_all
-        return which
+        return which if name == "which" else which_all
 
     # 3. Check for help function
     if name == "help":
@@ -427,49 +424,13 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         _SYMBOL_FUNCTIONS[name] = getattr(_introspect_mod, name)
         return _SYMBOL_FUNCTIONS[name]
 
+    # Check if already loaded in SYMBOL_FUNCTIONS (from a previous call to a related function)
+    if _SYMBOL_FUNCTIONS and name in _SYMBOL_FUNCTIONS:
+        return _SYMBOL_FUNCTIONS[name]
+
     # 7. Check alias map
     if name in _ALIAS_MAP:
         return _get_lazy_module(name)
-
-    # 8. Try module auto-search
-    if _AUTO_SEARCH_ENABLED:
-        found = _search_module(name)
-        if found:
-            _ALIAS_MAP[name] = found
-            return _get_lazy_module(name)
-
-    # 9. Try symbol auto-resolution
-    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
-        _ensure_symbol_functions_loaded()
-
-        _search_enhanced = _SYMBOL_FUNCTIONS.get("_search_symbol_enhanced")
-        if _search_enhanced is not None:
-            symbol_match = _search_enhanced(name, auto=True)
-            if symbol_match:
-                _SYMBOL_PREFERENCES[name] = symbol_match.module_name
-
-                if _DEBUG_MODE:
-                    import logging
-
-                    logging.info(
-                        f"[laziest-import] Auto-resolved symbol '{name}' -> "
-                        f"{symbol_match.module_name}.{symbol_match.symbol_name}"
-                    )
-
-                return LazySymbol(
-                    symbol_name=symbol_match.symbol_name,
-                    module_name=symbol_match.module_name,
-                    symbol_type=symbol_match.symbol_type,
-                )
-
-    # 10. Fall back to interactive symbol search
-    if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
-        _ensure_symbol_functions_loaded()
-        _handle_not_found = _SYMBOL_FUNCTIONS.get("_handle_symbol_not_found")
-        if _handle_not_found is not None:
-            found_module = _handle_not_found(name)
-            if found_module:
-                return _get_lazy_module(name)
 
     # 8. Try module auto-search
     if _AUTO_SEARCH_ENABLED:
