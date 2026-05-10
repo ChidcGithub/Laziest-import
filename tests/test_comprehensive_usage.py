@@ -55,7 +55,8 @@ try:
 except (ImportError, NameError):
     _have_numpy = False
     print(f"  np.array([1,2,3]) = (numpy not installed)")
-del _test_arr
+if _have_numpy:
+    del _test_arr
 
 os_mod = lz.os
 print(f"os = {os_mod}")
