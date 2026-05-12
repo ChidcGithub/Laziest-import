@@ -112,27 +112,12 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 | **1000+ aliases** | Predefined aliases for common packages |
 | **820+ tests** | Comprehensive test coverage |
 
-## What's New in v0.0.5-pre8
+## What's New in v0.1.0-pre2
 
+- **Major Refactor**: Restructured architecture for maintainability
 - **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
 - **820+ tests**: Comprehensive test coverage across 17+ test files
-
-## What's New in v0.0.4
-
-- **Background Index Building**: Symbol index builds in background thread, no blocking
-- **Lazy-loaded Functions**: Reduced startup time by lazy-loading symbol functions
-- **Symbol Sharding**: Large package symbols stored in shards for faster access
-- **Symbol Location Finder**: `lz.which()` - find where symbols are defined
-- **Interactive Help**: `lz.help()` - comprehensive help system with topics
-- **Jupyter Magics**: `%%lazy`, `%lazyimport`, `%lazylist`, `%lazysearch`
-- **User Config File**: `~/.laziestrc` for persistent configuration
-- **Type Hints Support**: `LazySymbol.__class_getitem__` for generic type hints
-- **Dependency Pre-Analysis**: Scan code to predict required imports
-- **Import Profiler**: Record module load times and memory usage
-- **Environment Detection**: Detect virtual environments (venv/conda/virtualenv)
-- **Conflict Visualization**: Find and display symbol conflicts across modules
-- **Persistent Preferences**: Save/load user preferences to `~/.laziestrc`
 
 ## Auto-Install
 

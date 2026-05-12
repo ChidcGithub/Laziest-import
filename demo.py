@@ -7,6 +7,7 @@ laziest-import to automatically discover and import 3D graphics libraries.
 
 # Use laziest-import for all imports
 from laziest_import import *
+from laziest_import._analysis import dependency_tree
 
 
 def main():
@@ -40,6 +41,9 @@ def main():
 
     # Enable symbol search with non-interactive mode for demo
     enable_symbol_search(interactive=False)
+
+    print(get_laziest_import_version())
+    print(dependency_tree("numpy"))
 
     # ===== Matplotlib 3D Demo =====
     print("=" * 50)
