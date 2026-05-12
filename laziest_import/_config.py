@@ -349,4 +349,7 @@ def _activate_state_setters() -> None:
     _self.get_importing_modules = _gim
 
 
-_activate_state_setters()
+try:
+    _activate_state_setters()
+except ImportError:
+    pass  # deferred activation in build/editable install environments
