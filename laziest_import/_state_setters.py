@@ -34,8 +34,6 @@ def _set_background_index_building(value: bool) -> None:
 
 def reset_all() -> None:
     """Reset all state to defaults (useful for testing)."""
-    from laziest_import._state import ImportStats
-
     c = _config()
 
     c._INITIALIZING = False
@@ -62,12 +60,17 @@ def reset_all() -> None:
     if "laziest_import._lazy_index" in sys.modules:
         sys.modules.pop("laziest_import._lazy_index")
 
-    c._IMPORT_STATS = ImportStats()
-    c._CACHE_STATS = {
-        "symbol_hits": 0, "symbol_misses": 0,
-        "module_hits": 0, "module_misses": 0,
-        "last_build_time": 0.0, "build_count": 0,
-    }
+    c._IMPORT_STATS.total_imports = 0
+    c._IMPORT_STATS.total_time = 0.0
+    c._IMPORT_STATS.module_times.clear()
+    c._IMPORT_STATS.module_access_counts.clear()
+
+    c._CACHE_STATS["symbol_hits"] = 0
+    c._CACHE_STATS["symbol_misses"] = 0
+    c._CACHE_STATS["module_hits"] = 0
+    c._CACHE_STATS["module_misses"] = 0
+    c._CACHE_STATS["last_build_time"] = 0.0
+    c._CACHE_STATS["build_count"] = 0
 
 
 def _load_priorities_from_file() -> Dict[str, int]:

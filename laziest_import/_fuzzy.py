@@ -12,20 +12,11 @@ import warnings
 
 import threading
 
+from . import _config
 from ._config import (
-    _DEBUG_MODE,
-    _AUTO_SEARCH_ENABLED,
-    _ALIAS_MAP,
-    _LAZY_MODULES,
-    _MODULE_PRIORITY,
-    _SYMBOL_PREFERENCES,
-    _SYMBOL_RESOLUTION_CONFIG,
-    _SYMBOL_SEARCH_CONFIG,
-    _SYMBOL_INDEX_BUILT,
-    _CLASS_TO_MODULE_CACHE,
-    check_version_range,
-    get_version_range,
-)
+     check_version_range,
+     get_version_range,
+ )
 
 
 # ============== Mapping Cache ==============
@@ -50,7 +41,7 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
     file_path = mappings_dir / filename
 
     if not file_path.exists():
-        if _DEBUG_MODE:
+        if not _config._DEBUG_MODE:
             logging.warning(f"[laziest-import] Mapping file not found: {file_path}")
         return {}
 
@@ -84,7 +75,7 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
                 result[key] = value
         return result
     except (json.JSONDecodeError, OSError) as e:
-        if _DEBUG_MODE:
+        if not _config._DEBUG_MODE:
             logging.warning(
                 f"[laziest-import] Failed to load mapping file {filename}: {e}"
             )
@@ -181,25 +172,25 @@ def _get_common_symbol_misspellings() -> Dict[str, str]:
 
 
 def _infer_context() -> Set[str]:
-    """Infer the current context by examining loaded modules."""
-    loaded = set()
+     """Infer the current context by examining loaded modules."""
+     loaded = set()
 
-    # Check already loaded lazy modules
-    for alias, lazy_mod in _LAZY_MODULES.items():
-        cached = object.__getattribute__(lazy_mod, "_cached_module")
-        if cached is not None:
-            module_name = object.__getattribute__(lazy_mod, "_module_name")
-            base_module = module_name.split(".")[0]
-            loaded.add(base_module)
+     # Check already loaded lazy modules
+     for alias, lazy_mod in _config._LAZY_MODULES.items():
+         cached = object.__getattribute__(lazy_mod, "_cached_module")
+         if cached is not None:
+             module_name = object.__getattribute__(lazy_mod, "_module_name")
+             base_module = module_name.split(".")[0]
+             loaded.add(base_module)
 
-    # Check sys.modules for already imported modules
-    for mod_name in sys.modules.keys():
-        if mod_name and not mod_name.startswith("_"):
-            base_module = mod_name.split(".")[0]
-            if base_module in _MODULE_PRIORITY or base_module in _ALIAS_MAP.values():
-                loaded.add(base_module)
+     # Check sys.modules for already imported modules
+     for mod_name in sys.modules.keys():
+         if mod_name and not mod_name.startswith("_"):
+             base_module = mod_name.split(".")[0]
+             if base_module in _config._MODULE_PRIORITY or base_module in _config._ALIAS_MAP.values():
+                 loaded.add(base_module)
 
-    return loaded
+     return loaded
 
 
 def _check_common_suffix_match(name: str, module: str) -> bool:
@@ -294,7 +285,7 @@ def _search_module(name: str) -> Optional[str]:
     """
     from ._alias import _build_known_modules_cache
 
-    if not _AUTO_SEARCH_ENABLED:
+    if not _config._AUTO_SEARCH_ENABLED:
         return None
 
     known_modules = _build_known_modules_cache()
@@ -344,7 +335,7 @@ def _search_module(name: str) -> Optional[str]:
     if name_lower in misspellings:
         corrected = misspellings[name_lower]
         if corrected in known_modules:
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.debug(
                     f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'"
                 )
@@ -400,7 +391,7 @@ def _search_module(name: str) -> Optional[str]:
         candidates.sort(key=lambda x: (x[0], x[1]))
         best = candidates[0]
 
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.debug(
                 f"[laziest-import] Fuzzy match: '{name}' -> '{best[2]}' "
                 f"(priority={best[0]}, distance={best[1]})"
@@ -416,8 +407,8 @@ def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
     import importlib
 
     # Check cache
-    if class_name in _CLASS_TO_MODULE_CACHE:
-        mod_name = _CLASS_TO_MODULE_CACHE[class_name]
+    if class_name in _config._CLASS_TO_MODULE_CACHE:
+        mod_name = _config._CLASS_TO_MODULE_CACHE[class_name]
         try:
             mod = sys.modules.get(mod_name) or importlib.import_module(mod_name)
             if hasattr(mod, class_name):
@@ -432,7 +423,7 @@ def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
         try:
             obj = getattr(mod, class_name, None)
             if obj is not None and isinstance(obj, type):
-                _CLASS_TO_MODULE_CACHE[class_name] = mod_name
+                _config._CLASS_TO_MODULE_CACHE[class_name] = mod_name
                 return (mod_name, obj)
         except Exception:
             continue
