@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict
 from dataclasses import dataclass
 
-from .._config import _SYMBOL_CACHE, _SYMBOL_PREFERENCES
+from .. import _config
 
 
 @dataclass
@@ -24,7 +24,7 @@ def find_symbol_conflicts() -> Dict[str, SymbolConflict]:
     """
     conflicts: Dict[str, SymbolConflict] = {}
     
-    for symbol_name, locations in _SYMBOL_CACHE.items():
+    for symbol_name, locations in _config._SYMBOL_CACHE.items():
         if len(locations) > 1:
             # Get unique modules
             modules = {}
@@ -36,7 +36,7 @@ def find_symbol_conflicts() -> Dict[str, SymbolConflict]:
             
             if len(modules) > 1:
                 # Find recommended module from preferences
-                recommended = _SYMBOL_PREFERENCES.get(symbol_name)
+                recommended = _config._SYMBOL_PREFERENCES.get(symbol_name)
                 
                 conflicts[symbol_name] = SymbolConflict(
                     symbol_name=symbol_name,

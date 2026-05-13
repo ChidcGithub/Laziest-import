@@ -10,18 +10,7 @@ import importlib
 import asyncio
 from types import ModuleType
 
-from .._config import (
-    _DEBUG_MODE,
-    _AUTO_SEARCH_ENABLED,
-    _AUTO_INSTALL_CONFIG,
-    _IMPORT_STATS,
-    _CACHE_STATS,
-    _RETRY_CONFIG,
-    _PRE_IMPORT_HOOKS,
-    _POST_IMPORT_HOOKS,
-    _ALIAS_MAP,
-    get_importing_modules,
-)
+from .. import _config
 from .._cache import _record_module_load
 from .._fuzzy import _search_module
 from ._submodule import LazySubmodule
@@ -52,32 +41,34 @@ class LazyModule:
 
     def _get_module(self) -> Any:
         """Get the actual module (lazy load)"""
+        c = _config
+
         cached = object.__getattribute__(self, "_cached_module")
         if cached is not None:
             alias = object.__getattribute__(self, "_alias")
-            _IMPORT_STATS.module_access_counts[alias] = (
-                _IMPORT_STATS.module_access_counts.get(alias, 0) + 1
+            c._IMPORT_STATS.module_access_counts[alias] = (
+                c._IMPORT_STATS.module_access_counts.get(alias, 0) + 1
             )
-            _CACHE_STATS["module_hits"] += 1
+            c._CACHE_STATS["module_hits"] += 1
             return cached
 
-        _CACHE_STATS["module_misses"] += 1
+        c._CACHE_STATS["module_misses"] += 1
 
         module_name = object.__getattribute__(self, "_module_name")
         alias = object.__getattribute__(self, "_alias")
 
-        importing_modules = get_importing_modules()
+        importing_modules = _config.get_importing_modules()
         if module_name in importing_modules:
             return importlib.import_module(module_name)
 
         importing_modules.add(module_name)
 
         try:
-            for hook in _PRE_IMPORT_HOOKS:
+            for hook in c._PRE_IMPORT_HOOKS:
                 try:
                     hook(module_name)
                 except Exception as e:
-                    if _DEBUG_MODE:
+                    if c._DEBUG_MODE:
                         logging.warning(
                             f"Pre-import hook failed for {module_name}: {e}"
                         )
@@ -86,12 +77,12 @@ class LazyModule:
 
             def _do_import(name: str) -> Any:
                 """Internal import function with retry support."""
-                if not _RETRY_CONFIG["enabled"]:
+                if not c._RETRY_CONFIG["enabled"]:
                     return importlib.import_module(name)
 
-                max_retries = _RETRY_CONFIG["max_retries"]
-                retry_delay = _RETRY_CONFIG["retry_delay"]
-                retry_modules = _RETRY_CONFIG["retry_modules"]
+                max_retries = c._RETRY_CONFIG["max_retries"]
+                retry_delay = c._RETRY_CONFIG["retry_delay"]
+                retry_modules = c._RETRY_CONFIG["retry_modules"]
 
                 if retry_modules and name.split(".")[0] not in retry_modules:
                     return importlib.import_module(name)
@@ -106,7 +97,7 @@ class LazyModule:
 
                 # In async context, disable retry with sleep to avoid blocking event loop
                 if in_async_context:
-                    if _DEBUG_MODE:
+                    if c._DEBUG_MODE:
                         logging.debug(
                             f"[laziest-import] In async context, disabling retry for '{name}' "
                             f"(sleep would block event loop)"
@@ -120,7 +111,7 @@ class LazyModule:
                     except ImportError as e:
                         last_error = e
                         if attempt < max_retries:
-                            if _DEBUG_MODE:
+                            if c._DEBUG_MODE:
                                 logging.info(
                                     f"Retry {attempt + 1}/{max_retries} for {name}"
                                 )
@@ -157,10 +148,10 @@ class LazyModule:
                 except Exception:
                     mem_delta = 0
 
-                _IMPORT_STATS.total_imports += 1
-                _IMPORT_STATS.total_time += elapsed
-                _IMPORT_STATS.module_times[module_name] = elapsed
-                _IMPORT_STATS.module_access_counts[alias] = 1
+                c._IMPORT_STATS.total_imports += 1
+                c._IMPORT_STATS.total_time += elapsed
+                c._IMPORT_STATS.module_times[module_name] = elapsed
+                c._IMPORT_STATS.module_access_counts[alias] = 1
 
                 _record_module_load(module_name)
 
@@ -172,16 +163,16 @@ class LazyModule:
 
                 object.__setattr__(self, "_cached_module", module)
 
-                for hook in _POST_IMPORT_HOOKS:
+                for hook in c._POST_IMPORT_HOOKS:
                     try:
                         hook(module_name, module)
                     except Exception as e:
-                        if _DEBUG_MODE:
+                        if c._DEBUG_MODE:
                             logging.warning(
                                 f"Post-import hook failed for {module_name}: {e}"
                             )
 
-                if _DEBUG_MODE:
+                if c._DEBUG_MODE:
                     logging.info(
                         f"[laziest-import] Loaded module '{module_name}' in {elapsed * 1000:.2f}ms"
                     )
@@ -189,7 +180,7 @@ class LazyModule:
                 return module
             except ImportError as e:
                 auto_searched = object.__getattribute__(self, "_auto_searched")
-                if _AUTO_SEARCH_ENABLED and not auto_searched:
+                if c._AUTO_SEARCH_ENABLED and not auto_searched:
                     found_name = _search_module(alias)
                     if found_name and found_name != module_name:
                         try:
@@ -198,18 +189,18 @@ class LazyModule:
                             object.__setattr__(self, "_module_name", found_name)
                             object.__setattr__(self, "_cached_module", module)
                             object.__setattr__(self, "_auto_searched", True)
-                            _ALIAS_MAP[alias] = found_name
+                            c._ALIAS_MAP[alias] = found_name
 
                             elapsed = time.perf_counter() - start_time
-                            _IMPORT_STATS.total_imports += 1
-                            _IMPORT_STATS.total_time += elapsed
-                            _IMPORT_STATS.module_times[found_name] = elapsed
+                            c._IMPORT_STATS.total_imports += 1
+                            c._IMPORT_STATS.total_time += elapsed
+                            c._IMPORT_STATS.module_times[found_name] = elapsed
 
                             return module
                         except ImportError:
                             pass
 
-                if _AUTO_INSTALL_CONFIG["enabled"]:
+                if c._AUTO_INSTALL_CONFIG["enabled"]:
                     from .._install import (
                         _get_pip_package_name,
                         _install_package_sync,
@@ -220,7 +211,7 @@ class LazyModule:
                     pip_package = _get_pip_package_name(module_name)
 
                     should_install = True
-                    if _AUTO_INSTALL_CONFIG["interactive"]:
+                    if c._AUTO_INSTALL_CONFIG["interactive"]:
                         should_install = _interactive_install_confirm(
                             module_name, pip_package
                         )
@@ -228,14 +219,14 @@ class LazyModule:
                     if should_install:
                         success, message = _install_package_sync(
                             pip_package,
-                            index=_AUTO_INSTALL_CONFIG["index"],
-                            extra_args=_AUTO_INSTALL_CONFIG["extra_args"],
-                            prefer_uv=_AUTO_INSTALL_CONFIG["prefer_uv"],
-                            silent=_AUTO_INSTALL_CONFIG["silent"],
+                            index=c._AUTO_INSTALL_CONFIG["index"],
+                            extra_args=c._AUTO_INSTALL_CONFIG["extra_args"],
+                            prefer_uv=c._AUTO_INSTALL_CONFIG["prefer_uv"],
+                            silent=c._AUTO_INSTALL_CONFIG["silent"],
                         )
 
                         if success:
-                            if _DEBUG_MODE:
+                            if c._DEBUG_MODE:
                                 logging.info(f"[laziest-import] {message}")
 
                             rebuild_module_cache()
@@ -244,10 +235,10 @@ class LazyModule:
                                 module = _do_import(module_name)
 
                                 elapsed = time.perf_counter() - start_time
-                                _IMPORT_STATS.total_imports += 1
-                                _IMPORT_STATS.total_time += elapsed
-                                _IMPORT_STATS.module_times[module_name] = elapsed
-                                _IMPORT_STATS.module_access_counts[alias] = 1
+                                c._IMPORT_STATS.total_imports += 1
+                                c._IMPORT_STATS.total_time += elapsed
+                                c._IMPORT_STATS.module_times[module_name] = elapsed
+                                c._IMPORT_STATS.module_access_counts[alias] = 1
 
                                 _record_module_load(module_name)
 

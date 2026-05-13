@@ -14,10 +14,6 @@ import traceback
 import atexit
 import importlib.util
 
-from .._config import (
-    _DEBUG_MODE,
-    _CACHE_STATS,
-)
 # Import config module directly to modify its global variables
 from .. import _config
 
@@ -114,12 +110,12 @@ def _save_file_cache(file_path: str, file_sha: str, modules: Set[str]) -> bool:
         with open(cache_file, 'w', encoding='utf-8') as f:
             json.dump(cache.to_dict(), f, indent=2)
         
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.info(f"[laziest-import] Saved cache for {file_path}: {len(modules)} modules")
         
         return True
     except (OSError, IOError) as e:
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.warning(f"Failed to save cache: {e}")
         return False
 
@@ -145,7 +141,7 @@ def _init_file_cache() -> None:
     cache = _load_file_cache(caller_path)
     
     if cache and cache.file_sha == caller_sha:
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.info(
                 f"[laziest-import] Found valid cache for {caller_path}: "
                 f"{len(cache.loaded_modules)} modules"
@@ -153,7 +149,7 @@ def _init_file_cache() -> None:
         _CALLER_LOADED_MODULES = set(cache.loaded_modules)
         _start_background_preload(cache.loaded_modules)
     else:
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             if cache:
                 logging.info(
                     f"[laziest-import] Cache outdated for {caller_path}, will rebuild"
@@ -185,11 +181,11 @@ def _start_background_preload(modules: List[str]) -> None:
             if spec:
                 import importlib
                 importlib.import_module(module_name)
-                if _DEBUG_MODE:
+                if _config._DEBUG_MODE:
                     logging.debug(f"[laziest-import] Preloaded {module_name}")
                 return True
         except Exception as e:
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.debug(f"[laziest-import] Failed to preload {module_name}: {e}")
         return False
     

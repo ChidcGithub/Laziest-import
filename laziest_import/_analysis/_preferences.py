@@ -6,7 +6,7 @@ import time
 import json
 import logging
 
-from .._config import _DEBUG_MODE, _SYMBOL_PREFERENCES
+from .. import _config
 
 
 _PREFERENCES_FILE = Path.home() / ".laziest_import" / "preferences.json"
@@ -28,7 +28,7 @@ def save_preferences() -> bool:
         _ensure_preferences_dir()
         
         data = {
-            "symbol_preferences": dict(_SYMBOL_PREFERENCES),
+            "symbol_preferences": dict(_config._SYMBOL_PREFERENCES),
             "timestamp": time.time(),
             "version": "1.0"
         }
@@ -36,12 +36,12 @@ def save_preferences() -> bool:
         with open(_PREFERENCES_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
         
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.info(f"[laziest-import] Saved preferences to {_PREFERENCES_FILE}")
         
         return True
     except Exception as e:
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.warning(f"[laziest-import] Failed to save preferences: {e}")
         return False
 
@@ -62,7 +62,7 @@ def load_preferences() -> Dict[str, str]:
         
         return data.get("symbol_preferences", {})
     except Exception as e:
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.warning(f"[laziest-import] Failed to load preferences: {e}")
         return {}
 
@@ -71,7 +71,7 @@ def apply_preferences() -> None:
     """Apply loaded preferences to current session."""
     prefs = load_preferences()
     for symbol, module in prefs.items():
-        _SYMBOL_PREFERENCES[symbol] = module
+        _config._SYMBOL_PREFERENCES[symbol] = module
 
 
 def clear_preferences() -> bool:

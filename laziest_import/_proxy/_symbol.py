@@ -6,12 +6,7 @@ from typing import Any
 import logging
 import importlib
 
-from .._config import (
-    _DEBUG_MODE,
-    _IMPORT_STATS,
-    _SYMBOL_CACHE,
-    _SYMBOL_CACHE_LOCK,
-)
+from .. import _config
 
 
 class LazySymbol:
@@ -39,6 +34,8 @@ class LazySymbol:
 
     def _get_object(self) -> Any:
         """Get the actual symbol object (lazy load)."""
+        c = _config
+
         cached = object.__getattribute__(self, "_cached_obj")
         if cached is not None:
             return cached
@@ -62,16 +59,16 @@ class LazySymbol:
         object.__setattr__(self, "_cached_obj", obj)
         object.__setattr__(self, "_loaded", True)
 
-        with _SYMBOL_CACHE_LOCK:
-            if symbol_name not in _SYMBOL_CACHE:
-                _SYMBOL_CACHE[symbol_name] = []
+        with c._SYMBOL_CACHE_LOCK:
+            if symbol_name not in c._SYMBOL_CACHE:
+                c._SYMBOL_CACHE[symbol_name] = []
 
-        _IMPORT_STATS.total_imports += 1
-        _IMPORT_STATS.module_access_counts[module_name] = (
-            _IMPORT_STATS.module_access_counts.get(module_name, 0) + 1
+        c._IMPORT_STATS.total_imports += 1
+        c._IMPORT_STATS.module_access_counts[module_name] = (
+            c._IMPORT_STATS.module_access_counts.get(module_name, 0) + 1
         )
 
-        if _DEBUG_MODE:
+        if c._DEBUG_MODE:
             logging.info(
                 f"[laziest-import] Loaded symbol '{symbol_name}' from '{module_name}'"
             )
