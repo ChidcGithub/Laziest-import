@@ -182,17 +182,54 @@ from ._public_api import (
 
 
 def add_pre_import_hook(hook) -> None:
-    """Add a pre-import hook."""
+    """Add a hook to be called before a module is imported.
+
+    Pre-import hooks are called with the module name as the argument
+    before the actual import takes place. This allows intercepting or
+    modifying import behavior.
+
+    Args:
+        hook: A callable that accepts a single string argument (module name).
+              The hook should not return anything; its purpose is to perform
+              side effects such as logging, modification, or validation.
+
+    Example:
+        >>> def my_hook(module_name):
+        ...     print(f"About to import: {module_name}")
+        >>> add_pre_import_hook(my_hook)
+    """
     _PRE_IMPORT_HOOKS.append(hook)
 
 
 def add_post_import_hook(hook) -> None:
-    """Add a post-import hook."""
+    """Add a hook to be called after a module is imported.
+
+    Post-import hooks are called with the module name and the imported
+    module object as arguments after the import completes successfully.
+
+    Args:
+        hook: A callable that accepts two arguments:
+              - module_name (str): The name of the imported module.
+              - module_obj: The actual imported module object.
+              The hook should not return anything.
+
+    Example:
+        >>> def my_hook(module_name, module_obj):
+        ...     print(f"Imported {module_name}: {type(module_obj)}")
+        >>> add_post_import_hook(my_hook)
+    """
     _POST_IMPORT_HOOKS.append(hook)
 
 
 def remove_pre_import_hook(hook) -> bool:
-    """Remove a pre-import hook."""
+    """Remove a previously registered pre-import hook.
+
+    Args:
+        hook: The callable previously registered with add_pre_import_hook().
+
+    Returns:
+        True if the hook was found and removed, False otherwise.
+    """
     if hook in _PRE_IMPORT_HOOKS:
         _PRE_IMPORT_HOOKS.remove(hook)
         return True
@@ -200,7 +237,14 @@ def remove_pre_import_hook(hook) -> bool:
 
 
 def remove_post_import_hook(hook) -> bool:
-    """Remove a post-import hook."""
+    """Remove a previously registered post-import hook.
+
+    Args:
+        hook: The callable previously registered with add_post_import_hook().
+
+    Returns:
+        True if the hook was found and removed, False otherwise.
+    """
     if hook in _POST_IMPORT_HOOKS:
         _POST_IMPORT_HOOKS.remove(hook)
         return True
@@ -208,7 +252,11 @@ def remove_post_import_hook(hook) -> bool:
 
 
 def clear_import_hooks() -> None:
-    """Remove all import hooks."""
+    """Remove all registered pre-import and post-import hooks.
+
+    This resets the hook system to its initial state. Use this if you want
+    to remove all hooks without tracking individual hook references.
+    """
     _PRE_IMPORT_HOOKS.clear()
     _POST_IMPORT_HOOKS.clear()
 

@@ -36,7 +36,7 @@ def _load_version_config() -> Dict[str, Any]:
 
 
 _VERSION_CONFIG = _load_version_config()
-__version__ = _VERSION_CONFIG.get("_current_version", "0.1.0-pre2")
+__version__ = _VERSION_CONFIG.get("_current_version", "0.1.0-pre7")
 
 
 def get_cache_version() -> str:
