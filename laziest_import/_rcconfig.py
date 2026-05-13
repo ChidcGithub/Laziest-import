@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 
-from ._config import _DEBUG_MODE
+from . import _config
 
 
 _LAZIESTRC_PATHS = [
@@ -59,7 +59,7 @@ def load_rc_config(force_reload: bool = False) -> Dict[str, Any]:
                 if file_config:
                     _deep_update(config, file_config)
             except Exception as e:
-                if _DEBUG_MODE:
+                if _config._DEBUG_MODE:
                     import logging
 
                     logging.warning(

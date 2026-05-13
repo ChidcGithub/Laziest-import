@@ -8,10 +8,7 @@ import logging
 import subprocess
 import shutil
 
-from ._config import (
-    _DEBUG_MODE,
-    _AUTO_INSTALL_CONFIG,
-)
+from . import _config
 from ._fuzzy import _get_package_rename_map
 
 
@@ -91,12 +88,12 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
 
     In non-interactive environments, returns False for safety.
     """
-    if not _AUTO_INSTALL_CONFIG["interactive"]:
+    if not _config._AUTO_INSTALL_CONFIG["interactive"]:
         return True
 
     # Check if we're in an interactive terminal
     if not _is_interactive_terminal():
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.debug(
                 f"[laziest-import] Non-interactive environment, "
                 f"auto-declining installation of '{package_name}'"
@@ -115,7 +112,7 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
         return False
     except OSError:
         # OSError can occur in some non-interactive environments
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.debug(
                 f"[laziest-import] OSError during install confirm, "
                 f"auto-declining installation"
@@ -144,11 +141,11 @@ def install_package(
     from ._alias import _build_known_modules_cache
 
     if index is None:
-        index = _AUTO_INSTALL_CONFIG["index"]
+        index = _config._AUTO_INSTALL_CONFIG["index"]
     if extra_args is None:
-        extra_args = _AUTO_INSTALL_CONFIG["extra_args"]
+        extra_args = _config._AUTO_INSTALL_CONFIG["extra_args"]
     if interactive is None:
-        interactive = _AUTO_INSTALL_CONFIG["interactive"]
+        interactive = _config._AUTO_INSTALL_CONFIG["interactive"]
 
     if interactive:
         if not _interactive_install_confirm(package_name, package_name):
@@ -158,12 +155,12 @@ def install_package(
         package_name,
         index=index,
         extra_args=extra_args,
-        prefer_uv=_AUTO_INSTALL_CONFIG["prefer_uv"],
-        silent=_AUTO_INSTALL_CONFIG["silent"],
+        prefer_uv=_config._AUTO_INSTALL_CONFIG["prefer_uv"],
+        silent=_config._AUTO_INSTALL_CONFIG["silent"],
     )
 
     if success:
-        if _DEBUG_MODE:
+        if _config._config._DEBUG_MODE:
             logging.info(f"[laziest-import] {message}")
         # Rebuild module cache
         _build_known_modules_cache(force=True)
@@ -183,42 +180,40 @@ def enable_auto_install(
     """
     Enable automatic installation of missing packages.
 
-    WARNING: This feature installs packages automatically. Use with caution
+WARNING: This feature installs packages automatically. Use with caution
     in production environments.
     """
-    global _AUTO_INSTALL_CONFIG
-
-    _AUTO_INSTALL_CONFIG["enabled"] = True
-    _AUTO_INSTALL_CONFIG["interactive"] = interactive
-    _AUTO_INSTALL_CONFIG["index"] = index
-    _AUTO_INSTALL_CONFIG["extra_args"] = extra_args or []
-    _AUTO_INSTALL_CONFIG["prefer_uv"] = prefer_uv
-    _AUTO_INSTALL_CONFIG["silent"] = silent
+    _config._AUTO_INSTALL_CONFIG["enabled"] = True
+    _config._AUTO_INSTALL_CONFIG["interactive"] = interactive
+    _config._AUTO_INSTALL_CONFIG["index"] = index
+    _config._AUTO_INSTALL_CONFIG["extra_args"] = extra_args or []
+    _config._AUTO_INSTALL_CONFIG["prefer_uv"] = prefer_uv
+    _config._AUTO_INSTALL_CONFIG["silent"] = silent
 
 
 def disable_auto_install() -> None:
     """Disable automatic installation of missing packages."""
-    _AUTO_INSTALL_CONFIG["enabled"] = False
+    _config._AUTO_INSTALL_CONFIG["enabled"] = False
 
 
 def is_auto_install_enabled() -> bool:
     """Check if automatic installation is enabled."""
-    return _AUTO_INSTALL_CONFIG["enabled"]
+    return _config._AUTO_INSTALL_CONFIG["enabled"]
 
 
 def get_auto_install_config() -> Dict[str, Any]:
     """Get current auto-install configuration."""
-    return dict(_AUTO_INSTALL_CONFIG)
+    return dict(_config._AUTO_INSTALL_CONFIG)
 
 
 def set_pip_index(url: Optional[str]) -> None:
     """Set custom PyPI mirror index URL."""
-    _AUTO_INSTALL_CONFIG["index"] = url
+    _config._AUTO_INSTALL_CONFIG["index"] = url
 
 
 def set_pip_extra_args(args: List[str]) -> None:
     """Set extra arguments for pip install."""
-    _AUTO_INSTALL_CONFIG["extra_args"] = args
+    _config._AUTO_INSTALL_CONFIG["extra_args"] = args
 
 
 def rebuild_module_cache() -> None:

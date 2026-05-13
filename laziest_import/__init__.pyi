@@ -1,5 +1,17 @@
 """
 Type stubs for laziest-import
+
+This file provides complete type hints for IDE support including
+IntelliSense, auto-completion, and type checking.
+
+Usage:
+    No action needed - Python automatically uses .pyi files alongside
+    .py files when present in the same package directory.
+
+IDE Support:
+    - VS Code: Works automatically with Python extension
+    - PyCharm: Works automatically
+    - IDLE: Limited support; see IDLE_NOTES.md for details
 """
 
 from typing import Dict, List, Optional, Set, Any, Tuple, Callable, Union
@@ -10,21 +22,12 @@ __version__: str
 
 # ============== Initialization State ==============
 
-def is_initializing() -> bool:
-    """Check if currently initializing."""
-    ...
-
-def is_initialized() -> bool:
-    """Check if initialization completed successfully."""
-    ...
-
-def is_init_failed() -> bool:
-    """Check if initialization failed."""
-    ...
-
-def get_init_error() -> Optional[str]:
-    """Get initialization error message if any."""
-    ...
+def is_initializing() -> bool: ...
+def is_initialized() -> bool: ...
+def is_init_failed() -> bool: ...
+def get_init_error() -> Optional[str]: ...
+def reset_init_state() -> None: ...
+def get_init_lock() -> object: ...  # threading.RLock
 
 # ============== LazyModule Classes ==============
 
@@ -52,97 +55,63 @@ class LazySymbol:
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
     def __enter__(self) -> Any: ...
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
-    def get_underlying_class(self) -> type:
-        """Get the underlying class for isinstance checks."""
-        ...
+    def get_underlying_class(self) -> type: ...
+
+class LazyProxy:
+    """Intelligent module recognition proxy."""
+    def __getattr__(self, name: str) -> Union[LazyModule, LazySymbol, Any]: ...
+    def __dir__(self) -> List[str]: ...
+
+lazy: LazyProxy
+
+def _get_lazy_module(name: str) -> LazyModule: ...
 
 # ============== Alias Management ==============
 
-def register_alias(alias: str, module_name: str) -> None:
-    """Register a custom module alias."""
-    ...
+def register_alias(alias: str, module_name: str) -> None: ...
+def register_aliases(aliases: Dict[str, str]) -> List[str]: ...
+def unregister_alias(alias: str) -> bool: ...
+def list_loaded() -> List[str]: ...
+def list_available() -> List[str]: ...
+def get_module(alias: str) -> Optional[ModuleType]: ...
+def clear_cache() -> None: ...
+def reload_aliases() -> None: ...
+def reload_mappings() -> None: ...
 
-def register_aliases(aliases: Dict[str, str]) -> List[str]:
-    """Register multiple module aliases at once."""
-    ...
-
-def unregister_alias(alias: str) -> bool:
-    """Remove a registered alias."""
-    ...
-
-def list_loaded() -> List[str]:
-    """Return list of loaded module aliases."""
-    ...
-
-def list_available() -> List[str]:
-    """Return list of all available module aliases."""
-    ...
-
-def get_module(alias: str) -> Optional[ModuleType]:
-    """Get a loaded module object."""
-    ...
-
-def clear_cache() -> None:
-    """Clear the loaded module cache."""
-    ...
+def get_config_paths() -> List[str]: ...
+def get_config_dirs() -> List[str]: ...
 
 # ============== Version & Reload ==============
 
-def get_version(alias: str) -> Optional[str]:
-    """Get the version of a loaded module."""
-    ...
-
-def reload_module(alias: str) -> bool:
-    """Reload a loaded module."""
-    ...
+def get_version(alias: str) -> Optional[str]: ...
+def reload_module(alias: str) -> bool: ...
 
 # ============== Auto-search ==============
 
-def enable_auto_search() -> None:
-    """Enable auto-search functionality."""
-    ...
-
-def disable_auto_search() -> None:
-    """Disable auto-search functionality."""
-    ...
-
-def is_auto_search_enabled() -> bool:
-    """Check if auto-search is enabled."""
-    ...
-
-def search_module(name: str) -> Optional[str]:
-    """Search for a matching module name."""
-    ...
-
-def search_class(class_name: str) -> Optional[Tuple[str, Any]]:
-    """Search for a class in loaded modules."""
-    ...
-
-def rebuild_module_cache() -> None:
-    """Rebuild the module cache."""
-    ...
+def enable_auto_search() -> None: ...
+def disable_auto_search() -> None: ...
+def is_auto_search_enabled() -> bool: ...
+def search_module(name: str) -> Optional[str]: ...
+def search_class(class_name: str) -> Optional[Tuple[str, Any]]: ...
+def rebuild_module_cache() -> None: ...
 
 # ============== Symbol Search ==============
 
 class SearchResult:
-    """Search result for a symbol."""
-
     module_name: str
     symbol_name: str
-    symbol_type: str
+    symbol_type: str  # 'class', 'function', 'callable'
     signature: Optional[str]
     score: float
     obj: Optional[Any]
 
 class SymbolMatch:
-    """Scored symbol match with confidence and source information."""
-
     module_name: str
     symbol_name: str
     symbol_type: str
     signature: Optional[str]
     confidence: float
-    source: str
+    source: str  # 'exact', 'user_pref', 'context', 'priority', 'fuzzy', 'misspelling'
     obj: Optional[Any]
 
 def enable_symbol_search(
@@ -151,221 +120,126 @@ def enable_symbol_search(
     max_results: int = 5,
     search_depth: int = 1,
     skip_stdlib: bool = False,
-) -> None:
-    """Enable symbol search functionality."""
-    ...
-
-def disable_symbol_search() -> None:
-    """Disable symbol search functionality."""
-    ...
-
-def is_symbol_search_enabled() -> bool:
-    """Check if symbol search is enabled."""
-    ...
-
+) -> None: ...
+def disable_symbol_search() -> None: ...
+def is_symbol_search_enabled() -> bool: ...
 def search_symbol(
     name: str,
     symbol_type: Optional[str] = None,
     signature: Optional[str] = None,
     max_results: Optional[int] = None,
-) -> List[SearchResult]:
-    """Search for a symbol (class/function) by name across installed packages."""
-    ...
-
-def rebuild_symbol_index() -> None:
-    """Rebuild the symbol index."""
-    ...
-
-def get_symbol_search_config() -> Dict[str, Any]:
-    """Get current symbol search configuration."""
-    ...
-
-def get_symbol_cache_info() -> Dict[str, Any]:
-    """Get information about the symbol cache."""
-    ...
-
-def clear_symbol_cache() -> None:
-    """Clear the symbol cache."""
-    ...
+) -> List[SearchResult]: ...
+def rebuild_symbol_index() -> None: ...
+def get_symbol_search_config() -> Dict[str, Any]: ...
+def get_symbol_cache_info() -> Dict[str, Any]: ...
+def clear_symbol_cache() -> None: ...
 
 # ============== Symbol Resolution ==============
 
-def set_symbol_preference(symbol: str, module: str) -> None:
-    """Set a user preference for symbol resolution."""
-    ...
-
-def get_symbol_preference(symbol: str) -> Optional[str]:
-    """Get the user preference for a symbol."""
-    ...
-
-def clear_symbol_preference(symbol: str) -> bool:
-    """Clear a user preference for a symbol."""
-    ...
-
-def list_symbol_conflicts(symbol: str) -> List[Dict[str, Any]]:
-    """List all modules that define a symbol with potential conflicts."""
-    ...
-
-def set_module_priority(module: str, priority: int) -> None:
-    """Set the priority for a module in symbol resolution."""
-    ...
-
-def get_module_priority(module: str) -> int:
-    """Get the priority for a module."""
-    ...
-
+def set_symbol_preference(symbol: str, module: str) -> None: ...
+def get_symbol_preference(symbol: str) -> Optional[str]: ...
+def clear_symbol_preference(symbol: str) -> bool: ...
+def list_symbol_conflicts(symbol: str) -> List[Dict[str, Any]]: ...
+def set_module_priority(module: str, priority: int) -> None: ...
+def get_module_priority(module: str) -> int: ...
 def enable_auto_symbol_resolution(
     auto: bool = True,
     threshold: float = 0.7,
     warn_on_conflict: bool = True,
     context_aware: bool = True,
-) -> None:
-    """Configure automatic symbol resolution behavior."""
-    ...
-
-def disable_auto_symbol_resolution() -> None:
-    """Disable automatic symbol resolution."""
-    ...
-
-def get_symbol_resolution_config() -> Dict[str, Any]:
-    """Get current symbol resolution configuration."""
-    ...
-
-def get_loaded_modules_context() -> Set[str]:
-    """Get the set of modules currently loaded/in use."""
-    ...
+) -> None: ...
+def disable_auto_symbol_resolution() -> None: ...
+def get_symbol_resolution_config() -> Dict[str, Any]: ...
+def get_loaded_modules_context() -> Set[str]: ...
 
 # ============== Configuration ==============
 
-def reload_aliases() -> None:
-    """Reload aliases from all configuration files."""
-    ...
-
-def export_aliases(path: Optional[str] = None, include_categories: bool = True) -> str:
-    """Export current aliases to a JSON file."""
-    ...
-
-def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
-    """Validate alias entries."""
-    ...
-
+def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]: ...
 def validate_aliases_importable(
     aliases: Optional[Dict[str, str]] = None,
-) -> Dict[str, Dict[str, Any]]:
-    """Validate that aliases can actually be imported."""
-    ...
-
-def get_config_paths() -> List[str]:
-    """Get all configuration file paths in priority order."""
-    ...
+) -> Dict[str, Dict[str, Any]]: ...
+def export_aliases(path: Optional[str] = None, include_categories: bool = True) -> str: ...
 
 # ============== Debug & Statistics ==============
 
-def enable_debug_mode() -> None:
-    """Enable debug mode for detailed logging."""
-    ...
-
-def disable_debug_mode() -> None:
-    """Disable debug mode."""
-    ...
-
-def is_debug_mode() -> bool:
-    """Check if debug mode is enabled."""
-    ...
-
-def get_import_stats() -> Dict[str, Any]:
-    """Get import statistics."""
-    ...
-
-def reset_import_stats() -> None:
-    """Reset import statistics."""
-    ...
+def enable_debug_mode() -> None: ...
+def disable_debug_mode() -> None: ...
+def is_debug_mode() -> bool: ...
+def get_import_stats() -> Dict[str, Any]: ...
+def reset_import_stats() -> None: ...
 
 # ============== Import Hooks ==============
 
-def add_pre_import_hook(hook: Callable[[str], None]) -> None:
-    """Add a hook to be called before a module is imported."""
-    ...
-
-def add_post_import_hook(hook: Callable[[str, Any], None]) -> None:
-    """Add a hook to be called after a module is imported."""
-    ...
-
-def remove_pre_import_hook(hook: Callable[[str], None]) -> bool:
-    """Remove a pre-import hook."""
-    ...
-
-def remove_post_import_hook(hook: Callable[[str, Any], None]) -> bool:
-    """Remove a post-import hook."""
-    ...
-
-def clear_import_hooks() -> None:
-    """Remove all import hooks."""
-    ...
+def add_pre_import_hook(hook: Callable[[str], None]) -> None: ...
+def add_post_import_hook(hook: Callable[[str, Any], None]) -> None: ...
+def remove_pre_import_hook(hook: Callable[[str], None]) -> bool: ...
+def remove_post_import_hook(hook: Callable[[str, Any], None]) -> bool: ...
+def clear_import_hooks() -> None: ...
 
 # ============== Async Import ==============
 
-async def import_async(alias: str) -> Any:
-    """Asynchronously import a module."""
-    ...
-
-async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
-    """Asynchronously import multiple modules in parallel."""
-    ...
+async def import_async(alias: str) -> Any: ...
+async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]: ...
 
 # ============== Retry Configuration ==============
 
 def enable_retry(
     max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[Set[str]] = None
-) -> None:
-    """Enable automatic retry for module imports."""
-    ...
-
-def disable_retry() -> None:
-    """Disable automatic retry for module imports."""
-    ...
-
-def is_retry_enabled() -> bool:
-    """Check if retry is enabled."""
-    ...
+) -> None: ...
+def disable_retry() -> None: ...
+def is_retry_enabled() -> bool: ...
 
 # ============== File Cache ==============
 
-def enable_file_cache() -> None:
-    """Enable file-level caching for faster subsequent imports."""
-    ...
+class FileCache:
+    file_path: str
+    file_sha: str
+    loaded_modules: List[str]
+    timestamp: float
+    def to_dict(self) -> Dict[str, Any]: ...
 
-def disable_file_cache() -> None:
-    """Disable file-level caching."""
-    ...
+def enable_file_cache() -> None: ...
+def disable_file_cache() -> None: ...
+def is_file_cache_enabled() -> bool: ...
+def clear_file_cache(file_path: Optional[str] = None) -> int: ...
+def get_file_cache_info() -> Dict[str, Any]: ...
+def force_save_cache() -> bool: ...
 
-def is_file_cache_enabled() -> bool:
-    """Check if file-level caching is enabled."""
-    ...
+# ============== Cache Configuration ==============
 
-def clear_file_cache(file_path: Optional[str] = None) -> int:
-    """Clear file cache(s)."""
-    ...
+def set_cache_config(
+    symbol_index_ttl: Optional[int] = None,
+    stdlib_cache_ttl: Optional[int] = None,
+    third_party_cache_ttl: Optional[int] = None,
+    enable_compression: Optional[bool] = None,
+    max_cache_size_mb: Optional[int] = None,
+) -> None: ...
+def get_cache_config() -> Dict[str, Any]: ...
+def get_cache_stats() -> Dict[str, Any]: ...
+def reset_cache_stats() -> None: ...
+def invalidate_package_cache(package_name: str) -> bool: ...
+def enable_cache_compression(enabled: bool = True) -> None: ...
 
-def get_file_cache_info() -> Dict[str, Any]:
-    """Get information about the current file cache."""
-    ...
+# ============== Cache Directory ==============
 
-def force_save_cache() -> bool:
-    """Force save the current file cache immediately."""
-    ...
+def set_cache_dir(path: Union[str, Path]) -> None: ...
+def get_cache_dir() -> Path: ...
+def reset_cache_dir() -> None: ...
 
-def set_cache_dir(path: Union[str, Path]) -> None:
-    """Set custom cache directory."""
-    ...
+# ============== Package Version ==============
 
-def get_cache_dir() -> Path:
-    """Get current cache directory path."""
-    ...
+def get_package_version(package_name: str) -> Optional[str]: ...
+def get_all_package_versions() -> Dict[str, str]: ...
+def get_laziest_import_version() -> str: ...
+def get_cache_version() -> str: ...
 
-def reset_cache_dir() -> None:
-    """Reset cache directory to default location."""
-    ...
+# ============== Incremental Index ==============
+
+def enable_incremental_index(enabled: bool = True) -> None: ...
+def enable_background_build(enabled: bool = True) -> None: ...
+def enable_cache_compression(enabled: bool = True) -> None: ...
+def get_incremental_config() -> Dict[str, Any]: ...
+def get_preheat_config() -> Dict[str, Any]: ...
 
 # ============== Auto Install ==============
 
@@ -375,114 +249,23 @@ def enable_auto_install(
     extra_args: Optional[List[str]] = None,
     prefer_uv: bool = False,
     silent: bool = False,
-) -> None:
-    """Enable automatic installation of missing packages."""
-    ...
-
-def disable_auto_install() -> None:
-    """Disable automatic installation of missing packages."""
-    ...
-
-def is_auto_install_enabled() -> bool:
-    """Check if automatic installation is enabled."""
-    ...
-
+) -> None: ...
+def disable_auto_install() -> None: ...
+def is_auto_install_enabled() -> bool: ...
 def install_package(
     package_name: str,
     index: Optional[str] = None,
     extra_args: Optional[List[str]] = None,
     interactive: Optional[bool] = None,
-) -> bool:
-    """Install a package manually."""
-    ...
-
-def get_auto_install_config() -> Dict[str, Any]:
-    """Get current auto-install configuration."""
-    ...
-
-def set_pip_index(url: Optional[str]) -> None:
-    """Set custom PyPI mirror index URL."""
-    ...
-
-def set_pip_extra_args(args: List[str]) -> None:
-    """Set extra arguments for pip install."""
-    ...
-
-# ============== Package Version ==============
-
-def get_package_version(package_name: str) -> Optional[str]:
-    """Get the version of an installed package."""
-    ...
-
-def get_all_package_versions() -> Dict[str, str]:
-    """Get versions of all installed packages."""
-    ...
-
-def get_laziest_import_version() -> str:
-    """Get the version of laziest-import library."""
-    ...
-
-# ============== Incremental Index ==============
-
-def enable_incremental_index(enabled: bool = True) -> None:
-    """Enable or disable incremental index updates."""
-    ...
-
-def enable_background_build(enabled: bool = True) -> None:
-    """Enable or disable background index building."""
-    ...
-
-def enable_cache_compression(enabled: bool = True) -> None:
-    """Enable or disable cache compression."""
-    ...
-
-def get_incremental_config() -> Dict[str, Any]:
-    """Get incremental index update configuration."""
-    ...
-
-def get_preheat_config() -> Dict[str, Any]:
-    """Get background preheat configuration."""
-    ...
+) -> bool: ...
+def get_auto_install_config() -> Dict[str, Any]: ...
+def set_pip_index(url: Optional[str]) -> None: ...
+def set_pip_extra_args(args: List[str]) -> None: ...
 
 # ============== Easter Egg & Help ==============
 
-def easter_egg(name: str = "default") -> str:
-    """Get a fun easter egg message!
-
-    Args:
-        name: The easter egg name. Available options:
-            - "default": A random fun fact about lazy imports
-            - "author": Author's message
-            - "quote": A programming quote
-            - "tip": A lazy import tip
-            - "secret": A secret message (shhh!)
-            - "thanks": Special thanks
-
-    Returns:
-        A fun message string.
-    """
-    ...
-
-def help(topic: Optional[str] = None) -> str:
-    """Get help on laziest-import topics.
-
-    Args:
-        topic: Optional topic to get help on. Available topics:
-            - None: General overview
-            - "quickstart": Quick start guide
-            - "lazy": How lazy imports work
-            - "alias": Alias system
-            - "symbol": Symbol search
-            - "cache": Caching system
-            - "config": Configuration options
-            - "async": Async imports
-            - "hooks": Import hooks
-            - "api": Full API reference
-
-    Returns:
-        Help text for the requested topic.
-    """
-    ...
+def easter_egg(name: str = "default") -> str: ...
+def help(topic: Optional[str] = None) -> str: ...
 
 # ============== Module Introspection ==============
 
@@ -491,23 +274,13 @@ def list_module_symbols(
     include_private: bool = False,
     include_submodules: bool = True,
     filter_types: Optional[Set[str]] = None,
-) -> List[str]:
-    """List symbols in a module without fully importing it."""
-    ...
-
-def get_module_info(module_name: str) -> Dict[str, Any]:
-    """Get information about a module."""
-    ...
-
-def search_in_module(module_name: str, pattern: str) -> List[str]:
-    """Search for symbols matching a pattern in a module."""
-    ...
+) -> List[str]: ...
+def get_module_info(module_name: str) -> Dict[str, Any]: ...
+def search_in_module(module_name: str, pattern: str) -> List[str]: ...
 
 # ============== Symbol Location ==============
 
 class SymbolLocation:
-    """Represents a symbol's definition location."""
-
     module_name: str
     symbol_name: str
     symbol_type: str
@@ -515,7 +288,6 @@ class SymbolLocation:
     line_number: Optional[int]
     doc: Optional[str]
     signature: Optional[str]
-
     def __init__(
         self,
         module_name: str,
@@ -525,85 +297,48 @@ class SymbolLocation:
         line_number: Optional[int] = None,
         doc: Optional[str] = None,
         signature: Optional[str] = None,
-    ): ...
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
     def to_dict(self) -> Dict[str, Any]: ...
 
 def which(
     symbol_name: str, module_hint: Optional[str] = None
-) -> Optional[SymbolLocation]:
-    """Find where a symbol is defined."""
-    ...
-
-def which_all(symbol_name: str) -> List[SymbolLocation]:
-    """Find all locations where a symbol is defined."""
-    ...
+) -> Optional[SymbolLocation]: ...
+def which_all(symbol_name: str) -> List[SymbolLocation]: ...
 
 # ============== Background Index ==============
 
 def start_background_index_build(
     progress_callback: Optional[Callable[[str, float], None]] = None,
     timeout: Optional[float] = None,
-) -> bool:
-    """Start building the symbol index in a background thread.
-    
-    Args:
-        progress_callback: Optional callback(status: str, elapsed: float)
-        timeout: Optional timeout in seconds
-    
-    Returns:
-        True if build started, False if already building or built
-    """
-    ...
-
-def is_index_building() -> bool:
-    """Check if background index build is in progress."""
-    ...
-
-def wait_for_index(timeout: Optional[float] = None) -> bool:
-    """Wait for background index build to complete."""
-    ...
+) -> bool: ...
+def is_index_building() -> bool: ...
+def wait_for_index(timeout: Optional[float] = None) -> bool: ...
 
 # ============== RC Config ==============
 
-def load_rc_config() -> Dict[str, Any]:
-    """Load configuration from .laziestrc file."""
-    ...
-
-def get_rc_value(key: str, default: Any = None) -> Any:
-    """Get a value from RC config."""
-    ...
-
-def create_rc_file(path: Optional[str] = None, template: bool = True) -> str:
-    """Create a new .laziestrc file."""
-    ...
-
-def get_rc_info() -> Dict[str, Any]:
-    """Get information about RC config files."""
-    ...
-
-def reload_rc_config() -> None:
-    """Reload RC config from file."""
-    ...
+def load_rc_config() -> Dict[str, Any]: ...
+def get_rc_value(key: str, default: Any = None) -> Any: ...
+def create_rc_file(path: Optional[str] = None, template: bool = True) -> str: ...
+def get_rc_info() -> Dict[str, Any]: ...
+def reload_rc_config() -> None: ...
+def save_rc_config(config: Dict[str, Any], path: Optional[str] = None) -> None: ...
+def list_rc_paths() -> List[str]: ...
 
 # ============== Reset All ==============
 
-def reset_all() -> None:
-    """Reset all state including cache, aliases, and symbol index."""
-    ...
+def reset_all() -> None: ...
 
 # ============== Analysis & Profiling ==============
 
 class PreAnalysisResult:
-    """Result of pre-analysis scan."""
     file_path: str
     predicted_imports: Set[str]
     used_symbols: Set[str]
     confidence: Dict[str, float]
 
 class ModuleProfile:
-    """Profile data for a single module."""
     module_name: str
     load_time: float
     memory_before: int
@@ -614,7 +349,6 @@ class ModuleProfile:
     last_access: Optional[float]
 
 class ProfileReport:
-    """Complete profile report."""
     total_time: float
     total_memory: int
     modules: Dict[str, ModuleProfile]
@@ -623,7 +357,6 @@ class ProfileReport:
     recommendations: List[str]
 
 class EnvironmentInfo:
-    """Information about the current Python environment."""
     python_version: str
     executable: str
     virtual_env: Optional[str]
@@ -631,112 +364,133 @@ class EnvironmentInfo:
     site_packages: List[str]
     installed_packages: Dict[str, str]
 
-def analyze_file(file_path: str) -> PreAnalysisResult:
-    """Analyze a Python file to predict required imports."""
-    ...
+class DependencyNode:
+    module_name: str
+    is_available: bool
+    is_stdlib: bool
+    is_third_party: bool
+    is_local: bool
+    version: Optional[str]
+    children: List["DependencyNode"]
+    depth: int
+    def to_dict(self) -> Dict[str, Any]: ...
 
-def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult:
-    """Analyze source code to predict required imports."""
-    ...
+class DependencyTree:
+    root_module: str
+    total_modules: int
+    stdlib_count: int
+    third_party_count: int
+    local_count: int
+    unavailable_count: int
+    max_depth: int
+    tree: Optional[DependencyNode]
+    circular_dependencies: List[Tuple[str, str]]
+    def to_dict(self) -> Dict[str, Any]: ...
 
+class BenchmarkResult:
+    name: str
+    iterations: int
+    total_time: float
+    avg_time: float
+    min_time: float
+    max_time: float
+    std_dev: float
+    memory_before: int
+    memory_after: int
+    memory_delta: int
+
+class BenchmarkReport:
+    results: List[BenchmarkResult]
+    comparison: Dict[str, float]
+    recommendations: List[str]
+
+class ImportComparison:
+    module_name: str
+    regular_import_time: float
+    lazy_import_time: float
+    speedup_factor: float
+    regular_memory: int
+    lazy_memory: int
+
+class BenchmarkRunner:
+    def __init__(
+        self,
+        warmup_iterations: int = 3,
+        default_iterations: int = 10,
+        use_gc: bool = True,
+    ) -> None: ...
+    def benchmark_function(
+        self, name: str, func: Callable, iterations: Optional[int] = None
+    ) -> BenchmarkResult: ...
+    def benchmark_import(self, module_name: str, iterations: Optional[int] = None) -> BenchmarkResult: ...
+    def benchmark_lazy_import(self, module_name: str, iterations: Optional[int] = None) -> BenchmarkResult: ...
+    def compare_import_methods(self, module_name: str, iterations: Optional[int] = None) -> ImportComparison: ...
+    def run_suite(self, benchmarks: List[Dict[str, Any]]) -> BenchmarkReport: ...
+
+def analyze_file(file_path: str) -> PreAnalysisResult: ...
+def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult: ...
 def analyze_directory(
     dir_path: str,
     recursive: bool = True,
-    exclude: Optional[Set[str]] = None
-) -> List[PreAnalysisResult]:
-    """Analyze all Python files in a directory."""
-    ...
+    exclude: Optional[Set[str]] = None,
+) -> List[PreAnalysisResult]: ...
 
-def start_profiling() -> None:
-    """Start import profiling."""
-    ...
+def start_profiling() -> None: ...
+def stop_profiling() -> None: ...
+def get_profile_report(top_n: int = 10) -> ProfileReport: ...
+def print_profile_report(top_n: int = 10) -> None: ...
 
-def stop_profiling() -> None:
-    """Stop import profiling."""
-    ...
-
-def get_profile_report(top_n: int = 10) -> ProfileReport:
-    """Get profile report."""
-    ...
-
-def print_profile_report(top_n: int = 10) -> None:
-    """Print profile report."""
-    ...
-
-def find_symbol_conflicts() -> Dict[str, Any]:
-    """Find all symbols that exist in multiple modules."""
-    ...
-
+def find_symbol_conflicts() -> Dict[str, Any]: ...
 def show_conflicts(
     symbol_filter: Optional[str] = None,
-    max_results: int = 20
-) -> None:
-    """Display symbol conflicts in a formatted table."""
-    ...
+    max_results: int = 20,
+) -> None: ...
+def get_conflicts_summary() -> Dict[str, Any]: ...
+def detect_environment() -> EnvironmentInfo: ...
+def show_environment() -> None: ...
 
-def get_conflicts_summary() -> Dict[str, Any]:
-    """Get a summary of all symbol conflicts."""
-    ...
-
-def detect_environment() -> EnvironmentInfo:
-    """Detect the current Python environment."""
-    ...
-
-def show_environment() -> None:
-    """Display environment information."""
-    ...
-
-def save_preferences() -> bool:
-    """Save current symbol preferences to file."""
-    ...
-
-def load_preferences() -> Dict[str, str]:
-    """Load symbol preferences from file."""
-    ...
-
-def apply_preferences() -> None:
-    """Apply loaded preferences to current session."""
-    ...
-
-def clear_preferences() -> bool:
-    """Clear saved preferences."""
-    ...
+def benchmark(
+    func: Optional[Callable] = None,
+    *,
+    name: Optional[str] = None,
+    iterations: int = 10,
+    warmup: int = 3,
+) -> BenchmarkResult: ...
+def benchmark_imports(
+    modules: List[str],
+    iterations: int = 5,
+    compare_lazy: bool = True,
+) -> BenchmarkReport: ...
+def print_benchmark_report(report: BenchmarkReport) -> None: ...
 
 # ============== Symbol Sharding ==============
 
-def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[SearchResult]:
-    """Search for symbol using sharded index."""
-    ...
-
-def enable_sharding(enabled: bool = True) -> None:
-    """Enable or disable symbol sharding."""
-    ...
-
-def disable_sharding() -> None:
-    """Disable symbol sharding."""
-    ...
-
-def get_sharding_config() -> Dict[str, Any]:
-    """Get current sharding configuration."""
-    ...
-
-def clear_shard_cache() -> None:
-    """Clear loaded shards from memory."""
-    ...
+def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[SearchResult]: ...
+def enable_sharding(enabled: bool = True) -> None: ...
+def disable_sharding() -> None: ...
+def get_sharding_config() -> Dict[str, Any]: ...
+def clear_shard_cache() -> None: ...
 
 # ============== Background Timeout ==============
 
-def set_background_timeout(timeout: float) -> None:
-    """Set timeout for background index building."""
-    ...
+def set_background_timeout(timeout: float) -> None: ...
+def get_background_timeout() -> float: ...
 
-def get_background_timeout() -> float:
-    """Get current background timeout setting."""
-    ...
+# ============== Preferences ==============
+
+def save_preferences() -> bool: ...
+def load_preferences() -> Dict[str, str]: ...
+def apply_preferences() -> None: ...
+def clear_preferences() -> bool: ...
+
+# ============== Dependency Tree ==============
+
+def dependency_tree(module_name: str, max_depth: int = 3, include_stdlib: bool = True, include_third_party: bool = True, include_local: bool = True) -> DependencyTree: ...
+def print_dependency_tree(tree: DependencyTree) -> None: ...
 
 # ============== Module-level attributes ==============
 
 __all__: List[str]
 
-def __getattr__(name: str) -> Union[LazyModule, LazySymbol]: ...
+def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]: ...
 def __dir__() -> List[str]: ...
