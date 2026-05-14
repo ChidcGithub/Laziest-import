@@ -2202,7 +2202,7 @@ class LazyImport:
         支持 lz.numpy, lz.pandas 等快捷方式。
         等价于 lz.module.numpy。
         """
-        if name.startswith("_"):
+        if name.startswith("_") and name != "__version__":
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         # 1. 检查别名映射
@@ -2247,6 +2247,10 @@ class LazyImport:
         ]
         base.extend(_ALIAS_MAP.keys())
         return sorted(set(base))
+
+    @property
+    def __version__(self) -> str:
+        return _config.__version__
 
     def __repr__(self) -> str:
         return (
