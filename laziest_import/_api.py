@@ -1,80 +1,3 @@
-"""
-全新面向对象 API 入口 — LazyImport。
-
-用法:
-    from laziest_import import LazyImport, lz
-
-    lz = LazyImport()
-
-    # 模块加载
-    np = lz.module.numpy
-    pd = lz.module.get('pandas')
-
-    # 配置
-    lz.config.debug = True
-    lz.config.auto_install.enabled = True
-
-    # 符号搜索
-    results = lz.symbol.search('DataFrame')
-    loc = lz.symbol.which('sqrt')
-
-    # 别名管理（字典式 + 方法式）
-    lz.alias['my_np'] = 'numpy'
-    mod = lz.alias['my_np']
-
-    # 缓存
-    lz.cache.symbols.clear()
-    lz.cache.files.clear()
-    stats = lz.cache.stats
-
-    # 钩子（支持 += -= 操作符）
-    lz.hooks.pre += my_pre_hook
-    lz.hooks.post += my_post_hook
-
-    # 异步
-    mod = await lz.async.get('numpy')
-    mods = await lz.async.fetch('numpy', 'pandas')
-
-    # 分析
-    result = lz.analyze.file('script.py')
-    result = lz.analyze.code('import numpy')
-    results = lz.analyze.dir('/path/to/project')
-
-    # 性能分析
-    lz.profile.start()
-    lz.profile.stop()
-    lz.profile.print_report()
-
-    # 安装
-    lz.install.package('torch')
-    lz.install.auto.enabled = True
-
-    # 导出
-    lz.alias.export('/path/aliases.json')
-    lz.config.export('/path/config.json')
-
-    # 后台索引构建
-    lz.background.start()
-    lz.background.wait()
-
-    # 版本
-    print(lz.version)
-    print(lz.version_of('numpy'))
-
-    # 快照与恢复
-    snap = lz.config.snapshot()
-    lz.config.restore(snap)
-
-    # 临时配置
-    with lz.config.temp_config(debug=True):
-        pass  # debug 在此范围内为 True，退出后恢复原值
-
-注意:
-    - LazyImport() 可以创建多个实例，它们共享同一份全局状态
-    - 推荐创建单例使用: lz = LazyImport()
-    - 或者使用模块级快捷函数: from laziest_import import lz
-"""
-
 from typing import (
     Any, Dict, List, Optional, Set, Tuple, Callable, Union, Iterator
 )
@@ -83,7 +6,7 @@ from pathlib import Path
 import warnings
 import logging
 
-# ─── 直接子模块导入（无循环依赖） ─────────────────────────────
+# ─── Direct submodule imports (no circular dependencies) ─────────────────────
 
 from . import _config
 
@@ -242,7 +165,7 @@ from ._rcconfig import (
 
 
 # ═══════════════════════════════════════════════════════════════
-#  Helper: 更新符号搜索配置
+#  Helper: Update symbol search configuration
 # ═══════════════════════════════════════════════════════════════
 
 def _apply_search_config(cfg: "SymbolSearchConfig") -> None:
@@ -254,12 +177,12 @@ def _apply_resolution_config(cfg: "SymbolResolutionConfig") -> None:
 
 
 # ═══════════════════════════════════════════════════════════════
-#  数据类
+#  Dataclasses
 # ═══════════════════════════════════════════════════════════════
 
 @dataclass
 class AutoInstallConfig:
-    """自动安装配置"""
+    """Auto-install configuration"""
     enabled: bool = False
     interactive: bool = True
     index: Optional[str] = None
@@ -270,7 +193,7 @@ class AutoInstallConfig:
 
 @dataclass
 class RetryConfig:
-    """重试配置"""
+    """Retry configuration"""
     enabled: bool = False
     max_retries: int = 3
     retry_delay: float = 0.5
@@ -279,7 +202,7 @@ class RetryConfig:
 
 @dataclass
 class SymbolSearchConfig:
-    """符号搜索配置"""
+    """Symbol search configuration"""
     enabled: bool = True
     interactive: bool = True
     exact_params: bool = False
@@ -292,7 +215,7 @@ class SymbolSearchConfig:
 
 @dataclass
 class SymbolResolutionConfig:
-    """符号解析配置"""
+    """Symbol resolution configuration"""
     auto_symbol: bool = True
     auto_threshold: float = 0.7
     conflict_threshold: float = 0.3
@@ -304,7 +227,7 @@ class SymbolResolutionConfig:
 
 @dataclass
 class CacheConfig:
-    """缓存配置"""
+    """Cache configuration"""
     enabled: bool = True
     max_size_mb: int = 100
     cleanup_threshold: float = 0.8
@@ -319,7 +242,7 @@ class CacheConfig:
 
 @dataclass
 class ModuleSkipConfig:
-    """模块跳过配置"""
+    """Module skip configuration"""
     skip_test_modules: bool = True
     skip_internal_modules: bool = True
     skip_large_modules: bool = True
@@ -333,9 +256,9 @@ class ModuleSkipConfig:
 
 class HookList:
     """
-    可订阅的钩子列表。
+    Subscribable hook list.
 
-    支持 += 和 -= 运算符：
+    Supports += and -= operators:
         lz.hooks.pre += my_hook
         lz.hooks.post -= my_hook
     """
@@ -344,12 +267,12 @@ class HookList:
         self._hooks = hook_list
 
     def add(self, callback: Callable) -> None:
-        """注册钩子"""
+        """Register a hook"""
         if callback not in self._hooks:
             self._hooks.append(callback)
 
     def remove(self, callback: Callable) -> bool:
-        """移除钩子，返回是否成功"""
+        """Remove a hook, returns whether successful"""
         try:
             self._hooks.remove(callback)
             return True
@@ -357,11 +280,11 @@ class HookList:
             return False
 
     def clear(self) -> None:
-        """清空所有钩子"""
+        """Clear all hooks"""
         self._hooks.clear()
 
     def __call__(self, *args: Any, **kwargs: Any) -> None:
-        """触发所有注册的钩子（内部使用）"""
+        """Trigger all registered hooks (internal use)"""
         for hook in list(self._hooks):
             try:
                 hook(*args, **kwargs)
@@ -392,44 +315,44 @@ class HookList:
 
 class ModuleNamespace:
     """
-    模块加载命名空间。
+    Module loading namespace.
 
-    用法:
-        lz.module.numpy                    # 属性式（触发懒加载）
-        lz.module.get('numpy')             # 方法式（不存在返回 None）
-        lz.module.load('numpy')            # 强制加载并返回
-        lz.module.reload('numpy')          # 重载
-        lz.module.list_loaded()            # 已加载列表
-        lz.module.list_available()         # 可用列表
-        lz.module.is_loaded('numpy')       # 检查是否已加载
+    Usage:
+        lz.module.numpy                    # Attribute-style (triggers lazy loading)
+        lz.module.get('numpy')             # Method-style (returns None if not found)
+        lz.module.load('numpy')            # Force load and return
+        lz.module.reload('numpy')          # Reload
+        lz.module.list_loaded()            # List loaded modules
+        lz.module.list_available()         # List available modules
+        lz.module.is_loaded('numpy')       # Check if loaded
     """
 
     def get(self, name: str) -> Optional[Any]:
-        """获取已加载的模块对象，不存在则返回 None"""
+        """Get a loaded module object, returns None if not found"""
         return get_module(name)
 
     def load(self, name: str) -> Any:
-        """加载并返回模块（强制触发懒加载）"""
+        """Load and return a module (force trigger lazy loading)"""
         lm = _get_lazy_module(name)
         return lm._get_module()
 
     def reload(self, name: str) -> bool:
-        """重载已加载的模块"""
+        """Reload a loaded module"""
         return reload_module(name)
 
     def list_loaded(self) -> List[str]:
-        """列出已加载的模块别名"""
+        """List loaded module aliases"""
         return list_loaded()
 
     def list_available(self) -> List[str]:
-        """列出所有可用模块别名"""
+        """List all available module aliases"""
         return list_available()
 
     def is_loaded(self, name: str) -> bool:
-        """检查模块是否已加载"""
+        """Check if a module is loaded"""
         return name in list_loaded()
 
-    # ---- 字典式访问 ----
+    # ---- Dict-style access ----
 
     def __getitem__(self, name: str) -> Any:
         mod = get_module(name)
@@ -467,24 +390,24 @@ class ModuleNamespace:
 
 class AliasNamespace:
     """
-    别名管理命名空间，支持字典式和方法式两种 API。
+    Alias management namespace, supports both dict-style and method-style APIs.
 
-    用法:
-        lz.alias.register('np', 'numpy')          # 方法式
-        lz.alias['my_np'] = 'numpy'                # 字典式
-        mod = lz.alias['np']                       # 获取懒加载代理
-        lz.alias.reload()                          # 从配置重载
-        lz.alias.export('/path/aliases.json')      # 导出
+    Usage:
+        lz.alias.register('np', 'numpy')          # Method-style
+        lz.alias['my_np'] = 'numpy'                # Dict-style
+        mod = lz.alias['np']                       # Get lazy proxy
+        lz.alias.reload()                          # Reload from config
+        lz.alias.export('/path/aliases.json')      # Export
     """
 
-    # ---- 方法式 API ----
+    # ---- Method-style API ----
 
     def register(self, alias: str, module_name: str) -> None:
-        """注册单个别名"""
+        """Register a single alias"""
         register_alias(alias, module_name)
 
     def register_many(self, aliases: Dict[str, str]) -> List[str]:
-        """批量注册别名，返回成功注册的列表"""
+        """Batch register aliases, returns list of successfully registered ones"""
         registered: List[str] = []
         for alias, mod in aliases.items():
             try:
@@ -495,11 +418,11 @@ class AliasNamespace:
         return registered
 
     def unregister(self, alias: str) -> bool:
-        """注销别名，返回是否成功"""
+        """Unregister an alias, returns whether successful"""
         return unregister_alias(alias)
 
     def reload(self) -> None:
-        """从配置文件重载所有别名"""
+        """Reload all aliases from config file"""
         reload_aliases()
 
     def export(
@@ -508,14 +431,14 @@ class AliasNamespace:
         include_categories: bool = True,
     ) -> str:
         """
-        导出别名到 JSON 文件或返回字符串。
+        Export aliases to a JSON file or return as string.
 
         Args:
-            path: 输出文件路径，None 则只返回字符串
-            include_categories: 是否包含分类信息
+            path: Output file path, None to return as string only
+            include_categories: Whether to include category info
 
         Returns:
-            JSON 字符串
+            JSON string
         """
         return export_aliases(path, include_categories)
 
@@ -523,25 +446,25 @@ class AliasNamespace:
         self, aliases: Optional[Dict[str, str]] = None
     ) -> Dict[str, List[str]]:
         """
-        验证别名有效性。
+        Validate alias validity.
 
         Args:
-            aliases: 要验证的别名映射，None 则验证当前所有别名
+            aliases: Alias mapping to validate, None validates all current aliases
 
         Returns:
-            包含 'valid', 'invalid', 'warnings' 的字典
+            Dict containing 'valid', 'invalid', 'warnings'
         """
         return validate_aliases(aliases)
 
     def import_file(self, path: str) -> int:
         """
-        从 JSON 文件导入别名。
+        Import aliases from a JSON file.
 
         Args:
-            path: JSON 文件路径
+            path: JSON file path
 
         Returns:
-            成功导入的别名数量
+            Number of aliases successfully imported
         """
         import json
         from pathlib import Path as _Path
@@ -565,13 +488,13 @@ class AliasNamespace:
 
     def search(self, pattern: str) -> List[str]:
         """
-        搜索匹配指定模式的别名。
+        Search for aliases matching a specified pattern.
 
         Args:
-            pattern: 搜索模式（子串匹配）
+            pattern: Search pattern (substring match)
 
         Returns:
-            匹配的别名列表
+            List of matching aliases
         """
         pattern_lower = pattern.lower()
         return [
@@ -579,7 +502,7 @@ class AliasNamespace:
             if pattern_lower in alias.lower()
         ]
 
-    # ---- 字典式 API ----
+    # ---- Dict-style API ----
 
     def __setitem__(self, alias: str, module_name: str) -> None:
         register_alias(alias, module_name)
@@ -623,53 +546,53 @@ class AliasNamespace:
 # ═══════════════════════════════════════════════════════════════
 
 class SymbolIndexNamespace:
-    """符号索引管理子命名空间"""
+    """Symbol index management sub-namespace"""
 
     def build(self, force: bool = False, max_modules: int = 100, timeout: float = 30.0) -> None:
         """
-        构建/重建符号索引。
+        Build/rebuild the symbol index.
 
         Args:
-            force: 是否强制重建
-            max_modules: 最大扫描模块数
-            timeout: 超时时间（秒）
+            force: Whether to force rebuild
+            max_modules: Maximum number of modules to scan
+            timeout: Timeout in seconds
         """
         _build_symbol_index(force=force, max_modules=max_modules, timeout=timeout)
 
     def rebuild(self) -> None:
-        """强制重建符号索引"""
+        """Force rebuild the symbol index"""
         rebuild_symbol_index()
 
     def incremental(self) -> bool:
         """
-        执行增量索引构建。
+        Perform incremental index build.
 
         Returns:
-            是否成功
+            Whether successful
         """
         return _build_incremental_symbol_index()
 
     def reset(self) -> None:
-        """重置符号缓存（不清除索引文件）"""
+        """Reset symbol cache (does not clear index files)"""
         clear_symbol_cache()
 
     def clear(self) -> None:
-        """清除符号缓存（reset 的别名）"""
+        """Clear symbol cache (alias for reset)"""
         clear_symbol_cache()
 
     @property
     def built(self) -> bool:
-        """索引是否已构建"""
+        """Whether the index has been built"""
         return _config._SYMBOL_INDEX_BUILT
 
     @property
     def count(self) -> int:
-        """已索引符号数量"""
+        """Number of indexed symbols"""
         return len(_config._SYMBOL_CACHE)
 
     @property
     def is_built(self) -> bool:
-        """索引是否已构建（built 的别名）"""
+        """Whether the index has been built (alias for built)"""
         return self.built
 
     def __repr__(self) -> str:
@@ -678,27 +601,27 @@ class SymbolIndexNamespace:
 
 class SymbolConfigNamespace:
     """
-    符号搜索和解析配置子命名空间。
+    Symbol search and resolution configuration sub-namespace.
 
-    所有修改实时同步到底层 _config 全局状态。
+    All modifications are synced in real-time to the underlying _config global state.
     """
 
-    # ---- 开关 ----
+    # ---- Toggles ----
 
     def enable(self) -> None:
-        """启用符号搜索"""
+        """Enable symbol search"""
         enable_symbol_search()
 
     def disable(self) -> None:
-        """禁用符号搜索"""
+        """Disable symbol search"""
         disable_symbol_search()
 
     @property
     def enabled(self) -> bool:
-        """符号搜索是否启用"""
+        """Whether symbol search is enabled"""
         return is_symbol_search_enabled()
 
-    # ---- 搜索参数 ----
+    # ---- Search parameters ----
 
     @property
     def interactive(self) -> bool:
@@ -756,7 +679,7 @@ class SymbolConfigNamespace:
     def cache_enabled(self, value: bool) -> None:
         _config._SYMBOL_SEARCH_CONFIG["cache_enabled"] = value
 
-    # ---- 解析参数 ----
+    # ---- Resolution parameters ----
 
     @property
     def auto_resolution(self) -> bool:
@@ -817,17 +740,17 @@ class SymbolConfigNamespace:
     def save_preferences(self, value: bool) -> None:
         _config._SYMBOL_RESOLUTION_CONFIG["save_preferences"] = value
 
-    # ---- 导出/快照 ----
+    # ---- Export / snapshot ----
 
     def snapshot(self) -> Dict[str, Any]:
-        """获取搜索+解析配置的完整快照"""
+        """Get a complete snapshot of search + resolution config"""
         return {
             "search": dict(get_symbol_search_config()),
             "resolution": dict(get_symbol_resolution_config()),
         }
 
     def export(self, path: Optional[str] = None) -> str:
-        """导出配置为 JSON"""
+        """Export config as JSON"""
         import json
         data = self.snapshot()
         if path:
@@ -844,22 +767,22 @@ class SymbolConfigNamespace:
 
 class SymbolNamespace:
     """
-    符号搜索命名空间。
+    Symbol search namespace.
 
-    用法:
-        lz.symbol.search('DataFrame')          # 搜索符号
-        lz.symbol.which('sqrt')                # 查找定义位置
-        lz.symbol.which_all('sqrt')            # 查找所有位置
-        lz.symbol.prefer('DF', 'pandas')       # 设置偏好
-        lz.symbol.preference('DF')             # 获取偏好
-        lz.symbol.conflicts()                  # 获取所有冲突
-        lz.symbol.index.build()                # 构建索引
-        lz.symbol.index.reset()                # 重置索引
-        lz.symbol.config.enabled = False       # 配置
-        lz.symbol.config.sharding.enable()     # 分片搜索
+    Usage:
+        lz.symbol.search('DataFrame')          # Search symbols
+        lz.symbol.which('sqrt')                # Find definition location
+        lz.symbol.which_all('sqrt')            # Find all locations
+        lz.symbol.prefer('DF', 'pandas')       # Set preference
+        lz.symbol.preference('DF')             # Get preference
+        lz.symbol.conflicts()                  # Get all conflicts
+        lz.symbol.index.build()                # Build index
+        lz.symbol.index.reset()                # Reset index
+        lz.symbol.config.enabled = False       # Configure
+        lz.symbol.config.sharding.enable()     # Sharded search
     """
 
-    # ---- 搜索 ----
+    # ---- Search ----
 
     def search(
         self,
@@ -869,13 +792,13 @@ class SymbolNamespace:
         max_results: Optional[int] = None,
     ) -> List[Any]:
         """
-        搜索符号。
+        Search for symbols.
 
         Args:
-            name: 符号名称（支持模糊匹配）
-            symbol_type: 类型过滤 ('class', 'function', 'callable')
-            signature: 签名过滤
-            max_results: 最大结果数
+            name: Symbol name (supports fuzzy matching)
+            symbol_type: Type filter ('class', 'function', 'callable')
+            signature: Signature filter
+            max_results: Maximum number of results
 
         Returns:
             List[SearchResult]
@@ -883,10 +806,10 @@ class SymbolNamespace:
         return search_symbol(name, symbol_type, signature, max_results)
 
     def sharded(self, name: str, max_results: int = 5) -> List[Any]:
-        """使用分片索引搜索（大数据量场景更快）"""
+        """Search using sharded index (faster for large datasets)"""
         return search_with_sharding(name, max_results)
 
-    # ---- 位置查找 ----
+    # ---- Location lookup ----
 
     def which(
         self,
@@ -894,54 +817,54 @@ class SymbolNamespace:
         module_hint: Optional[str] = None,
     ) -> Optional[Any]:
         """
-        查找符号定义位置（返回第一个匹配）。
+        Find where a symbol is defined (returns first match).
 
         Args:
-            name: 符号名称（支持 "module.symbol" 格式）
-            module_hint: 可选模块提示
+            name: Symbol name (supports "module.symbol" format)
+            module_hint: Optional module hint
 
         Returns:
-            SymbolLocation 或 None
+            SymbolLocation or None
         """
         return which(name, module_hint)
 
     def which_all(self, name: str) -> List[Any]:
         """
-        查找符号所有定义位置。
+        Find all locations where a symbol is defined.
 
         Args:
-            name: 符号名称
+            name: Symbol name
 
         Returns:
             List[SymbolLocation]
         """
         return which_all(name)
 
-    # ---- 偏好 ----
+    # ---- Preferences ----
 
     def prefer(self, symbol: str, module: str) -> None:
-        """为符号设置首选模块"""
+        """Set preferred module for a symbol"""
         set_symbol_preference(symbol, module)
 
     def preference(self, symbol: str) -> Optional[str]:
-        """获取符号的首选模块"""
+        """Get preferred module for a symbol"""
         return get_symbol_preference(symbol)
 
     def clear_preference(self, symbol: str) -> bool:
-        """清除符号偏好"""
+        """Clear symbol preference"""
         return clear_symbol_preference(symbol)
 
-    # ---- 冲突 ----
+    # ---- Conflicts ----
 
     def conflicts(self, symbol: Optional[str] = None) -> Any:
         """
-        获取符号冲突信息。
+        Get symbol conflict information.
 
         Args:
-            symbol: 如果提供，只返回该符号的冲突；否则返回所有冲突
+            symbol: If provided, return conflicts for this symbol only; otherwise return all
 
         Returns:
-            SymbolConflict (单符号) 或 Dict[str, SymbolConflict] (全部)
+            SymbolConflict (single symbol) or Dict[str, SymbolConflict] (all)
         """
         from .._analysis._conflict import find_symbol_conflicts
         all_conflicts = find_symbol_conflicts()
@@ -950,43 +873,43 @@ class SymbolNamespace:
         return all_conflicts
 
     def conflict_summary(self) -> Dict[str, Any]:
-        """获取冲突概要统计"""
+        """Get conflict summary statistics"""
         from .._analysis._conflict import get_conflicts_summary
         return get_conflicts_summary()
 
     def show_conflicts(self, symbol_filter: Optional[str] = None, max_results: int = 20) -> None:
-        """格式化打印符号冲突"""
+        """Display formatted symbol conflicts"""
         from .._analysis._conflict import show_conflicts
         show_conflicts(symbol_filter, max_results)
 
-    # ---- 配置 ----
+    # ---- Configuration ----
 
     @property
     def config(self) -> SymbolConfigNamespace:
-        """搜索/解析配置"""
+        """Search/resolution configuration"""
         return _SYMBOL_CONFIG_NS
 
-    # ---- 索引 ----
+    # ---- Index ----
 
     @property
     def index(self) -> SymbolIndexNamespace:
-        """索引管理"""
+        """Index management"""
         return _SYMBOL_INDEX_NS
 
-    # ---- 缓存信息 ----
+    # ---- Cache info ----
 
     def cache_info(self) -> Dict[str, Any]:
-        """获取符号缓存信息"""
+        """Get symbol cache information"""
         return get_symbol_cache_info()
 
-    # ---- 内部方法（高级用户） ----
+    # ---- Internal methods (advanced users) ----
 
     def _search_direct(self, name: str, symbol_type=None, signature=None, max_results=None) -> List[Any]:
-        """直接搜索（不模糊匹配）"""
+        """Direct search (no fuzzy matching)"""
         return _search_symbol_direct(name, symbol_type, signature, max_results)
 
     def _enhanced(self, name: str, auto: bool = True, symbol_type=None) -> Optional[Any]:
-        """增强搜索（含自动解析和拼写纠正）"""
+        """Enhanced search (with auto-resolution and spell correction)"""
         return _search_symbol_enhanced(name, auto, symbol_type)
 
     def __repr__(self) -> str:
@@ -999,14 +922,14 @@ class SymbolNamespace:
 # ═══════════════════════════════════════════════════════════════
 
 class CacheSymbolsNamespace:
-    """符号缓存子命名空间"""
+    """Symbol cache sub-namespace"""
 
     def clear(self) -> None:
-        """清除所有符号缓存（内存）"""
+        """Clear all symbol cache (memory)"""
         clear_symbol_cache()
 
     def reset(self) -> None:
-        """重置并重建索引"""
+        """Reset and rebuild index"""
         clear_symbol_cache()
         rebuild_symbol_index()
 
@@ -1031,26 +954,26 @@ class CacheSymbolsNamespace:
 
 
 class CacheFilesNamespace:
-    """文件缓存子命名空间"""
+    """File cache sub-namespace"""
 
     def clear(self, file_path: Optional[str] = None) -> int:
         """
-        清除文件缓存。
+        Clear file cache.
 
         Args:
-            file_path: 如果提供，只清除该文件的缓存；否则清除所有
+            file_path: If provided, clear cache for this file only; otherwise clear all
 
         Returns:
-            被删除的缓存文件数量
+            Number of deleted cache files
         """
         return clear_file_cache(file_path)
 
     def info(self) -> Dict[str, Any]:
-        """获取文件缓存详细信息"""
+        """Get file cache details"""
         return get_file_cache_info()
 
     def force_save(self) -> bool:
-        """强制保存当前文件缓存"""
+        """Force save current file cache"""
         return force_save_cache()
 
     @property
@@ -1071,10 +994,10 @@ class CacheFilesNamespace:
 
 class CacheStatsNamespace:
     """
-    缓存统计命名空间。
+    Cache statistics namespace.
 
-    支持属性式访问统计值。
-    用法: lz.cache.stats.hit_rate, lz.cache.stats['symbol_hits'] 等。
+    Supports attribute-style access to statistics.
+    Usage: lz.cache.stats.hit_rate, lz.cache.stats['symbol_hits'] etc.
     """
 
     def _get_stats(self) -> Dict[str, Any]:
@@ -1113,7 +1036,7 @@ class CacheStatsNamespace:
         return self._get_stats().get("build_count", 0)
 
     def reset(self) -> None:
-        """重置所有统计为零"""
+        """Reset all statistics to zero"""
         reset_cache_stats()
 
     def __getitem__(self, key: str) -> Any:
@@ -1143,7 +1066,7 @@ class CacheStatsNamespace:
 
 
 class CacheConfigNamespace:
-    """缓存配置子命名空间"""
+    """Cache config sub-namespace"""
 
     def __getitem__(self, key: str) -> Any:
         cfg = get_cache_config()
@@ -1203,11 +1126,11 @@ class CacheConfigNamespace:
         enable_cache_compression(value)
 
     def snapshot(self) -> Dict[str, Any]:
-        """获取缓存配置快照"""
+        """Get cache config snapshot"""
         return dict(get_cache_config())
 
     def export(self, path: Optional[str] = None) -> str:
-        """导出为 JSON"""
+        """Export as JSON"""
         import json
         data = dict(get_cache_config())
         if path:
@@ -1221,50 +1144,50 @@ class CacheConfigNamespace:
 
 class CacheNamespace:
     """
-    缓存管理命名空间。
+    Cache management namespace.
 
-    用法:
-        lz.cache.clear()                  # 清除所有缓存
-        lz.cache.symbols.clear()          # 仅清除符号缓存
-        lz.cache.files.clear()            # 仅清除文件缓存
-        lz.cache.stats                    # 统计信息（属性访问）
-        lz.cache.stats.reset()            # 重置统计
-        lz.cache.dir                      # 缓存目录
-        lz.cache.dir = '/new/path'        # 设置缓存目录
-        lz.cache.compression = True       # 启用压缩
+    Usage:
+        lz.cache.clear()                  # Clear all cache
+        lz.cache.symbols.clear()          # Clear symbol cache only
+        lz.cache.files.clear()            # Clear file cache only
+        lz.cache.stats                    # Statistics (attribute access)
+        lz.cache.stats.reset()            # Reset statistics
+        lz.cache.dir                      # Cache directory
+        lz.cache.dir = '/new/path'        # Set cache directory
+        lz.cache.compression = True       # Enable compression
     """
 
     @property
     def symbols(self) -> CacheSymbolsNamespace:
-        """符号缓存管理"""
+        """Symbol cache management"""
         return _CACHE_SYMBOLS_NS
 
     @property
     def files(self) -> CacheFilesNamespace:
-        """文件缓存管理"""
+        """File cache management"""
         return _CACHE_FILES_NS
 
     @property
     def stats(self) -> CacheStatsNamespace:
-        """缓存统计"""
+        """Cache statistics"""
         return _CACHE_STATS_NS
 
     @property
     def config(self) -> CacheConfigNamespace:
-        """缓存详细配置"""
+        """Detailed cache configuration"""
         return _CACHE_CONFIG_NS
 
-    # ---- 核心操作 ----
+    # ---- Core operations ----
 
     def clear(self) -> None:
-        """清除所有缓存（模块 + 符号 + 文件）"""
+        """Clear all cache (module + symbol + file)"""
         clear_cache()
 
-    # ---- 目录 ----
+    # ---- Directory ----
 
     @property
     def dir(self) -> Path:
-        """缓存目录路径"""
+        """Cache directory path"""
         return get_cache_dir()
 
     @dir.setter
@@ -1272,10 +1195,10 @@ class CacheNamespace:
         set_cache_dir(value)
 
     def reset_dir(self) -> None:
-        """重置为默认缓存目录"""
+        """Reset to default cache directory"""
         reset_cache_dir()
 
-    # ---- 压缩 ----
+    # ---- Compression ----
 
     @property
     def compression(self) -> bool:
@@ -1295,11 +1218,11 @@ class CacheNamespace:
 
 class ConfigNamespace:
     """
-    全局配置命名空间。
+    Global configuration namespace.
 
-    所有修改实时同步到底层 _config 全局状态。
+    All modifications are synced in real-time to the underlying _config global state.
 
-    用法:
+    Usage:
         lz.config.debug = True
         lz.config.auto_search = False
         lz.config.auto_install.enabled = True
@@ -1307,7 +1230,7 @@ class ConfigNamespace:
         lz.config.symbol_search.max_results = 10
     """
 
-    # ---- 调试 ----
+    # ---- Debug ----
 
     @property
     def debug(self) -> bool:
@@ -1317,7 +1240,7 @@ class ConfigNamespace:
     def debug(self, value: bool) -> None:
         _config._DEBUG_MODE = value
 
-    # ---- 自动搜索 ----
+    # ---- Auto search ----
 
     @property
     def auto_search(self) -> bool:
@@ -1327,11 +1250,11 @@ class ConfigNamespace:
     def auto_search(self, value: bool) -> None:
         _config._AUTO_SEARCH_ENABLED = value
 
-    # ---- 自动安装 ----
+    # ---- Auto install ----
 
     @property
     def auto_install(self) -> AutoInstallConfig:
-        """获取自动安装配置快照"""
+        """Get auto-install configuration snapshot"""
         c = _config._AUTO_INSTALL_CONFIG
         return AutoInstallConfig(
             enabled=c["enabled"],
@@ -1344,7 +1267,7 @@ class ConfigNamespace:
 
     @auto_install.setter
     def auto_install(self, cfg: AutoInstallConfig) -> None:
-        """设置自动安装配置"""
+        """Set auto-install configuration"""
         _config._AUTO_INSTALL_CONFIG["enabled"] = cfg.enabled
         _config._AUTO_INSTALL_CONFIG["interactive"] = cfg.interactive
         _config._AUTO_INSTALL_CONFIG["index"] = cfg.index
@@ -1360,11 +1283,11 @@ class ConfigNamespace:
     def auto_install_enabled(self, value: bool) -> None:
         _config._AUTO_INSTALL_CONFIG["enabled"] = value
 
-    # ---- 重试 ----
+    # ---- Retry ----
 
     @property
     def retry(self) -> RetryConfig:
-        """获取重试配置快照"""
+        """Get retry configuration snapshot"""
         c = _config._RETRY_CONFIG
         return RetryConfig(
             enabled=c["enabled"],
@@ -1380,7 +1303,7 @@ class ConfigNamespace:
         _config._RETRY_CONFIG["retry_delay"] = cfg.retry_delay
         _config._RETRY_CONFIG["retry_modules"] = cfg.modules
 
-    # ---- 符号搜索配置（快捷访问） ----
+    # ---- Symbol search configuration (shortcut access) ----
 
     @property
     def symbol_search(self) -> SymbolSearchConfig:
@@ -1398,7 +1321,7 @@ class ConfigNamespace:
     def symbol_resolution(self, cfg: SymbolResolutionConfig) -> None:
         _apply_resolution_config(cfg)
 
-    # ---- 缓存配置（快捷访问） ----
+    # ---- Cache configuration (shortcut access) ----
 
     @property
     def cache(self) -> CacheConfig:
@@ -1414,7 +1337,7 @@ class ConfigNamespace:
             enable_compression=cfg.enable_compression,
         )
 
-    # ---- 模块跳过配置 ----
+    # ---- Module skip configuration ----
 
     @property
     def module_skip(self) -> ModuleSkipConfig:
@@ -1429,20 +1352,20 @@ class ConfigNamespace:
             large_module_threshold=cfg.large_module_threshold,
         )
 
-    # ---- 导入统计 ----
+    # ---- Import statistics ----
 
     @property
     def import_stats(self) -> Dict[str, Any]:
         return get_import_stats()
 
-    # ---- 导出/快照 ----
+    # ---- Export / snapshot ----
 
     def snapshot(self) -> Dict[str, Any]:
         """
-        创建当前所有配置的完整快照。
+        Create a complete snapshot of all current configurations.
 
         Returns:
-            包含所有配置的字典
+            Dictionary containing all configurations
         """
         return {
             "debug": self.debug,
@@ -1457,10 +1380,10 @@ class ConfigNamespace:
 
     def restore(self, snapshot: Dict[str, Any]) -> None:
         """
-        从快照恢复配置。
+        Restore configuration from a snapshot.
 
         Args:
-            snapshot: 由 snapshot() 创建的快照字典
+            snapshot: Snapshot dictionary created by snapshot()
         """
         if "debug" in snapshot:
             self.debug = snapshot["debug"]
@@ -1481,13 +1404,13 @@ class ConfigNamespace:
 
     def export(self, path: Optional[str] = None) -> str:
         """
-        导出配置为 JSON。
+        Export configuration as JSON.
 
         Args:
-            path: 输出文件路径，None 则只返回字符串
+            path: Output file path, None to return as string only
 
         Returns:
-            JSON 字符串（如果 path 为 None）
+            JSON string (if path is None)
         """
         import json
         data = self.snapshot()
@@ -1496,16 +1419,16 @@ class ConfigNamespace:
                 json.dump(data, f, indent=2)
         return json.dumps(data, indent=2)
 
-    # ---- 上下文管理器 ----
+    # ---- Context manager ----
 
     def temp_config(self, **kwargs: Any) -> "ConfigContext":
         """
-        创建临时配置上下文，退出时自动恢复。
+        Create a temporary configuration context that auto-restores on exit.
 
-        用法:
+        Usage:
             with lz.config.temp_config(debug=True, auto_search=False):
-                # 在此范围内 debug=True, auto_search=False
-            # 退出后恢复原值
+                # debug=True, auto_search=False within this scope
+            # Values restored after exit
         """
         return ConfigContext(kwargs)
 
@@ -1515,11 +1438,11 @@ class ConfigNamespace:
 
 class ConfigContext:
     """
-    临时配置上下文管理器。
+    Temporary configuration context manager.
 
-    用法:
+    Usage:
         with lz.config.temp_config(debug=True):
-            pass  # 退出后自动恢复
+            pass  # Auto-restores after exit
     """
 
     def __init__(self, overrides: Dict[str, Any]) -> None:
@@ -1548,9 +1471,9 @@ class ConfigContext:
 
 class AnalyzeNamespace:
     """
-    代码分析命名空间。
+    Code analysis namespace.
 
-    用法:
+    Usage:
         result = lz.analyze.file('script.py')
         result = lz.analyze.code('import numpy')
         results = lz.analyze.dir('/path/to/project')
@@ -1558,13 +1481,13 @@ class AnalyzeNamespace:
     """
 
     def file(self, file_path: str) -> Any:
-        """分析 Python 文件以预测所需的导入"""
+        """Analyze a Python file to predict required imports"""
         from .._analysis._preanalyze import DependencyPreAnalyzer
         analyzer = DependencyPreAnalyzer()
         return analyzer.analyze_file(file_path)
 
     def code(self, source: str, file_path: str = "<string>") -> Any:
-        """分析源代码以预测所需的导入"""
+        """Analyze source code to predict required imports"""
         from .._analysis._preanalyze import DependencyPreAnalyzer
         analyzer = DependencyPreAnalyzer()
         return analyzer.analyze_source(source, file_path)
@@ -1575,7 +1498,7 @@ class AnalyzeNamespace:
         recursive: bool = True,
         exclude: Optional[Set[str]] = None,
     ) -> List[Any]:
-        """分析目录下所有 Python 文件"""
+        """Analyze all Python files in a directory"""
         from .._analysis._preanalyze import DependencyPreAnalyzer
         analyzer = DependencyPreAnalyzer()
         return analyzer.analyze_directory(dir_path, recursive, exclude)
@@ -1586,7 +1509,7 @@ class AnalyzeNamespace:
         max_depth: int = 3,
         exclude: Optional[Set[str]] = None,
     ) -> Any:
-        """生成依赖树"""
+        """Generate a dependency tree"""
         from .._analysis._dependency import dependency_tree
         return dependency_tree(dir_path, max_depth=max_depth, exclude=exclude)
 
@@ -1600,9 +1523,9 @@ class AnalyzeNamespace:
 
 class ProfileNamespace:
     """
-    性能分析命名空间。
+    Profiling namespace.
 
-    用法:
+    Usage:
         lz.profile.start()
         # ... do work ...
         lz.profile.stop()
@@ -1610,24 +1533,24 @@ class ProfileNamespace:
     """
 
     def start(self) -> None:
-        """开始性能分析"""
+        """Start profiling"""
         from .._analysis._profiler import start_profiling
         start_profiling()
 
     def stop(self) -> None:
-        """停止性能分析"""
+        """Stop profiling"""
         from .._analysis._profiler import stop_profiling
         stop_profiling()
 
     def report(self, print_report: bool = False) -> Any:
         """
-        获取分析报告。
+        Get profiling report.
 
         Args:
-            print_report: 如果为 True，同时打印报告
+            print_report: If True, also print the report
 
         Returns:
-            ProfileReport 对象
+            ProfileReport object
         """
         from .._analysis._profiler import get_profile_report, print_profile_report
         if print_report:
@@ -1635,13 +1558,13 @@ class ProfileNamespace:
         return get_profile_report()
 
     def print_report(self) -> None:
-        """打印分析报告"""
+        """Print profiling report"""
         from .._analysis._profiler import print_profile_report
         print_profile_report()
 
     @property
     def is_active(self) -> bool:
-        """分析器是否正在运行"""
+        """Whether the profiler is currently running"""
         from .._analysis._profiler import _profiler
         return _profiler.is_active()
 
@@ -1655,19 +1578,19 @@ class ProfileNamespace:
 
 class AsyncNamespace:
     """
-    异步操作命名空间。
+    Async operations namespace.
 
-    用法:
+    Usage:
         mod = await lz.async.get('numpy')
         mods = await lz.async.fetch('numpy', 'pandas', 'torch')
     """
 
     async def get(self, alias: str) -> Any:
-        """异步导入单个模块"""
+        """Asynchronously import a single module"""
         return await import_async(alias)
 
     async def fetch(self, *aliases: str) -> Dict[str, Any]:
-        """异步并行导入多个模块"""
+        """Asynchronously import multiple modules in parallel"""
         return await import_multiple_async(list(aliases))
 
     def __repr__(self) -> str:
@@ -1680,9 +1603,9 @@ class AsyncNamespace:
 
 class InstallNamespace:
     """
-    包安装命名空间。
+    Package installation namespace.
 
-    用法:
+    Usage:
         lz.install.package('torch')
         lz.install.auto.enabled = True
         lz.install.rebuild_cache()
@@ -1696,16 +1619,16 @@ class InstallNamespace:
         interactive: Optional[bool] = None,
     ) -> bool:
         """
-        安装包。
+        Install a package.
 
         Args:
-            package_name: pip 包名
-            index: 可选的 PyPI 镜像 URL
-            extra_args: 额外的 pip 参数
-            interactive: 是否交互式确认，None 表示使用配置
+            package_name: pip package name
+            index: Optional PyPI mirror URL
+            extra_args: Additional pip arguments
+            interactive: Whether to confirm interactively, None means use config
 
         Returns:
-            是否安装成功
+            Whether installation succeeded
         """
         return install_package(
             package_name, index=index, extra_args=extra_args,
@@ -1714,12 +1637,12 @@ class InstallNamespace:
 
     @property
     def auto(self) -> AutoInstallConfig:
-        """获取当前自动安装配置"""
+        """Get current auto-install configuration"""
         return get_auto_install_config()
 
     @auto.setter
     def auto(self, cfg: AutoInstallConfig) -> None:
-        """设置自动安装配置"""
+        """Set auto-install configuration"""
         _config._AUTO_INSTALL_CONFIG.update(asdict(cfg))
 
     def enable(
@@ -1730,20 +1653,20 @@ class InstallNamespace:
         prefer_uv: bool = False,
         silent: bool = False,
     ) -> None:
-        """启用自动安装"""
+        """Enable auto-install"""
         enable_auto_install(interactive, index, extra_args, prefer_uv, silent)
 
     def disable(self) -> None:
-        """禁用自动安装"""
+        """Disable auto-install"""
         disable_auto_install()
 
     @property
     def enabled(self) -> bool:
-        """自动安装是否启用"""
+        """Whether auto-install is enabled"""
         return is_auto_install_enabled()
 
     def rebuild_cache(self) -> None:
-        """重建模块缓存"""
+        """Rebuild module cache"""
         rebuild_module_cache()
 
     def __repr__(self) -> str:
@@ -1755,7 +1678,7 @@ class InstallNamespace:
 # ═══════════════════════════════════════════════════════════════
 
 class ExportNamespace:
-    """导出命名空间"""
+    """Export namespace"""
 
     def aliases(
         self,
@@ -1763,26 +1686,26 @@ class ExportNamespace:
         include_categories: bool = True,
     ) -> str:
         """
-        导出别名。
+        Export aliases.
 
         Args:
-            path: 输出文件路径，None 则只返回字符串
-            include_categories: 是否包含分类
+            path: Output file path, None to return as string only
+            include_categories: Whether to include category info
 
         Returns:
-            JSON 字符串
+            JSON string
         """
         return export_aliases(path, include_categories)
 
     def config(self, path: Optional[str] = None) -> str:
         """
-        导出全部配置（符号搜索、解析、缓存等）。
+        Export complete configuration (symbol search, resolution, cache, etc.).
 
         Args:
-            path: 输出文件路径，None 则只返回字符串
+            path: Output file path, None to return as string only
 
         Returns:
-            JSON 字符串
+            JSON string
         """
         return _global_config.export(path)
 
@@ -1796,9 +1719,9 @@ class ExportNamespace:
 
 class BackgroundNamespace:
     """
-    后台索引构建命名空间。
+    Background index building namespace.
 
-    用法:
+    Usage:
         lz.background.start(callback=my_callback)
         lz.background.wait(timeout=60)
         lz.background.stop()
@@ -1810,46 +1733,46 @@ class BackgroundNamespace:
         timeout: Optional[float] = None,
     ) -> bool:
         """
-        启动后台索引构建。
+        Start background index building.
 
         Args:
-            progress_callback: 进度回调，参数为 (status, progress)
-            timeout: 超时时间（秒）
+            progress_callback: Progress callback, receives (status, progress)
+            timeout: Timeout in seconds
 
         Returns:
-            是否成功启动（已构建或正在构建则返回 False）
+            Whether successfully started (False if already built or building)
         """
         from .._lazy_index import start_background_index_build
         return start_background_index_build(progress_callback, timeout)
 
     def stop(self) -> None:
-        """停止后台构建（等待当前任务完成）"""
+        """Stop background build (wait for current task to complete)"""
         from .._lazy_index import get_background_builder
         builder = get_background_builder()
         builder.stop()
 
     @property
     def is_building(self) -> bool:
-        """是否正在构建"""
+        """Whether a build is currently in progress"""
         from .._lazy_index import is_index_building
         return is_index_building()
 
     def wait(self, timeout: float = 30.0) -> bool:
         """
-        等待后台构建完成。
+        Wait for background build to complete.
 
         Args:
-            timeout: 超时时间（秒）
+            timeout: Timeout in seconds
 
         Returns:
-            是否在超时前完成
+            Whether completed before timeout
         """
         from .._lazy_index import wait_for_index
         return wait_for_index(timeout)
 
     @property
     def timeout(self) -> float:
-        """获取/设置后台构建超时时间"""
+        """Get/set background build timeout"""
         from .._lazy_index import get_background_timeout
         return get_background_timeout()
 
@@ -1860,11 +1783,11 @@ class BackgroundNamespace:
 
     @property
     def preheat(self) -> Dict[str, Any]:
-        """预热配置"""
+        """Preheat configuration"""
         return get_preheat_config()
 
     def enable(self, enabled: bool = True) -> None:
-        """启用/禁用后台构建"""
+        """Enable/disable background building"""
         enable_background_build(enabled)
 
     def __repr__(self) -> str:
@@ -1877,27 +1800,27 @@ class BackgroundNamespace:
 
 class HookNamespace:
     """
-    钩子管理命名空间。
+    Hook management namespace.
 
-    用法:
-        lz.hooks.pre += my_pre_hook     # 等价于 add_pre_import_hook
-        lz.hooks.post += my_post_hook   # 等价于 add_post_import_hook
-        lz.hooks.pre -= my_pre_hook     # 等价于 remove_pre_import_hook
-        lz.hooks.clear()                # 等价于 clear_import_hooks
+    Usage:
+        lz.hooks.pre += my_pre_hook     # Equivalent to add_pre_import_hook
+        lz.hooks.post += my_post_hook   # Equivalent to add_post_import_hook
+        lz.hooks.pre -= my_pre_hook     # Equivalent to remove_pre_import_hook
+        lz.hooks.clear()                # Equivalent to clear_import_hooks
     """
 
     @property
     def pre(self) -> HookList:
-        """预导入钩子（在模块导入前调用）"""
+        """Pre-import hooks (called before module import)"""
         return HookList(_config._PRE_IMPORT_HOOKS)
 
     @property
     def post(self) -> HookList:
-        """后导入钩子（在模块导入后调用）"""
+        """Post-import hooks (called after module import)"""
         return HookList(_config._POST_IMPORT_HOOKS)
 
     def clear(self) -> None:
-        """清除所有钩子"""
+        """Clear all hooks"""
         _config._PRE_IMPORT_HOOKS.clear()
         _config._POST_IMPORT_HOOKS.clear()
 
@@ -1913,30 +1836,30 @@ class HookNamespace:
 # ═══════════════════════════════════════════════════════════════
 
 class VersionNamespace:
-    """版本信息命名空间"""
+    """Version information namespace"""
 
     @property
     def current(self) -> str:
-        """laziest-import 版本号"""
+        """laziest-import version number"""
         return _config.__version__
 
     def of(self, package: str) -> Optional[str]:
-        """获取已安装包的版本"""
+        """Get the version of an installed package"""
         return get_package_version(package)
 
     def all_packages(self) -> Dict[str, str]:
-        """获取所有已安装包的版本"""
+        """Get versions of all installed packages"""
         return get_all_package_versions()
 
     def laziest_import(self) -> str:
-        """获取 laziest-import 版本（等价于 current）"""
+        """Get laziest-import version (equivalent to current)"""
         return get_laziest_import_version()
 
     def cache(self) -> str:
-        """获取缓存版本"""
+        """Get cache version"""
         return get_cache_version()
 
-    # 支持 str() 转换
+    # Support str() conversion
     def __str__(self) -> str:
         return self.current
 
@@ -1949,39 +1872,39 @@ class VersionNamespace:
 # ═══════════════════════════════════════════════════════════════
 
 class RCConfigNamespace:
-    """RC 配置文件管理命名空间"""
+    """RC config file management namespace"""
 
     def load(self, force_reload: bool = False) -> Dict[str, Any]:
-        """加载 RC 配置"""
+        """Load RC configuration"""
         return load_rc_config(force_reload)
 
     def get(self, key: str, default: Any = None) -> Any:
-        """获取 RC 配置值"""
+        """Get an RC config value"""
         return get_rc_value(key, default)
 
     def create(self, path: Optional[str] = None, template: bool = True) -> Path:
-        """创建 RC 文件"""
+        """Create an RC file"""
         return create_rc_file(path, template)
 
     def save(self, config: Dict[str, Any], path: Optional[str] = None) -> Path:
-        """保存 RC 配置"""
+        """Save RC configuration"""
         return save_rc_config(config, path)
 
     def paths(self) -> List[str]:
-        """列出所有 RC 文件路径"""
+        """List all RC file paths"""
         return [str(p) for p in _LAZIESTRC_PATHS]
 
     @property
     def paths_list(self) -> List[str]:
-        """RC 文件路径列表"""
+        """RC file path list"""
         return self.paths()
 
     def reload(self) -> Dict[str, Any]:
-        """强制重载 RC 配置"""
+        """Force reload RC configuration"""
         return reload_rc_config()
 
     def info(self) -> Dict[str, Any]:
-        """获取 RC 配置信息"""
+        """Get RC configuration info"""
         return get_rc_info()
 
     def __repr__(self) -> str:
@@ -1990,79 +1913,79 @@ class RCConfigNamespace:
 
 
 # ═══════════════════════════════════════════════════════════════
-#  LazyImport (主类)
+#  LazyImport (main class)
 # ═══════════════════════════════════════════════════════════════
 
-# 单例引用，供 ConfigContext 内部使用
+# Singleton reference, used internally by ConfigContext
 _global_config: Optional["ConfigNamespace"] = None
 
 
 class LazyImport:
     """
-    laziest-import 的统一面向对象 API 入口。
+    Unified object-oriented API entry point for laziest-import.
 
-    所有命名空间通过属性访问：
+    All namespaces are accessed via properties:
 
         from laziest_import import LazyImport
         lz = LazyImport()
 
-        # 模块加载
+        # Module loading
         np = lz.module.numpy
         pd = lz.module.get('pandas')
 
-        # 配置
+        # Configuration
         lz.config.debug = True
         lz.config.auto_install.enabled = True
 
-        # 符号搜索
+        # Symbol search
         results = lz.symbol.search('DataFrame')
         loc = lz.symbol.which('sqrt')
 
-        # 别名管理（字典式）
+        # Alias management (dict-style)
         lz.alias['my_np'] = 'numpy'
         mod = lz.alias['my_np']
 
-        # 缓存
+        # Caching
         lz.cache.symbols.clear()
         lz.cache.files.clear()
         stats = lz.cache.stats
 
-        # 钩子
+        # Hooks
         lz.hooks.pre += my_pre_hook
         lz.hooks.post += my_post_hook
 
-        # 异步
+        # Async
         mod = await lz.async.get('numpy')
         mods = await lz.async.fetch('numpy', 'pandas')
 
-        # 分析
+        # Analysis
         result = lz.analyze.file('script.py')
         result = lz.analyze.code('import numpy')
 
-        # 性能分析
+        # Profiling
         with lz.config.temp_config(debug=True):
             lz.profile.start()
             # ... do work ...
             lz.profile.stop()
             lz.profile.print_report()
 
-        # 导出
+        # Export
         lz.alias.export('/path/aliases.json')
         lz.config.export('/path/config.json')
 
-        # RC 配置
+        # RC config
         rc = lz.rc.load()
         lz.rc.create('/path/.laziestrc')
 
-    注意:
-        - LazyImport() 可以创建多个实例，它们共享同一份全局状态
-        - 推荐创建单例使用: lz = LazyImport()
-        - 或者使用模块级快捷函数: from laziest_import import lz
+    Note:
+        - Multiple LazyImport() instances can be created; they all share the same global state
+        - Recommended to create a singleton: lz = LazyImport()
+        - Or use module-level convenience functions: from laziest_import import lz
     """
 
     def __init__(self) -> None:
-        """创建 LazyImport 实例。所有实例共享同一份 _config 全局状态。"""
-        # 延迟初始化命名空间（避免循环导入）
+        """Create a LazyImport instance. All instances share the same _config global state."""
+        # Lazy initialization of namespaces (avoid circular imports)
         self._module_ns: Optional[ModuleNamespace] = None
         self._alias_ns: Optional[AliasNamespace] = None
         self._symbol_ns: Optional[SymbolNamespace] = None
@@ -2078,7 +2001,7 @@ class LazyImport:
         self._version_ns: Optional[VersionNamespace] = None
         self._rc_ns: Optional[RCConfigNamespace] = None
 
-    # ─── 模块访问 ─────────────────────────────
+    # ─── Module access ─────────────────────────────
 
     @property
     def module(self) -> ModuleNamespace:
@@ -2086,7 +2009,7 @@ class LazyImport:
             self._module_ns = ModuleNamespace()
         return self._module_ns
 
-    # ─── 别名管理 ─────────────────────────────
+    # ─── Alias management ─────────────────────────────
 
     @property
     def alias(self) -> AliasNamespace:
@@ -2094,7 +2017,7 @@ class LazyImport:
             self._alias_ns = AliasNamespace()
         return self._alias_ns
 
-    # ─── 符号搜索 ─────────────────────────────
+    # ─── Symbol search ─────────────────────────────
 
     @property
     def symbol(self) -> SymbolNamespace:
@@ -2102,7 +2025,7 @@ class LazyImport:
             self._symbol_ns = SymbolNamespace()
         return self._symbol_ns
 
-    # ─── 缓存管理 ─────────────────────────────
+    # ─── Cache management ─────────────────────────────
 
     @property
     def cache(self) -> CacheNamespace:
@@ -2110,7 +2033,7 @@ class LazyImport:
             self._cache_ns = CacheNamespace()
         return self._cache_ns
 
-    # ─── 全局配置 ─────────────────────────────
+    # ─── Global configuration ─────────────────────────────
 
     @property
     def config(self) -> ConfigNamespace:
@@ -2118,7 +2041,7 @@ class LazyImport:
             self._config_ns = ConfigNamespace()
         return self._config_ns
 
-    # ─── 代码分析 ─────────────────────────────
+    # ─── Code analysis ─────────────────────────────
 
     @property
     def analyze(self) -> AnalyzeNamespace:
@@ -2126,7 +2049,7 @@ class LazyImport:
             self._analyze_ns = AnalyzeNamespace()
         return self._analyze_ns
 
-    # ─── 性能分析 ─────────────────────────────
+    # ─── Profiling ─────────────────────────────
 
     @property
     def profile(self) -> ProfileNamespace:
@@ -2134,7 +2057,7 @@ class LazyImport:
             self._profile_ns = ProfileNamespace()
         return self._profile_ns
 
-    # ─── 钩子系统 ─────────────────────────────
+    # ─── Hook system ─────────────────────────────
 
     @property
     def hooks(self) -> HookNamespace:
@@ -2142,16 +2065,16 @@ class LazyImport:
             self._hooks_ns = HookNamespace()
         return self._hooks_ns
 
-    # ─── 异步操作 ─────────────────────────────
+    # ─── Async operations ─────────────────────────────
 
     @property
     def async_(self) -> AsyncNamespace:
-        """异步操作（使用 async_ 避免与 Python 关键字 async 冲突）"""
+        """Async operations (using async_ to avoid conflict with Python keyword async)"""
         if self._async_ns is None:
             self._async_ns = AsyncNamespace()
         return self._async_ns
 
-    # ─── 包安装 ─────────────────────────────
+    # ─── Package installation ─────────────────────────────
 
     @property
     def install(self) -> InstallNamespace:
@@ -2159,7 +2082,7 @@ class LazyImport:
             self._install_ns = InstallNamespace()
         return self._install_ns
 
-    # ─── 导出 ─────────────────────────────
+    # ─── Export ─────────────────────────────
 
     @property
     def export(self) -> ExportNamespace:
@@ -2167,7 +2090,7 @@ class LazyImport:
             self._export_ns = ExportNamespace()
         return self._export_ns
 
-    # ─── 后台构建 ─────────────────────────────
+    # ─── Background building ─────────────────────────────
 
     @property
     def background(self) -> BackgroundNamespace:
@@ -2175,7 +2098,7 @@ class LazyImport:
             self._background_ns = BackgroundNamespace()
         return self._background_ns
 
-    # ─── 版本信息 ─────────────────────────────
+    # ─── Version info ─────────────────────────────
 
     @property
     def version(self) -> VersionNamespace:
@@ -2184,10 +2107,10 @@ class LazyImport:
         return self._version_ns
 
     def version_of(self, package: str) -> Optional[str]:
-        """获取已安装包的版本"""
+        """Get the version of an installed package"""
         return get_package_version(package)
 
-    # ─── RC 配置 ─────────────────────────────
+    # ─── RC config ─────────────────────────────
 
     @property
     def rc(self) -> RCConfigNamespace:
@@ -2195,28 +2118,28 @@ class LazyImport:
             self._rc_ns = RCConfigNamespace()
         return self._rc_ns
 
-    # ─── 模块级快捷访问 ───────────────────────
+    # ─── Module-level shortcut access ───────────────────────
 
     def __getattr__(self, name: str) -> Any:
         """
-        支持 lz.numpy, lz.pandas 等快捷方式。
-        等价于 lz.module.numpy。
+        Support lz.numpy, lz.pandas, etc. shortcuts.
+        Equivalent to lz.module.numpy.
         """
         if name.startswith("_") and name != "__version__":
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-        # 1. 检查别名映射
+        # 1. Check alias map
         if name in _ALIAS_MAP:
             return _get_lazy_module(name)._get_module()
 
-        # 2. 尝试自动搜索
+        # 2. Try auto search
         if _config._AUTO_SEARCH_ENABLED:
             found = _search_module(name)
             if found:
                 _ALIAS_MAP[name] = found
                 return _get_lazy_module(name)._get_module()
 
-        # 3. 尝试符号自动解析
+        # 3. Try symbol auto-resolution
         if _config._SYMBOL_RESOLUTION_CONFIG["auto_symbol"]:
             match = _search_symbol_enhanced(name, auto=True)
             if match:
@@ -2226,7 +2149,7 @@ class LazyImport:
                     symbol_type=match.symbol_type,
                 )
 
-            # 尝试交互式解析
+            # Try interactive resolution
             if _config._SYMBOL_SEARCH_CONFIG["enabled"]:
                 found_module = _handle_symbol_not_found(name)
                 if found_module:
@@ -2238,7 +2161,7 @@ class LazyImport:
         )
 
     def __dir__(self) -> List[str]:
-        """支持 tab 补全"""
+        """Support tab completion"""
         base = [
             "module", "alias", "symbol", "cache",
             "config", "analyze", "profile", "hooks",
@@ -2261,13 +2184,13 @@ class LazyImport:
 
 
 # ═══════════════════════════════════════════════════════════════
-#  模块级单例（供 from laziest_import import lz 使用）
+#  Module-level singleton (for from laziest_import import lz)
 # ═══════════════════════════════════════════════════════════════
 
-#: 全局 LazyImport 单例实例
-#: 用法: from laziest_import import lz; lz.module.numpy; lz.config.debug = True
+#: Global LazyImport singleton instance
+#: Usage: from laziest_import import lz; lz.module.numpy; lz.config.debug = True
 lz = LazyImport()
 
 
-# 需要在类定义后导入（因为 LazySymbol 引用 _search_symbol_enhanced）
+# Needs to be imported after class definition (because LazySymbol references _search_symbol_enhanced)
 from ._proxy._symbol import LazySymbol

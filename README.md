@@ -112,6 +112,16 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 | **1000+ aliases** | Predefined aliases for common packages |
 | **820+ tests** | Comprehensive test coverage |
 
+## What's New in v0.1.0
+
+- **New Object-Oriented API**: `LazyImport` class with sub-namespaces (`lz.module`, `lz.config`, `lz.symbol`, etc.)
+- **Backward Compatible**: All old functions still work with `FutureWarning` deprecation notices
+- **Config Dataclasses**: `AutoInstallConfig`, `RetryConfig`, `CacheConfig`, etc.
+- **HookList**: Supports `+=`/`-=` operators for hook management
+- **ConfigContext**: `with lz.config.temp_config(debug=True):` for temporary overrides
+- **Module-level Singleton**: `from laziest_import import lz` — access everything via `lz.*`
+- **See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** for full old→new API mapping
+
 ## What's New in v0.1.0-pre2
 
 - **Major Refactor**: Restructured architecture for maintainability

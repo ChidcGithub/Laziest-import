@@ -156,14 +156,14 @@ from ._analysis import (
 )
 
 # ═══════════════════════════════════════════════════════════════
-#  新的面向对象 API（推荐使用）
+#  New object-oriented API (recommended)
 # ═══════════════════════════════════════════════════════════════
 
 from ._api import (
-    # 主类
+    # Main class
     LazyImport,
     lz,
-    # 命名空间类（供高级用户继承/组合）
+    # Namespace classes (for advanced users to inherit/compose)
     ModuleNamespace,
     AliasNamespace,
     SymbolNamespace,
@@ -186,7 +186,7 @@ from ._api import (
     CacheFilesNamespace,
     CacheStatsNamespace,
     ConfigContext,
-    # 数据类
+    # Data classes
     AutoInstallConfig,
     RetryConfig,
     SymbolSearchConfig,
@@ -196,7 +196,7 @@ from ._api import (
 )
 
 # ═══════════════════════════════════════════════════════════════
-#  旧 API 向后兼容层（已弃用，调用时发出 FutureWarning）
+#  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
 
 from ._deprecated import (  # noqa: F401, F403
