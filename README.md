@@ -35,50 +35,50 @@
 
 <div align="center">
 
-## 🚀 Zero-Configuration Lazy Import Library
+## Zero-Configuration Lazy Import Library
 
 **Import and use any installed（for the not installed, it uses pip to auto install if you permitted) module with a single line**
 
 <p align="center">
-  <b>A magical way to import Python modules - just use them!</b>
+ <b>A magical way to import Python modules - just use them!</b>
 </p>
 
 </div>
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
-- [Features](#-key-features)
-- [Quick Start](#-quick-start)
-- [Installation](#-installation)
-- [Examples](#-examples)
-- [Configuration](#-configuration)
-- [API Reference](#-api-reference)
-- [Troubleshooting](#-troubleshooting)
-- [How It Works](#-how-it-works)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Examples](#examples)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Troubleshooting](#troubleshooting)
+- [How It Works](#how-it-works)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
 | Feature | Badge | Description |
 |---------|-------|-------------|
-| 🚀 Lazy Loading | ![](https://img.shields.io/badge/feature-lazy_loading-green.svg) | Modules import only on first access |
-| 🔄 Background Index | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | Symbol index builds in background thread |
-| ✏️ Auto-Correction | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | Typo correction (`nump` → `numpy`) |
-| 📝 Symbol Search | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | Search symbols across all modules |
-| 💾 Multi-Level Cache | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | Three-tier caching for speed |
-| 📊 Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
-| ⚡ Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
-| 🛠️ 933+ Tests | ![](https://img.shields.io/badge/tests-933%2B-brightgreen.svg) | Comprehensive test coverage |
-| 📦 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
+| Lazy Loading | ![](https://img.shields.io/badge/feature-lazy_loading-green.svg) | Modules import only on first access |
+| Background Index | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | Symbol index builds in background thread |
+| Auto-Correction | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | Typo correction (`nump` → `numpy`) |
+| Symbol Search | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | Search symbols across all modules |
+| Multi-Level Cache | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | Three-tier caching for speed |
+| Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
+| Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
+| 933+ Tests | ![](https://img.shields.io/badge/tests-933%2B-brightgreen.svg) | Comprehensive test coverage |
+| 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 # Stable version
@@ -93,28 +93,28 @@ pip install git+https://github.com/ChidcGithub/Laziest-import.git
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
-### 🎯 Method 1: Wildcard Import (Recommended)
+### Method 1: Wildcard Import (Recommended)
 
 ```python
 from laziest_import import *
 
 # Data Science
-arr = np.array([1, 2, 3])           # numpy
-df = pd.DataFrame({'a': [1, 2]})    # pandas
-plt.plot([1, 2, 3]); plt.show()     # matplotlib
+arr = np.array([1, 2, 3]) # numpy
+df = pd.DataFrame({'a': [1, 2]}) # pandas
+plt.plot([1, 2, 3]); plt.show() # matplotlib
 
 # Standard Library
-print(os.getcwd())                  # os
+print(os.getcwd()) # os
 data = json.dumps({'key': 'value'}) # json
-result = math.sqrt(16)              # math
+result = math.sqrt(16) # math
 
 # Submodules (auto-loading)
-svd_result = np.linalg.svd(matrix)  # numpy.linalg.svd()
+svd_result = np.linalg.svd(matrix) # numpy.linalg.svd()
 ```
 
-### 🛠️ Method 2: Namespace Prefix
+### Method 2: Namespace Prefix
 
 ```python
 import laziest_import as lz
@@ -123,23 +123,22 @@ arr = lz.np.array([1, 2, 3])
 df = lz.pd.DataFrame({'a': [1, 2]})
 ```
 
-### ✨ Method 3: Lazy Proxy (with Auto-Correction)
+### Method 3: Lazy Proxy (with Auto-Correction)
 
 ```python
 from laziest_import import lazy
 
 # Automatic typo correction
-arr = lazy.nump.array([1, 2, 3])    # nump -> numpy ✅
-df = lazy.pnda.DataFrame()          # pnda -> pandas ✅
-arr2 = lazy.nupi.array([4, 5, 6])   # nupi -> numpy ✅
+arr = lazy.nump.array([1, 2, 3]) # nump -> numpy 
+df = lazy.pnda.DataFrame() # pnda -> pandas 
+arr2 = lazy.nupi.array([4, 5, 6]) # nupi -> numpy 
 
 # Submodule shortcuts
-layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
-relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
+layer = lazy.nn.Linear(10, 5) # nn -> torch.nn 
+relu = lazy.F.relu(tensor) # F -> torch.nn.functional 
 ```
 
 ---
-</details>
 
 ## Key Features
 
@@ -189,15 +188,15 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
 - **820+ tests**: Comprehensive test coverage across 17+ test files
 
-## 📚 What's New
+## What's New
 
-### 🚀 v0.0.5-pre8 (Latest)
+### v0.0.5-pre8 (Latest)
 
 - **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
 - **933+ tests**: Comprehensive test coverage across 17+ test files
 
-### 🎯 v0.0.4
+### v0.0.4
 
 - **Background Index Building**: Symbol index builds in background thread, no blocking
 - **Lazy-loaded Functions**: Reduced startup time by lazy-loading symbol functions
@@ -215,9 +214,9 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
 
 ---
 
-## 🎮 Examples
+## Examples
 
-### 🔍 Symbol Search & Location
+### Symbol Search & Location
 
 ```python
 import laziest_import as lz
@@ -225,19 +224,19 @@ import laziest_import as lz
 # Search for a symbol across all modules
 results = lz.search_symbol('DataFrame')
 for result in results:
-    print(f"{result.module_name}.{result.symbol_name}")
+ print(f"{result.module_name}.{result.symbol_name}")
 
 # Find where a symbol is defined
 loc = lz.which('sqrt')
-print(f"Found at: {loc}")  # numpy.sqrt
+print(f"Found at: {loc}") # numpy.sqrt
 
 # Find all occurrences
 locs = lz.which_all('sqrt')
 for loc in locs:
-    print(f"{loc.module_name}.{loc.symbol_name}")
+ print(f"{loc.module_name}.{loc.symbol_name}")
 ```
 
-### 🌲 Dependency Tree Analysis
+### Dependency Tree Analysis
 
 ```python
 import laziest_import as lz
@@ -251,17 +250,17 @@ print(f"Stdlib: {tree.stdlib_count}, Third-party: {tree.third_party_count}")
 lz.print_dependency_tree(tree)
 ```
 
-### 🏋️ Performance Benchmarking
+### Performance Benchmarking
 
 ```python
 import laziest_import as lz
 
 # Benchmark a function
 result = lz.benchmark(
-    lambda: sum(range(10000)),
-    name="sum_test",
-    iterations=100,
-    warmup=10
+ lambda: sum(range(10000)),
+ name="sum_test",
+ iterations=100,
+ warmup=10
 )
 print(f"Avg: {result.avg_time*1000:.4f}ms")
 print(f"Min: {result.min_time*1000:.4f}ms")
@@ -272,7 +271,7 @@ report = lz.benchmark_imports(['numpy', 'pandas', 'matplotlib'])
 lz.print_benchmark_report(report)
 ```
 
-### 📦 Auto-Install (Optional)
+### Auto-Install (Optional)
 
 ```python
 from laziest_import import *
@@ -281,14 +280,14 @@ from laziest_import import *
 lz.enable_auto_install()
 
 # Accessing uninstalled modules triggers installation
-arr = np.array([1, 2, 3])  # If numpy missing, prompts to install
+arr = np.array([1, 2, 3]) # If numpy missing, prompts to install
 ```
 
 ---
 
-## 🛠️ Configuration
+## Configuration
 
-### 📋 User Configuration
+### User Configuration
 
 ```python
 import laziest_import as lz
@@ -306,7 +305,7 @@ value = lz.get_rc_value('debug', default=False)
 info = lz.get_rc_info()
 ```
 
-### 💾 Cache Configuration
+### Cache Configuration
 
 ```python
 import laziest_import as lz
@@ -316,9 +315,9 @@ lz.set_cache_dir('./my_cache')
 
 # Configure cache settings
 lz.set_cache_config(
-    symbol_index_ttl=3600,       # Symbol index TTL: 1 hour
-    stdlib_cache_ttl=2592000,    # Stdlib cache TTL: 30 days
-    max_cache_size_mb=200        # Max cache size: 200 MB
+ symbol_index_ttl=3600, # Symbol index TTL: 1 hour
+ stdlib_cache_ttl=2592000, # Stdlib cache TTL: 30 days
+ max_cache_size_mb=200 # Max cache size: 200 MB
 )
 
 # Get cache statistics
@@ -332,9 +331,9 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 
 ---
 
-## 📖 API Reference
+## API Reference
 
-### 🔧 Alias Management
+### Alias Management
 
 | Function | Description |
 |----------|-------------|
@@ -346,7 +345,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 | `get_module(alias)` | Get module object |
 | `clear_cache()` | Clear memory cache |
 
-### 🔍 Symbol Search
+### Symbol Search
 
 | Function | Description |
 |----------|-------------|
@@ -357,7 +356,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 | `which(symbol)` | Find symbol location |
 | `which_all(symbol)` | Find all symbol locations |
 
-### 🔄 Auto-Install
+### Auto-Install
 
 | Function | Description |
 |----------|-------------|
@@ -366,7 +365,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 | `install_package(name)` | Install a package manually |
 | `set_pip_index(url)` | Set mirror URL |
 
-### 💾 Cache Management
+### Cache Management
 
 | Function | Description |
 |----------|-------------|
@@ -380,7 +379,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 | `clear_file_cache()` | Clear file cache |
 | `set_cache_dir(path)` | Set cache directory |
 
-### 📊 Analysis & Profiling
+### Analysis & Profiling
 
 | Function | Description |
 |----------|-------------|
@@ -400,7 +399,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 | `find_symbol_conflicts()` | Find symbol conflicts |
 | `show_conflicts()` | Display conflicts table |
 
-### ⚙️ Preferences
+### Preferences
 
 | Function | Description |
 |----------|-------------|
@@ -414,7 +413,7 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -430,22 +429,22 @@ lz.register_alias('mymodule', 'mypackage.mymodule')
 **Q: Slow first import**
 The symbol index may be building. Check status with:
 ```python
-lz.is_index_building()  # True if building
-lz.wait_for_index(30)  # Wait up to 30 seconds
+lz.is_index_building() # True if building
+lz.wait_for_index(30) # Wait up to 30 seconds
 ```
 
 **Q: Typo correction not working**
 Ensure the module is in the alias list:
 ```python
-lz.register_alias('nump', 'numpy')  # Add misspelling
-arr = lz.nump.array([1, 2, 3])  # Now works
+lz.register_alias('nump', 'numpy') # Add misspelling
+arr = lz.nump.array([1, 2, 3]) # Now works
 ```
 
 **Q: Symbol conflicts (same name in multiple modules)**
 Use module hints or preferences:
 ```python
-lz.set_symbol_preference('DataFrame', 'pandas')  # Prefer pandas
-result = lz.DataFrame  # Gets pandas.DataFrame
+lz.set_symbol_preference('DataFrame', 'pandas') # Prefer pandas
+result = lz.DataFrame # Gets pandas.DataFrame
 ```
 
 ### Debug Mode
@@ -454,16 +453,16 @@ Enable detailed logging:
 ```python
 lz.enable_debug_mode()
 import laziest_import as lz
-arr = lz.np.array([1, 2, 3])  # See import details in logs
+arr = lz.np.array([1, 2, 3]) # See import details in logs
 ```
 
 ### Cache Issues
 
 Clear caches if experiencing stale data:
 ```python
-lz.clear_cache()       # Clear memory cache
-lz.clear_file_cache()  # Clear disk cache
-lz.rebuild_symbol_index()  # Rebuild symbol index
+lz.clear_cache() # Clear memory cache
+lz.clear_file_cache() # Clear disk cache
+lz.rebuild_symbol_index() # Rebuild symbol index
 ```
 
 ### Performance Tips
@@ -475,7 +474,7 @@ lz.rebuild_symbol_index()  # Rebuild symbol index
 
 ---
 
-## 🔬 How It Works
+## How It Works
 
 ### Architecture
 
@@ -502,7 +501,7 @@ Cache files are stored in `~/.laziest_import/cache/` and automatically:
 
 ---
 
-## 📚 Predefined Aliases
+## Predefined Aliases
 
 ### Data Science
 `np`, `pd`, `plt`, `sns`, `scipy`
@@ -542,11 +541,11 @@ Cache files are stored in `~/.laziest_import/cache/` and automatically:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We love contributions! Check out our [Contributing Guide](CONTRIBUTING.md) for more information.
 
-### 🌱 How to Contribute
+### How to Contribute
 
 1. Fork the repo and create your branch from `main`
 2. Read our [Code of Conduct](CODE_OF_CONDUCT.md)
@@ -556,7 +555,7 @@ We love contributions! Check out our [Contributing Guide](CONTRIBUTING.md) for m
 6. Commit your changes
 7. Push to your branch and open a Pull Request!
 
-### 🔄 Development Setup
+### Development Setup
 
 ```bash
 # Clone the repo
@@ -573,78 +572,78 @@ pytest tests/ -v
 flake8 laziest_import/
 ```
 
-### 📋 Good First Issues
+### Good First Issues
 
 Looking for a place to start? Check out:
 - Good first issues: [Issues labeled "good first issue"](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 - Help wanted: [Issues labeled "help wanted"](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
-### ✨ Ways to Contribute
+### Ways to Contribute
 
-- 🐛 Report bugs
-- 💡 Propose new features
-- 📝 Improve documentation
-- 🔧 Fix existing issues
-- 🧪 Add more tests
-- 🌍 Help with translations
-- 🎨 Design improvements
+- Report bugs
+- Propose new features
+- Improve documentation
+- Fix existing issues
+- Add more tests
+- Help with translations
+- Design improvements
 
 ---
 
-## 🌟 Contributors
+## Contributors
 
 Thanks goes to these wonderful people:
 
 <a href="https://github.com/ChidcGithub/Laziest-import/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ChidcGithub/Laziest-import" />
+ <img src="https://contrib.rocks/image?repo=ChidcGithub/Laziest-import" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
 
 ---
 
-## 📝 Star History
+## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ChidcGithub/Laziest-import&type=Date)](https://star-history.com/#ChidcGithub/Laziest-import&Date)
 
 ---
 
-## 💬 Get In Touch
+## Get In Touch
 
-- 📧 Email: (your email)
-- 🐙 GitHub: [ChidcGithub/Laziest-import](https://github.com/ChidcGithub/Laziest-import)
-- 💬 Discussions: [GitHub Discussions](https://github.com/ChidcGithub/Laziest-import/discussions)
-- 🐛 Issues: [GitHub Issues](https://github.com/ChidcGithub/Laziest-import/issues)
+- Email: (your email)
+- GitHub: [ChidcGithub/Laziest-import](https://github.com/ChidcGithub/Laziest-import)
+- Discussions: [GitHub Discussions](https://github.com/ChidcGithub/Laziest-import/discussions)
+- Issues: [GitHub Issues](https://github.com/ChidcGithub/Laziest-import/issues)
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Thanks to all the contributors who have helped make this project better!
 - Inspired by the Python community's love for clean, simple APIs
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## ⭐ Show Your Support
+## Show Your Support
 
 If you find this project useful, please consider:
 
-- ⭐ Starring this repo on GitHub
-- 🐛 Reporting bugs or suggesting features
-- 🔄 Sharing it with friends and colleagues
-- 📝 Blogging about it if you use it
-- 🤝 Contributing to the project
+- Starring this repo on GitHub
+- Reporting bugs or suggesting features
+- Sharing it with friends and colleagues
+- Blogging about it if you use it
+- Contributing to the project
 
-Thank you! ❤️
+Thank you!
 
 ---
 
 <div align="center">
-  <b>Made with ❤️ by Chidc and contributors</b>
+ <b>Made by Chidc and contributors</b>
 </div>

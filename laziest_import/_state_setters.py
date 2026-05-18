@@ -36,11 +36,6 @@ def reset_all() -> None:
     """Reset all state to defaults (useful for testing)."""
     c = _config()
 
-    c._INITIALIZING = False
-    c._INITIALIZED = False
-    c._INIT_FAILED = False
-    c._INIT_ERROR = None
-
     c._ALIAS_MAP.clear()
     c._LAZY_MODULES.clear()
     c._NEGATIVE_CACHE.clear()

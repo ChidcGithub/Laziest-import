@@ -78,6 +78,8 @@ def reset_all() -> None:
     _warn("reset_all", "lz().cache.clear() and other combined operations")
     from ._config import reset_all as _reset_all
     _reset_all()
+    from ._alias import reload_aliases
+    reload_aliases()
 
 
 def get_version(alias: str) -> Optional[str]:
@@ -825,18 +827,18 @@ def get_preferences_path() -> Path:
 
 # ─── Dependency tree functions ────────────────────────────────
 
-def dependency_tree(dir_path: str = ".", max_depth: int = 3, exclude: Optional[set] = None) -> Any:
+def dependency_tree(*args, **kwargs) -> Any:
     """Deprecated -> lz().analyze.dep_tree()"""
     _warn("dependency_tree", "lz().analyze.dep_tree()")
     from ._analysis._dependency import dependency_tree as _tree
-    return _tree(dir_path, max_depth, exclude)
+    return _tree(*args, **kwargs)
 
 
-def print_dependency_tree(dir_path: str = ".", max_depth: int = 3, exclude: Optional[set] = None) -> None:
+def print_dependency_tree(*args, **kwargs) -> None:
     """Deprecated -> lz().analyze.dep_tree() + print"""
     _warn("print_dependency_tree", "lz().analyze.dep_tree()")
     from ._analysis._dependency import print_dependency_tree as _print
-    _print(dir_path, max_depth, exclude)
+    _print(*args, **kwargs)
 
 
 # ─── Benchmark functions ──────────────────────────────
@@ -848,11 +850,11 @@ def benchmark(func, *args, **kwargs) -> Any:
     return _benchmark(func, *args, **kwargs)
 
 
-def benchmark_imports(aliases: List[str], iterations: int = 10) -> Any:
+def benchmark_imports(*args, **kwargs) -> Any:
     """Deprecated -> lz().profile related"""
     _warn("benchmark_imports", "lz().profile related")
     from ._analysis._benchmark import benchmark_imports as _benchmark
-    return _benchmark(aliases, iterations)
+    return _benchmark(*args, **kwargs)
 
 
 def print_benchmark_report(report: Any) -> None:
