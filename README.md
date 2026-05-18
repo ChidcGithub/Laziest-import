@@ -37,7 +37,7 @@
 
 ## 🚀 Zero-Configuration Lazy Import Library
 
-**Import and use any installed module with a single line**
+**Import and use any installed（for not installed, it uses pip to auto install if you permitted) module with a single line**
 
 <p align="center">
   <b>A magical way to import Python modules - just use them!</b>
