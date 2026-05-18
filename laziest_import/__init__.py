@@ -155,8 +155,51 @@ from ._analysis import (
     print_benchmark_report,
 )
 
-# Import public API functions
-from ._public_api import (
+# ═══════════════════════════════════════════════════════════════
+#  New object-oriented API (recommended)
+# ═══════════════════════════════════════════════════════════════
+
+from ._api import (
+    # Main class
+    LazyImport,
+    lz,
+    # Namespace classes (for advanced users to inherit/compose)
+    ModuleNamespace,
+    AliasNamespace,
+    SymbolNamespace,
+    CacheNamespace,
+    ConfigNamespace,
+    AnalyzeNamespace,
+    ProfileNamespace,
+    HookNamespace,
+    HookList,
+    AsyncNamespace,
+    InstallNamespace,
+    ExportNamespace,
+    BackgroundNamespace,
+    VersionNamespace,
+    RCConfigNamespace,
+    SymbolIndexNamespace,
+    SymbolConfigNamespace,
+    CacheConfigNamespace,
+    CacheSymbolsNamespace,
+    CacheFilesNamespace,
+    CacheStatsNamespace,
+    ConfigContext,
+    # Data classes
+    AutoInstallConfig,
+    RetryConfig,
+    SymbolSearchConfig,
+    SymbolResolutionConfig,
+    CacheConfig,
+    ModuleSkipConfig,
+)
+
+# ═══════════════════════════════════════════════════════════════
+#  Old API backward compatibility layer (deprecated, emits FutureWarning)
+# ═══════════════════════════════════════════════════════════════
+
+from ._deprecated import (  # noqa: F401, F403
     list_loaded,
     list_available,
     get_module,
@@ -174,7 +217,94 @@ from ._public_api import (
     is_debug_mode,
     get_import_stats,
     reset_import_stats,
+    search_symbol,
+    enable_symbol_search,
+    disable_symbol_search,
+    is_symbol_search_enabled,
+    rebuild_symbol_index,
+    get_symbol_search_config,
+    get_symbol_cache_info,
+    set_symbol_preference,
+    get_symbol_preference,
+    clear_symbol_preference,
+    list_symbol_conflicts,
+    set_module_priority,
+    get_module_priority,
+    enable_auto_symbol_resolution,
+    disable_auto_symbol_resolution,
+    get_symbol_resolution_config,
+    get_loaded_modules_context,
+    get_module_skip_config,
+    set_module_skip_config,
+    search_with_sharding,
+    enable_sharding,
+    disable_sharding,
+    get_sharding_config,
+    clear_shard_cache,
+    build_symbol_index_incremental,
+    set_cache_config,
+    get_cache_config,
+    get_cache_stats,
+    reset_cache_stats,
+    invalidate_package_cache,
+    clear_symbol_cache,
+    enable_cache_compression,
+    enable_file_cache,
+    disable_file_cache,
+    is_file_cache_enabled,
+    clear_file_cache,
+    get_file_cache_info,
+    force_save_cache,
+    enable_background_build,
+    get_preheat_config,
+    enable_incremental_index,
+    get_incremental_config,
+    get_package_version,
+    get_all_package_versions,
+    get_laziest_import_version,
+    get_cache_version,
+    get_config_paths,
+    get_config_dirs,
+    reload_aliases,
+    export_aliases,
+    validate_aliases,
+    register_alias,
+    register_aliases,
+    unregister_alias,
+    install_package,
+    enable_auto_install,
+    disable_auto_install,
+    is_auto_install_enabled,
+    get_auto_install_config,
+    set_pip_index,
+    set_pip_extra_args,
+    rebuild_module_cache,
+    import_async,
+    import_multiple_async,
+    enable_retry,
+    disable_retry,
+    is_retry_enabled,
+    which,
+    which_all,
     validate_aliases_importable,
+    analyze_file,
+    analyze_source,
+    analyze_directory,
+    dependency_tree,
+    print_dependency_tree,
+    start_profiling,
+    stop_profiling,
+    get_profile_report,
+    print_profile_report,
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
+    add_pre_import_hook,
+    add_post_import_hook,
+    remove_pre_import_hook,
+    remove_post_import_hook,
+    clear_import_hooks,
+    help,
 )
 
 
@@ -182,17 +312,54 @@ from ._public_api import (
 
 
 def add_pre_import_hook(hook) -> None:
-    """Add a pre-import hook."""
+    """Add a hook to be called before a module is imported.
+
+    Pre-import hooks are called with the module name as the argument
+    before the actual import takes place. This allows intercepting or
+    modifying import behavior.
+
+    Args:
+        hook: A callable that accepts a single string argument (module name).
+              The hook should not return anything; its purpose is to perform
+              side effects such as logging, modification, or validation.
+
+    Example:
+        >>> def my_hook(module_name):
+        ...     print(f"About to import: {module_name}")
+        >>> add_pre_import_hook(my_hook)
+    """
     _PRE_IMPORT_HOOKS.append(hook)
 
 
 def add_post_import_hook(hook) -> None:
-    """Add a post-import hook."""
+    """Add a hook to be called after a module is imported.
+
+    Post-import hooks are called with the module name and the imported
+    module object as arguments after the import completes successfully.
+
+    Args:
+        hook: A callable that accepts two arguments:
+              - module_name (str): The name of the imported module.
+              - module_obj: The actual imported module object.
+              The hook should not return anything.
+
+    Example:
+        >>> def my_hook(module_name, module_obj):
+        ...     print(f"Imported {module_name}: {type(module_obj)}")
+        >>> add_post_import_hook(my_hook)
+    """
     _POST_IMPORT_HOOKS.append(hook)
 
 
 def remove_pre_import_hook(hook) -> bool:
-    """Remove a pre-import hook."""
+    """Remove a previously registered pre-import hook.
+
+    Args:
+        hook: The callable previously registered with add_pre_import_hook().
+
+    Returns:
+        True if the hook was found and removed, False otherwise.
+    """
     if hook in _PRE_IMPORT_HOOKS:
         _PRE_IMPORT_HOOKS.remove(hook)
         return True
@@ -200,7 +367,14 @@ def remove_pre_import_hook(hook) -> bool:
 
 
 def remove_post_import_hook(hook) -> bool:
-    """Remove a post-import hook."""
+    """Remove a previously registered post-import hook.
+
+    Args:
+        hook: The callable previously registered with add_post_import_hook().
+
+    Returns:
+        True if the hook was found and removed, False otherwise.
+    """
     if hook in _POST_IMPORT_HOOKS:
         _POST_IMPORT_HOOKS.remove(hook)
         return True
@@ -208,7 +382,11 @@ def remove_post_import_hook(hook) -> bool:
 
 
 def clear_import_hooks() -> None:
-    """Remove all import hooks."""
+    """Remove all registered pre-import and post-import hooks.
+
+    This resets the hook system to its initial state. Use this if you want
+    to remove all hooks without tracking individual hook references.
+    """
     _PRE_IMPORT_HOOKS.clear()
     _POST_IMPORT_HOOKS.clear()
 
@@ -506,6 +684,38 @@ def __dir__() -> List[str]:
 _BASE_EXPORTS = [
     "__version__",
     "lazy",
+    # New API
+    "LazyImport",
+    "lz",
+    "ModuleNamespace",
+    "AliasNamespace",
+    "SymbolNamespace",
+    "CacheNamespace",
+    "ConfigNamespace",
+    "AnalyzeNamespace",
+    "ProfileNamespace",
+    "HookNamespace",
+    "HookList",
+    "AsyncNamespace",
+    "InstallNamespace",
+    "ExportNamespace",
+    "BackgroundNamespace",
+    "VersionNamespace",
+    "RCConfigNamespace",
+    "SymbolIndexNamespace",
+    "SymbolConfigNamespace",
+    "CacheConfigNamespace",
+    "CacheSymbolsNamespace",
+    "CacheFilesNamespace",
+    "CacheStatsNamespace",
+    "ConfigContext",
+    "AutoInstallConfig",
+    "RetryConfig",
+    "SymbolSearchConfig",
+    "SymbolResolutionConfig",
+    "CacheConfig",
+    "ModuleSkipConfig",
+    # Data classes
     "ImportStats",
     "SearchResult",
     "SymbolMatch",
@@ -616,18 +826,18 @@ _BASE_EXPORTS = [
     "wait_for_index",
     "set_background_timeout",
     "get_background_timeout",
-    "which",
-    "which_all",
-    "load_rc_config",
-    "get_rc_value",
-    "create_rc_file",
-    "get_rc_info",
-    "reload_rc_config",
-    "list_module_symbols",
-    "get_module_info",
-    "search_in_module",
-    "easter_egg",
-    "help",
+"which",
+     "which_all",
+     "load_rc_config",
+     "get_rc_value",
+     "create_rc_file",
+     "get_rc_info",
+     "reload_rc_config",
+     "list_module_symbols",
+     "get_module_info",
+     "search_in_module",
+     "easter_egg",
+     "help",
     "DependencyPreAnalyzer",
     "ImportProfiler",
     "PreAnalysisResult",

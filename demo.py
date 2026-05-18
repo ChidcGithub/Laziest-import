@@ -6,44 +6,38 @@ laziest-import to automatically discover and import 3D graphics libraries.
 """
 
 # Use laziest-import for all imports
-from laziest_import import *
-from laziest_import._analysis import dependency_tree
+from laziest_import import lz
 
 
 def main():
     """Run the laziest-import demo."""
-    print(help())
-    print("="*50)
-
-    import laziest_import as lz
+    print("=" * 50)
 
     # Start profiling
-    lz.start_profiling()
+    lz.profile.start()
 
     # Use laziest-import for lazy imports (tracked by profiler)
-    np = lz.numpy
-    pd = lz.pandas
 
     # Trigger actual imports by using them
     _ = np.array([1, 2, 3])
     _ = pd.DataFrame()
 
     # Stop profiling
-    lz.stop_profiling()
+    lz.profile.stop()
 
     # Get report
-    report = lz.get_profile_report()
+    report = lz.profile.report()
     for name, profile in report.modules.items():
-        print(f"{name}: {profile.load_time*1000:.2f}ms, {profile.memory_delta/1024:.1f}KB")
+        print(f"{name}: {profile.load_time * 1000:.2f}ms, {profile.memory_delta / 1024:.1f}KB")
 
     # Print formatted report
-    lz.print_profile_report()
+    lz.profile.print_report()
 
     # Enable symbol search with non-interactive mode for demo
-    enable_symbol_search(interactive=False)
+    lz.symbol.config.interactive = False
 
-    print(get_laziest_import_version())
-    print(dependency_tree("numpy"))
+    print(lz.version.current)
+    print(lz.analyze.dep_tree("numpy"))
 
     # ===== Matplotlib 3D Demo =====
     print("=" * 50)
@@ -51,7 +45,7 @@ def main():
     print("=" * 50)
 
     # Create figure and 3D axes
-    fig = plt.figure(figsize=(12, 5))
+    fig = lz.module.plt.figure(figsize=(12, 5))
 
     # --- 3D Surface Plot ---
     ax1 = fig.add_subplot(121, projection='3d')
@@ -74,7 +68,7 @@ def main():
     ax2 = fig.add_subplot(122, projection='3d')
 
     # Create wireframe data
-    theta = np.linspace(0, 2*np.pi, 30)
+    theta = np.linspace(0, 2 * np.pi, 30)
     phi = np.linspace(0, np.pi, 30)
     Theta, Phi = np.meshgrid(theta, phi)
 
@@ -92,7 +86,7 @@ def main():
     ax2.set_zlabel('Z')
 
     # Adjust layout
-    plt.tight_layout()
+    lz.module.plt.tight_layout()
 
     print("\n✓ All imports handled by laziest-import:")
     print(f"  - np (numpy)")
@@ -100,18 +94,18 @@ def main():
     print()
 
     # Show statistics
-    stats = get_import_stats()
+    stats = lz.cache.stats
     print(f"Import Statistics:")
     print(f"  - Total imports: {stats['total_imports']}")
-    print(f"  - Total time: {stats['total_time']*1000:.2f}ms")
+    print(f"  - Total time: {stats['total_time'] * 1000:.2f}ms")
     print()
 
     # Show loaded modules
-    loaded = list_loaded()
+    loaded = lz.module.list_loaded()
     print(f"Loaded modules: {loaded}")
 
     # Show the plot in a window
-    plt.show()
+    lz.module.plt.show()
     print("\n✓ Figure displayed in window")
 
     print("\n✓ Demo completed successfully!")
@@ -119,4 +113,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

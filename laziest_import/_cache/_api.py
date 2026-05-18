@@ -4,19 +4,7 @@ Public cache API for laziest-import.
 
 from typing import Dict, Any, Optional
 
-from .._config import (
-    _DEBUG_MODE,
-    _CACHE_CONFIG,
-    _CACHE_STATS,
-    _TRACKED_PACKAGES,
-    _SYMBOL_CACHE,
-    _STDLIB_SYMBOL_CACHE,
-    _THIRD_PARTY_SYMBOL_CACHE,
-    _CONFIRMED_MAPPINGS,
-    _set_symbol_index_built,
-    _set_stdlib_cache_built,
-    _set_third_party_cache_built,
-)
+from .. import _config
 
 from ._dir import (
     set_cache_dir,
@@ -65,32 +53,34 @@ def set_cache_config(
     max_cache_size_mb: Optional[int] = None,
 ) -> None:
     """Configure cache settings."""
+    c = _config
     if symbol_index_ttl is not None:
-        _CACHE_CONFIG["symbol_index_ttl"] = symbol_index_ttl
+        c._CACHE_CONFIG["symbol_index_ttl"] = symbol_index_ttl
     if stdlib_cache_ttl is not None:
-        _CACHE_CONFIG["stdlib_cache_ttl"] = stdlib_cache_ttl
+        c._CACHE_CONFIG["stdlib_cache_ttl"] = stdlib_cache_ttl
     if third_party_cache_ttl is not None:
-        _CACHE_CONFIG["third_party_cache_ttl"] = third_party_cache_ttl
+        c._CACHE_CONFIG["third_party_cache_ttl"] = third_party_cache_ttl
     if enable_compression is not None:
-        _CACHE_CONFIG["enable_compression"] = enable_compression
+        c._CACHE_CONFIG["enable_compression"] = enable_compression
     if max_cache_size_mb is not None:
-        _CACHE_CONFIG["max_cache_size_mb"] = max_cache_size_mb
+        c._CACHE_CONFIG["max_cache_size_mb"] = max_cache_size_mb
 
 
 def get_cache_config() -> Dict[str, Any]:
     """Get current cache configuration."""
-    return dict(_CACHE_CONFIG)
+    return dict(_config._CACHE_CONFIG)
 
 
 def get_cache_stats() -> Dict[str, Any]:
     """Get cache statistics."""
-    total_hits = _CACHE_STATS["symbol_hits"] + _CACHE_STATS["module_hits"]
-    total_misses = _CACHE_STATS["symbol_misses"] + _CACHE_STATS["module_misses"]
+    c = _config
+    total_hits = c._CACHE_STATS["symbol_hits"] + c._CACHE_STATS["module_hits"]
+    total_misses = c._CACHE_STATS["symbol_misses"] + c._CACHE_STATS["module_misses"]
     total_requests = total_hits + total_misses
     hit_rate = total_hits / total_requests if total_requests > 0 else 0.0
 
     return {
-        **_CACHE_STATS,
+        **c._CACHE_STATS,
         "hit_rate": hit_rate,
         "total_requests": total_requests,
     }
@@ -98,50 +88,48 @@ def get_cache_stats() -> Dict[str, Any]:
 
 def reset_cache_stats() -> None:
     """Reset cache statistics."""
-    global _CACHE_STATS
-    _CACHE_STATS = {
-        "symbol_hits": 0,
-        "symbol_misses": 0,
-        "module_hits": 0,
-        "module_misses": 0,
-        "last_build_time": 0.0,
-        "build_count": 0,
-    }
+    c = _config
+    c._CACHE_STATS["symbol_hits"] = 0
+    c._CACHE_STATS["symbol_misses"] = 0
+    c._CACHE_STATS["module_hits"] = 0
+    c._CACHE_STATS["module_misses"] = 0
+    c._CACHE_STATS["last_build_time"] = 0.0
+    c._CACHE_STATS["build_count"] = 0
 
 
 def invalidate_package_cache(package_name: str) -> bool:
     """Invalidate cache for a specific package."""
-    global _TRACKED_PACKAGES, _THIRD_PARTY_CACHE_BUILT
+    c = _config
 
     # Return False if package not tracked
-    if package_name not in _TRACKED_PACKAGES:
+    if package_name not in c._TRACKED_PACKAGES:
         return False
 
-    del _TRACKED_PACKAGES[package_name]
+    del c._TRACKED_PACKAGES[package_name]
 
     # Remove symbols from cache
     to_remove = []
-    for symbol, locations in list(_SYMBOL_CACHE.items()):
+    for symbol, locations in list(c._SYMBOL_CACHE.items()):
         filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
         if filtered:
-            _SYMBOL_CACHE[symbol] = filtered
+            c._SYMBOL_CACHE[symbol] = filtered
         else:
             to_remove.append(symbol)
 
     for symbol in to_remove:
-        _SYMBOL_CACHE.pop(symbol, None)
+        c._SYMBOL_CACHE.pop(symbol, None)
 
     # Also check third-party cache
     to_remove = []
-    for symbol, locations in list(_THIRD_PARTY_SYMBOL_CACHE.items()):
+    for symbol, locations in list(c._THIRD_PARTY_SYMBOL_CACHE.items()):
         filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
         if filtered:
-            _THIRD_PARTY_SYMBOL_CACHE[symbol] = filtered
+            c._THIRD_PARTY_SYMBOL_CACHE[symbol] = filtered
         else:
             to_remove.append(symbol)
 
     for symbol in to_remove:
-        _THIRD_PARTY_SYMBOL_CACHE.pop(symbol, None)
+        c._THIRD_PARTY_SYMBOL_CACHE.pop(symbol, None)
 
     _save_tracked_packages()
     return True
@@ -149,20 +137,21 @@ def invalidate_package_cache(package_name: str) -> bool:
 
 def clear_symbol_cache() -> None:
     """Clear the symbol cache (memory only)."""
-    _SYMBOL_CACHE.clear()
-    _STDLIB_SYMBOL_CACHE.clear()
-    _THIRD_PARTY_SYMBOL_CACHE.clear()
-    _CONFIRMED_MAPPINGS.clear()
+    c = _config
+    c._SYMBOL_CACHE.clear()
+    c._STDLIB_SYMBOL_CACHE.clear()
+    c._THIRD_PARTY_SYMBOL_CACHE.clear()
+    c._CONFIRMED_MAPPINGS.clear()
 
     # Modify the config module variables using setters
-    _set_symbol_index_built(False)
-    _set_stdlib_cache_built(False)
-    _set_third_party_cache_built(False)
+    c._set_symbol_index_built(False)
+    c._set_stdlib_cache_built(False)
+    c._set_third_party_cache_built(False)
 
 
 def enable_cache_compression(enabled: bool = True) -> None:
     """Enable or disable cache compression."""
-    _CACHE_CONFIG["enable_compression"] = enabled
+    _config._CACHE_CONFIG["enable_compression"] = enabled
 
 
 __all__ = [

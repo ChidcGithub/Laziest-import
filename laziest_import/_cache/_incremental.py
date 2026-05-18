@@ -5,11 +5,7 @@ Incremental index update detection for laziest-import.
 from typing import Dict, Optional, Set, Tuple, Any
 import logging
 
-from .._config import (
-    _DEBUG_MODE,
-    _TRACKED_PACKAGES,
-    _INCREMENTAL_INDEX_CONFIG,
-)
+from .. import _config
 
 from ._symbol_index import (
     _save_tracked_packages,
@@ -42,18 +38,18 @@ def _detect_changed_packages() -> Tuple[Set[str], Set[str], Set[str]]:
     Returns:
         Tuple of (new_packages, updated_packages, removed_packages)
     """
-    if not _INCREMENTAL_INDEX_CONFIG.get("enabled", True):
+    if not _config._INCREMENTAL_INDEX_CONFIG.get("enabled", True):
         return set(), set(), set()
     
     current_packages = _get_installed_packages()
-    tracked_packages = set(_TRACKED_PACKAGES.keys())
+    tracked_packages = set(_config._TRACKED_PACKAGES.keys())
     
     new_packages = current_packages - tracked_packages
     removed_packages = tracked_packages - current_packages
     
     # Check for version updates
     updated_packages = set()
-    if _INCREMENTAL_INDEX_CONFIG.get("check_version", True):
+    if _config._INCREMENTAL_INDEX_CONFIG.get("check_version", True):
         for pkg in tracked_packages & current_packages:
             if _check_package_changed(pkg):
                 updated_packages.add(pkg)
@@ -70,12 +66,12 @@ def _get_incremental_update_modules() -> Tuple[Set[str], bool]:
     new_packages, updated_packages, removed_packages = _detect_changed_packages()
     
     # If no existing cache, need full rebuild
-    if not _TRACKED_PACKAGES:
+    if not _config._TRACKED_PACKAGES:
         return set(), True
     
     # If too many changes, full rebuild might be faster
     total_changes = len(new_packages) + len(updated_packages) + len(removed_packages)
-    if total_changes > len(_TRACKED_PACKAGES) * 0.3:  # More than 30% changed
+    if total_changes > len(_config._TRACKED_PACKAGES) * 0.3:  # More than 30% changed
         return set(), True
     
     # Collect modules to update
@@ -94,15 +90,13 @@ def _get_incremental_update_modules() -> Tuple[Set[str], bool]:
 
 
 def enable_incremental_index(enabled: bool = True) -> None:
-    """Enable or disable incremental index updates."""
-    from .._config import _INCREMENTAL_INDEX_CONFIG
-    _INCREMENTAL_INDEX_CONFIG["enabled"] = enabled
+     """Enable or disable incremental index updates."""
+     _config._INCREMENTAL_INDEX_CONFIG["enabled"] = enabled
 
 
 def get_incremental_config() -> Dict[str, Any]:
-    """Get incremental index update configuration."""
-    from .._config import _INCREMENTAL_INDEX_CONFIG
-    return dict(_INCREMENTAL_INDEX_CONFIG)
+     """Get incremental index update configuration."""
+     return dict(_config._INCREMENTAL_INDEX_CONFIG)
 
 
 __all__ = [

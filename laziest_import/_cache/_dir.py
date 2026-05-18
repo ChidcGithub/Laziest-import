@@ -6,16 +6,12 @@ from typing import Optional, Union
 from pathlib import Path
 import logging
 
-from .._config import (
-    _DEBUG_MODE,
-    _CACHE_CONFIG,
-)
+from .. import _config
+
 
 # Cache directory (can be customized)
 _CACHE_DIR: Optional[Path] = None
 
-
-# ============== Cache Directory Management ==============
 
 def _get_default_cache_dir() -> Path:
     """Get default cache directory path."""
@@ -43,12 +39,13 @@ def _get_cache_size() -> int:
 
 def _cleanup_cache_if_needed() -> None:
     """Clean up old cache files if cache size exceeds limit."""
-    max_size_bytes = _CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    c = _config
+    max_size_bytes = c._CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
     current_size = _get_cache_size()
-    
+
     if current_size <= max_size_bytes:
         return
-    
+
     cache_dir = _get_cache_dir()
     cache_files = []
     try:
@@ -56,9 +53,9 @@ def _cleanup_cache_if_needed() -> None:
             cache_files.append((cache_file, cache_file.stat().st_mtime))
     except (OSError, IOError):
         return
-    
+
     cache_files.sort(key=lambda x: x[1])
-    
+
     for cache_file, _ in cache_files:
         if current_size <= max_size_bytes:
             break
@@ -66,7 +63,7 @@ def _cleanup_cache_if_needed() -> None:
             file_size = cache_file.stat().st_size
             cache_file.unlink()
             current_size -= file_size
-            if _DEBUG_MODE:
+            if c._DEBUG_MODE:
                 logging.debug(f"[laziest-import] Removed old cache file: {cache_file.name}")
         except (OSError, IOError):
             continue
@@ -74,7 +71,8 @@ def _cleanup_cache_if_needed() -> None:
 
 def _check_cache_size_before_save() -> bool:
     """Check if we should save cache based on size limit."""
-    max_size_bytes = _CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    c = _config
+    max_size_bytes = c._CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
     current_size = _get_cache_size()
     return current_size < max_size_bytes * 0.9
 

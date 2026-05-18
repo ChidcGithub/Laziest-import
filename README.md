@@ -139,6 +139,55 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
 ```
 
 ---
+</details>
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Modular architecture** | Clean 10-module codebase for maintainability |
+| **Lazy loading** | Modules import only on first access, reducing startup overhead |
+| **Lazy function loading** | Symbol functions loaded on-demand for faster startup |
+| **Background index build** | Symbol index builds in background thread |
+| **Symbol sharding** | Large packages split into shards for faster access |
+| **Submodule support** | `np.linalg.svd()` chains submodules automatically |
+| **Auto-discovery** | Unregistered names search installed modules automatically |
+| **Typo correction** | Misspelling auto-correction (`nump` → `numpy`, `matplotlip` → `matplotlib`) |
+| **Abbreviation expansion** | 300+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
+| **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
+| **Symbol location** | `lz.which()` finds where symbols are defined |
+| **Auto-install** | Optional: missing modules can be pip-installed automatically |
+| **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
+| **Cache persistence** | Symbol index saved to disk with configurable TTL |
+| **Cache statistics** | Track hits/misses and optimize performance |
+| **Version checking** | Automatic compatibility warnings for aliases/mappings |
+| **Type hints support** | `LazySymbol.__class_getitem__` for generic type hints |
+| **Dependency tree analysis** | `lz.dependency_tree()` - analyze module dependencies |
+| **Performance benchmarking** | `lz.benchmark()` - benchmark functions and imports |
+| **Dependency pre-analysis** | Scan code to predict required imports |
+| **Import profiler** | Record module load times and memory usage |
+| **Environment detection** | Detect virtual environments (venv/conda/virtualenv) |
+| **Conflict visualization** | Find and display symbol conflicts across modules |
+| **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
+| **1000+ aliases** | Predefined aliases for common packages |
+| **820+ tests** | Comprehensive test coverage |
+
+## What's New in v0.1.0
+
+- **New Object-Oriented API**: `LazyImport` class with sub-namespaces (`lz.module`, `lz.config`, `lz.symbol`, etc.)
+- **Backward Compatible**: All old functions still work with `FutureWarning` deprecation notices
+- **Config Dataclasses**: `AutoInstallConfig`, `RetryConfig`, `CacheConfig`, etc.
+- **HookList**: Supports `+=`/`-=` operators for hook management
+- **ConfigContext**: `with lz.config.temp_config(debug=True):` for temporary overrides
+- **Module-level Singleton**: `from laziest_import import lz` — access everything via `lz.*`
+- **See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** for full old→new API mapping
+
+## What's New in v0.1.0-pre2
+
+- **Major Refactor**: Restructured architecture for maintainability
+- **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
+- **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
+- **820+ tests**: Comprehensive test coverage across 17+ test files
 
 ## 📚 What's New
 

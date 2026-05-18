@@ -6,7 +6,7 @@ import ast
 from dataclasses import dataclass
 from collections import defaultdict
 
-from .._config import _ALIAS_MAP, _SYMBOL_CACHE
+from .. import _config
 from .._alias import _build_known_modules_cache
 
 
@@ -37,7 +37,7 @@ class DependencyPreAnalyzer:
     
     def _build_reverse_aliases(self) -> None:
         """Build reverse alias mapping."""
-        for alias, module in _ALIAS_MAP.items():
+        for alias, module in _config._ALIAS_MAP.items():
             self._alias_to_module[alias] = module
             self._module_aliases[module].add(alias)
     
@@ -109,8 +109,8 @@ class DependencyPreAnalyzer:
                 predicted.add(name)
                 confidence[name] = confidence.get(name, 0.0) + 0.8
             # Check symbol cache
-            elif name in _SYMBOL_CACHE:
-                for loc in _SYMBOL_CACHE[name][:3]:
+            elif name in _config._SYMBOL_CACHE:
+                for loc in _config._SYMBOL_CACHE[name][:3]:
                     module = loc[0].split('.')[0]
                     predicted.add(module)
                     confidence[module] = confidence.get(module, 0.0) + 0.5
