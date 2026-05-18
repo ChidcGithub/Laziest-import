@@ -5,8 +5,8 @@
 [![Python](https://img.shields.io/pypi/pyversions/laziest-import.svg)](https://pypi.org/project/laziest-import/)
 [![License](https://img.shields.io/pypi/l/laziest-import.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://img.shields.io/pypi/dm/laziest-import.svg)](https://pypi.org/project/laziest-import/)
-[![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/ChidcGithub/Laziest-import.svg?style=social)](https://github.com/ChidcGithub/Laziest-import/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/ChidcGithub/Laziest-import.svg?style=social&label=Stars)](https://github.com/ChidcGithub/Laziest-import/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/ChidcGithub/Laziest-import.svg?style=social&label=Forks)](https://github.com/ChidcGithub/Laziest-import/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import/pulls)
 [![GitHub Actions](https://github.com/ChidcGithub/Laziest-import/workflows/Build%20and%20Publish/badge.svg)](https://github.com/ChidcGithub/Laziest-import/actions)
@@ -14,50 +14,107 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-820+_passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-933%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
+[![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
+[![Contributors](https://img.shields.io/badge/contributors-welcome-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/graphs/contributors)
+[![First Timers Only](https://img.shields.io/badge/first-timers_only-blue.svg)](https://github.com/ChidcGithub/Laziest-import/contribute)
+[![Documentation Status](https://img.shields.io/badge/docs-complete-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
+[![Made with Love](https://img.shields.io/badge/made_with-%E2%9D%A4-red.svg)](https://github.com/ChidcGithub/Laziest-import)
+[![Pythonic](https://img.shields.io/badge/pythonic-yes-blue.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ChidcGithub/Laziest-import)
+[![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/ChidcGithub/Laziest-import)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/pulls)
+[![License MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A zero-configuration lazy import library. Import and use any installed module with a single line.
+[![中文版](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-README_CN-blue.svg)](README_CN.md)
+[![English](https://img.shields.io/badge/English-README-blue.svg)](README.md)
 
-```python
-from laziest_import import *
+---
 
-arr = np.array([1, 2, 3])      # numpy
-df = pd.DataFrame({'a': [1]})  # pandas
-plt.plot([1, 2, 3])            # matplotlib
-```
+<div align="center">
 
-No `import numpy as np`, no `import pandas as pd` required.
+## 🚀 Zero-Configuration Lazy Import Library
 
-## Installation
+**Import and use any installed module with a single line**
+
+<p align="center">
+  <b>A magical way to import Python modules - just use them!</b>
+</p>
+
+</div>
+
+---
+
+## 📖 Table of Contents
+
+- [Features](#-key-features)
+- [Quick Start](#-quick-start)
+- [Installation](#-installation)
+- [Examples](#-examples)
+- [Configuration](#-configuration)
+- [API Reference](#-api-reference)
+- [Troubleshooting](#-troubleshooting)
+- [How It Works](#-how-it-works)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## 🎯 Key Features
+
+| Feature | Badge | Description |
+|---------|-------|-------------|
+| 🚀 Lazy Loading | ![](https://img.shields.io/badge/feature-lazy_loading-green.svg) | Modules import only on first access |
+| 🔄 Background Index | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | Symbol index builds in background thread |
+| ✏️ Auto-Correction | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | Typo correction (`nump` → `numpy`) |
+| 📝 Symbol Search | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | Search symbols across all modules |
+| 💾 Multi-Level Cache | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | Three-tier caching for speed |
+| 📊 Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
+| ⚡ Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
+| 🛠️ 933+ Tests | ![](https://img.shields.io/badge/tests-933%2B-brightgreen.svg) | Comprehensive test coverage |
+| 📦 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
+
+---
+
+## 📦 Installation
 
 ```bash
+# Stable version
 pip install laziest-import
+
+# Pre-release version (latest features)
+pip install --pre laziest-import
+
+# From source (latest development)
+pip install git+https://github.com/ChidcGithub/Laziest-import.git
 ```
 
-## Quick Start
+---
 
-<details>
-<summary>Show examples</summary>
+## ⚡ Quick Start
 
-**Method 1: Wildcard import (recommended)**
+### 🎯 Method 1: Wildcard Import (Recommended)
 
 ```python
 from laziest_import import *
 
-# Common libraries work immediately
+# Data Science
 arr = np.array([1, 2, 3])           # numpy
 df = pd.DataFrame({'a': [1, 2]})    # pandas
 plt.plot([1, 2, 3]); plt.show()     # matplotlib
 
-# Standard library
+# Standard Library
 print(os.getcwd())                  # os
 data = json.dumps({'key': 'value'}) # json
+result = math.sqrt(16)              # math
 
-# Submodules load automatically
-result = np.linalg.svd(matrix)      # numpy.linalg
+# Submodules (auto-loading)
+svd_result = np.linalg.svd(matrix)  # numpy.linalg.svd()
 ```
 
-**Method 2: Namespace prefix**
+### 🛠️ Method 2: Namespace Prefix
 
 ```python
 import laziest_import as lz
@@ -66,7 +123,7 @@ arr = lz.np.array([1, 2, 3])
 df = lz.pd.DataFrame({'a': [1, 2]})
 ```
 
-**Method 3: Lazy proxy (with auto-correction)**
+### ✨ Method 3: Lazy Proxy (with Auto-Correction)
 
 ```python
 from laziest_import import lazy
@@ -74,11 +131,14 @@ from laziest_import import lazy
 # Automatic typo correction
 arr = lazy.nump.array([1, 2, 3])    # nump -> numpy ✅
 df = lazy.pnda.DataFrame()          # pnda -> pandas ✅
+arr2 = lazy.nupi.array([4, 5, 6])   # nupi -> numpy ✅
 
 # Submodule shortcuts
 layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
+relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
 ```
 
+---
 </details>
 
 ## Key Features
@@ -129,64 +189,55 @@ layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
 - **820+ tests**: Comprehensive test coverage across 17+ test files
 
-## Auto-Install
+## 📚 What's New
 
-When enabled, accessing an uninstalled module triggers automatic installation:
+### 🚀 v0.0.5-pre8 (Latest)
+
+- **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
+- **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
+- **933+ tests**: Comprehensive test coverage across 17+ test files
+
+### 🎯 v0.0.4
+
+- **Background Index Building**: Symbol index builds in background thread, no blocking
+- **Lazy-loaded Functions**: Reduced startup time by lazy-loading symbol functions
+- **Symbol Sharding**: Large package symbols stored in shards for faster access
+- **Symbol Location Finder**: `lz.which()` - find where symbols are defined
+- **Interactive Help**: `lz.help()` - comprehensive help system with topics
+- **Jupyter Magics**: `%%lazy`, `%lazyimport`, `%lazylist`, `%lazysearch`
+- **User Config File**: `~/.laziestrc` for persistent configuration
+- **Type Hints Support**: `LazySymbol.__class_getitem__` for generic type hints
+- **Dependency Pre-Analysis**: Scan code to predict required imports
+- **Import Profiler**: Record module load times and memory usage
+- **Environment Detection**: Detect virtual environments (venv/conda/virtualenv)
+- **Conflict Visualization**: Find and display symbol conflicts across modules
+- **Persistent Preferences**: Save/load user preferences to `~/.laziestrc`
+
+---
+
+## 🎮 Examples
+
+### 🔍 Symbol Search & Location
 
 ```python
-from laziest_import import *
+import laziest_import as lz
 
-# Enable auto-install with interactive confirmation
-enable_auto_install()
+# Search for a symbol across all modules
+results = lz.search_symbol('DataFrame')
+for result in results:
+    print(f"{result.module_name}.{result.symbol_name}")
 
-# Use a mirror for faster downloads
-enable_auto_install(index="https://pypi.org/simple")
+# Find where a symbol is defined
+loc = lz.which('sqrt')
+print(f"Found at: {loc}")  # numpy.sqrt
 
-# Now accessing uninstalled modules prompts for installation
-arr = np.array([1, 2, 3])  # If numpy is missing, prompts to install
+# Find all occurrences
+locs = lz.which_all('sqrt')
+for loc in locs:
+    print(f"{loc.module_name}.{loc.symbol_name}")
 ```
 
-<details>
-<summary>Auto-install API</summary>
-
-| Function | Description |
-|----------|-------------|
-| `enable_auto_install(interactive=True, index=None)` | Enable auto-install |
-| `disable_auto_install()` | Disable auto-install |
-| `is_auto_install_enabled()` | Check status |
-| `install_package(name)` | Manually install a package |
-| `set_pip_index(url)` | Set mirror URL |
-
-</details>
-
-## Predefined Aliases
-
-<details>
-<summary>Show full list</summary>
-
-| Category | Aliases |
-|----------|---------|
-| Data Science | `np`, `pd`, `plt`, `sns`, `scipy` |
-| Machine Learning | `torch`, `tf`, `keras`, `sklearn`, `xgboost`, `lightgbm` |
-| Deep Learning | `transformers`, `langchain`, `llama_index` |
-| Web Frameworks | `flask`, `django`, `fastapi`, `starlette` |
-| HTTP Clients | `requests`, `httpx`, `aiohttp` |
-| Databases | `sqlalchemy`, `pymongo`, `redis`, `duckdb` |
-| Cloud Services | `boto3` (AWS), `google.cloud`, `azure` |
-| Image Processing | `cv2`, `PIL.Image`, `skimage` |
-| GUI | `PyQt6`, `tkinter`, `flet`, `nicegui` |
-| DevOps | `docker`, `kubernetes`, `ansible` |
-| NLP | `spacy`, `nltk`, `transformers` |
-| Visualization | `plotly`, `bokeh`, `streamlit`, `gradio` |
-
-</details>
-
-## Advanced Features
-
-<details>
-<summary>Dependency Tree Analysis</summary>
-
-Analyze module dependencies and visualize import relationships:
+### 🌲 Dependency Tree Analysis
 
 ```python
 import laziest_import as lz
@@ -198,23 +249,9 @@ print(f"Stdlib: {tree.stdlib_count}, Third-party: {tree.third_party_count}")
 
 # Print formatted tree
 lz.print_dependency_tree(tree)
-
-# Exclude certain module types
-tree = lz.dependency_tree(
-    'pandas',
-    max_depth=3,
-    include_stdlib=False,      # Exclude stdlib
-    include_third_party=True,  # Include third-party
-    include_local=True         # Include local modules
-)
 ```
 
-</details>
-
-<details>
-<summary>Performance Benchmarking</summary>
-
-Benchmark function execution and import performance:
+### 🏋️ Performance Benchmarking
 
 ```python
 import laziest_import as lz
@@ -229,192 +266,29 @@ result = lz.benchmark(
 print(f"Avg: {result.avg_time*1000:.4f}ms")
 print(f"Min: {result.min_time*1000:.4f}ms")
 print(f"Max: {result.max_time*1000:.4f}ms")
-print(f"Std dev: {result.std_dev*1000:.4f}ms")
 
 # Benchmark module imports
 report = lz.benchmark_imports(['numpy', 'pandas', 'matplotlib'])
 lz.print_benchmark_report(report)
-
-# Compare lazy vs regular imports
-report = lz.benchmark_imports(['numpy'], compare_lazy=True)
-for result in report.results:
-    print(f"{result.name}: {result.avg_time*1000:.2f}ms")
 ```
 
-</details>
-
-<details>
-<summary>File-based cache</summary>
-
-Cache imported modules for faster subsequent runs:
+### 📦 Auto-Install (Optional)
 
 ```python
-import laziest_import as lz
+from laziest_import import *
 
-# View cache status
-info = lz.get_file_cache_info()
-# {'cache_size_bytes': 12345, 'cache_size_mb': 0.01, 'max_cache_size_mb': 100, ...}
+# Enable auto-install
+lz.enable_auto_install()
 
-# Set custom cache directory
-lz.set_cache_dir('./my_cache')
-
-# Clear cache
-lz.clear_file_cache()
+# Accessing uninstalled modules triggers installation
+arr = np.array([1, 2, 3])  # If numpy missing, prompts to install
 ```
 
-</details>
+---
 
-<details>
-<summary>Cache configuration</summary>
+## 🛠️ Configuration
 
-```python
-import laziest_import as lz
-
-# Get cache version
-version = lz.get_cache_version()  # '0.0.2.3'
-
-# Configure cache settings
-lz.set_cache_config(
-    symbol_index_ttl=3600,       # Symbol index TTL: 1 hour
-    stdlib_cache_ttl=2592000,    # Stdlib cache TTL: 30 days
-    max_cache_size_mb=200        # Max cache size: 200 MB
-)
-
-# Get cache statistics
-stats = lz.get_cache_stats()
-# {'symbol_hits': 10, 'symbol_misses': 2, 'module_hits': 5, 
-#  'module_misses': 1, 'hit_rate': 0.875, ...}
-
-# Reset statistics
-lz.reset_cache_stats()
-
-# Invalidate cache for a specific package (after upgrade)
-lz.invalidate_package_cache('numpy')
-
-# Rebuild symbol index
-lz.rebuild_symbol_index()
-```
-
-</details>
-
-<details>
-<summary>Debug and statistics</summary>
-
-```python
-import laziest_import as lz
-
-# Enable debug mode
-lz.enable_debug_mode()
-
-# Get import statistics
-stats = lz.get_import_stats()
-# {'total_imports': 3, 'total_time': 0.15, 'module_times': {...}}
-
-# Reset statistics
-lz.reset_import_stats()
-```
-
-</details>
-
-<details>
-<summary>Import hooks</summary>
-
-```python
-import laziest_import as lz
-
-def before_import(module_name):
-    print(f"About to import: {module_name}")
-
-def after_import(module_name, module):
-    print(f"Imported: {module_name}")
-
-lz.add_pre_import_hook(before_import)
-lz.add_post_import_hook(after_import)
-```
-
-</details>
-
-<details>
-<summary>Async import</summary>
-
-```python
-import laziest_import as lz
-import asyncio
-
-async def main():
-    # Import multiple modules in parallel
-    modules = await lz.import_multiple_async(['numpy', 'pandas', 'torch'])
-    np, pd = modules['numpy'], modules['pandas']
-
-asyncio.run(main())
-```
-
-</details>
-
-<details>
-<summary>Symbol Location Finder</summary>
-
-```python
-import laziest_import as lz
-
-# Find where a symbol is defined
-loc = lz.which('sqrt')
-print(loc)  # numpy.sqrt
-
-# Find in a specific module
-loc = lz.which('DataFrame', 'pandas')
-
-# Find all locations
-locs = lz.which_all('sqrt')
-for loc in locs:
-    print(f"{loc.module_name}.{loc.symbol_name}")
-```
-
-</details>
-
-<details>
-<summary>Interactive Help</summary>
-
-```python
-import laziest_import as lz
-
-# General help
-print(lz.help())
-
-# Specific topics
-print(lz.help('quickstart'))
-print(lz.help('which'))
-print(lz.help('jupyter'))
-```
-
-</details>
-
-<details>
-<summary>Jupyter/IPython Magics</summary>
-
-```python
-# Load the extension
-%load_ext laziest_import
-
-# Import modules lazily in current session
-%lazyimport numpy pandas
-
-# List available modules
-%lazylist
-
-# Search for symbols
-%lazysearch sqrt
-%lazysearch DataFrame
-
-# Cell magic for lazy import
-%%lazy -m numpy
-arr = np.array([1, 2, 3])
-```
-
-</details>
-
-<details>
-<summary>User Configuration</summary>
+### 📋 User Configuration
 
 ```python
 import laziest_import as lz
@@ -432,161 +306,35 @@ value = lz.get_rc_value('debug', default=False)
 info = lz.get_rc_info()
 ```
 
-</details>
-
-<details>
-<summary>Custom aliases</summary>
-
-```python
-from laziest_import import *
-
-# Register a single alias
-register_alias("mylib", "my_awesome_library")
-
-# Register multiple aliases
-register_aliases({
-    "api": "my_api_client",
-    "db": "my_database_lib",
-})
-```
-
-</details>
-
-<details>
-<summary>Dependency Pre-Analysis</summary>
-
-Scan Python code to predict required imports before execution:
+### 💾 Cache Configuration
 
 ```python
 import laziest_import as lz
 
-# Analyze a file
-result = lz.analyze_file('my_script.py')
-print(result.predicted_imports)  # {'numpy', 'pandas', ...}
+# Set custom cache directory
+lz.set_cache_dir('./my_cache')
 
-# Analyze source code directly
-code = '''
-import numpy as np
-import pandas as pd
-'''
-result = lz.analyze_source(code)
-print(result.used_symbols)  # {'np', 'pd'}
+# Configure cache settings
+lz.set_cache_config(
+    symbol_index_ttl=3600,       # Symbol index TTL: 1 hour
+    stdlib_cache_ttl=2592000,    # Stdlib cache TTL: 30 days
+    max_cache_size_mb=200        # Max cache size: 200 MB
+)
 
-# Analyze a directory
-results = lz.analyze_directory('./src', recursive=True)
-for r in results:
-    print(f"{r.file_path}: {r.predicted_imports}")
+# Get cache statistics
+stats = lz.get_cache_stats()
+print(f"Hit rate: {stats['hit_rate']:.1%}")
+
+# View cache status
+info = lz.get_file_cache_info()
+print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 ```
 
-</details>
+---
 
-<details>
-<summary>Import Profiler</summary>
+## 📖 API Reference
 
-Record module load times and memory usage:
-
-```python
-import laziest_import as lz
-
-# Start profiling
-lz.start_profiling()
-
-# Your code here
-import numpy as np
-import pandas as pd
-
-# Stop profiling
-lz.stop_profiling()
-
-# Get report
-report = lz.get_profile_report()
-for name, profile in report.modules.items():
-    print(f"{name}: {profile.load_time_ms:.2f}ms, {profile.memory_kb:.1f}KB")
-
-# Print formatted report
-lz.print_profile_report()
-```
-
-</details>
-
-<details>
-<summary>Environment Detection</summary>
-
-Detect the current Python environment:
-
-```python
-import laziest_import as lz
-
-# Get environment info
-env = lz.detect_environment()
-print(f"Python: {env.python_version}")
-print(f"Executable: {env.executable}")
-print(f"Virtual env: {env.virtual_env}")
-print(f"Venv type: {env.venv_type}")  # 'venv', 'conda', 'virtualenv', None
-print(f"Site packages: {env.site_packages}")
-
-# Show formatted info
-lz.show_environment()
-```
-
-</details>
-
-<details>
-<summary>Conflict Visualization</summary>
-
-Find symbols that exist in multiple modules:
-
-```python
-import laziest_import as lz
-
-# Find all symbol conflicts
-conflicts = lz.find_symbol_conflicts()
-for symbol, conflict in conflicts.items():
-    print(f"{symbol}: {conflict.modules}")
-
-# Show formatted table
-lz.show_conflicts()
-
-# Get summary
-summary = lz.get_conflicts_summary()
-print(f"Total conflicts: {summary['total_conflicts']}")
-```
-
-</details>
-
-<details>
-<summary>Persistent Preferences</summary>
-
-Save and load user preferences:
-
-```python
-import laziest_import as lz
-
-# Set symbol preference
-lz.set_symbol_preference('DataFrame', 'pandas')
-lz.set_symbol_preference('sqrt', 'math')
-
-# Save to ~/.laziestrc
-lz.save_preferences()
-
-# Load preferences
-prefs = lz.load_preferences()
-
-# Apply loaded preferences
-lz.apply_preferences(prefs)
-
-# Clear preferences
-lz.clear_preferences()
-```
-
-</details>
-
-## API Reference
-
-<details>
-<summary>Show full API</summary>
-
-### Alias Management
+### 🔧 Alias Management
 
 | Function | Description |
 |----------|-------------|
@@ -596,45 +344,29 @@ lz.clear_preferences()
 | `list_loaded()` | List loaded modules |
 | `list_available()` | List all available aliases |
 | `get_module(alias)` | Get module object |
-| `clear_cache()` | Clear cache |
+| `clear_cache()` | Clear memory cache |
 
-### Auto-Search
-
-| Function | Description |
-|----------|-------------|
-| `enable_auto_search()` | Enable auto-discovery |
-| `disable_auto_search()` | Disable auto-discovery |
-| `search_module(name)` | Search for a module |
-| `search_class(class_name)` | Search by class name |
-| `rebuild_module_cache()` | Rebuild cache |
-
-### Symbol Search
+### 🔍 Symbol Search
 
 | Function | Description |
 |----------|-------------|
 | `enable_symbol_search()` | Enable symbol search |
+| `disable_symbol_search()` | Disable symbol search |
 | `search_symbol(name)` | Search for classes/functions |
-| `rebuild_symbol_index()` | Rebuild index |
+| `rebuild_symbol_index()` | Rebuild symbol index |
+| `which(symbol)` | Find symbol location |
+| `which_all(symbol)` | Find all symbol locations |
 
-### Auto-Install
+### 🔄 Auto-Install
 
 | Function | Description |
 |----------|-------------|
 | `enable_auto_install()` | Enable auto-install |
 | `disable_auto_install()` | Disable auto-install |
-| `install_package(name)` | Install manually |
+| `install_package(name)` | Install a package manually |
 | `set_pip_index(url)` | Set mirror URL |
 
-### Other
-
-| Function | Description |
-|----------|-------------|
-| `get_version(alias)` | Get module version |
-| `reload_module(alias)` | Reload a module |
-| `enable_retry()` | Enable retry mechanism |
-| `enable_file_cache()` | Enable file cache |
-
-### Cache Management
+### 💾 Cache Management
 
 | Function | Description |
 |----------|-------------|
@@ -648,7 +380,7 @@ lz.clear_preferences()
 | `clear_file_cache()` | Clear file cache |
 | `set_cache_dir(path)` | Set cache directory |
 
-### Analysis & Profiling
+### 📊 Analysis & Profiling
 
 | Function | Description |
 |----------|-------------|
@@ -659,105 +391,30 @@ lz.clear_preferences()
 | `stop_profiling()` | Stop import profiler |
 | `get_profile_report()` | Get profiling report |
 | `print_profile_report()` | Print formatted report |
-
-### Dependency Tree
-
-| Function | Description |
-|----------|-------------|
-| `dependency_tree(module, max_depth=3)` | Analyze module dependency tree |
-| `print_dependency_tree(tree)` | Print formatted dependency tree |
-
-### Benchmarking
-
-| Function | Description |
-|----------|-------------|
-| `benchmark(func, name, iterations=10)` | Benchmark a function |
-| `benchmark_imports(modules, iterations=5)` | Benchmark module imports |
-| `print_benchmark_report(report)` | Print formatted benchmark report |
-
-### Environment Detection
-
-| Function | Description |
-|----------|-------------|
+| `dependency_tree(module)` | Analyze module dependency tree |
+| `print_dependency_tree(tree)` | Print dependency tree |
+| `benchmark(func)` | Benchmark a function |
+| `benchmark_imports(modules)` | Benchmark module imports |
 | `detect_environment()` | Detect Python environment |
 | `show_environment()` | Display environment info |
-
-### Conflict Detection
-
-| Function | Description |
-|----------|-------------|
 | `find_symbol_conflicts()` | Find symbol conflicts |
 | `show_conflicts()` | Display conflicts table |
-| `get_conflicts_summary()` | Get conflicts summary |
 
-### Preferences
+### ⚙️ Preferences
 
 | Function | Description |
 |----------|-------------|
+| `set_symbol_preference(name, module)` | Set symbol preference |
+| `get_symbol_preference(name)` | Get symbol preference |
+| `clear_symbol_preference(name)` | Clear symbol preference |
 | `save_preferences()` | Save preferences to file |
 | `load_preferences()` | Load preferences from file |
 | `apply_preferences(prefs)` | Apply loaded preferences |
-| `clear_preferences()` | Clear saved preferences |
+| `clear_preferences()` | Clear all preferences |
 
-</details>
+---
 
-## Configuration
-
-Custom aliases can be configured in:
-
-1. `~/.laziest_import/aliases/A.json`, `B.json`, ... (user global, letter-based)
-2. `./.laziest_import/A.json`, `B.json`, ... (project level)
-
-```json
-// ~/.laziest_import/aliases/M.json
-{
-    "mylib": "my_awesome_library",
-    "mpl": "matplotlib"
-}
-```
-
-Letter-based files load faster - only the relevant file is loaded on demand.
-
-### JSON Mappings
-
-All mappings are stored in `laziest_import/mappings/` directory:
-
-| File | Description |
-|------|-------------|
-| `abbreviations.json` | Module abbreviations (`np` → `numpy`) |
-| `misspellings.json` | Common misspellings (`numpi` → `numpy`) |
-| `submodules.json` | Submodule shortcuts (`nn` → `torch.nn`) |
-| `package_rename.json` | Package rename mappings (`sklearn` → `scikit-learn`) |
-| `symbol_misspellings.json` | Symbol misspellings (`dataframe` → `DataFrame`) |
-| `priorities.json` | Module priorities for conflict resolution |
-
-### Version Management
-
-Version compatibility is managed centrally in `version.json`:
-
-```json
-{
-    "_current_version": "0.0.3.1",
-    "_cache_version": "0.0.3.1",
-    "aliases": {
-        "_min_version": "0.0.3",
-        "_max_version": "0.0.4"
-    },
-    "mappings": {
-        "_min_version": "0.0.3",
-        "_max_version": "0.0.4"
-    }
-}
-```
-
-If the current version is outside the specified range, a warning is issued:
-
-```
-UserWarning: [laziest-import] aliases: Version 0.0.4 is at or above maximum 0.0.4. 
-Some alias features may not work correctly.
-```
-
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -775,10 +432,6 @@ The symbol index may be building. Check status with:
 ```python
 lz.is_index_building()  # True if building
 lz.wait_for_index(30)  # Wait up to 30 seconds
-```
-Enable background build to avoid blocking:
-```python
-lz.enable_background_build()
 ```
 
 **Q: Typo correction not working**
@@ -820,7 +473,11 @@ lz.rebuild_symbol_index()  # Rebuild symbol index
 3. Use `lz.enable_background_build()` to avoid blocking on first import
 4. For CI/CD, set `LAZY_BG_BUILD=1` to pre-build cache
 
-## How It Works
+---
+
+## 🔬 How It Works
+
+### Architecture
 
 1. **Proxy objects**: Each alias maps to a `LazyModule` proxy
 2. **On-demand import**: Real import triggers on first attribute access via `__getattr__`
@@ -843,10 +500,151 @@ Cache files are stored in `~/.laziest_import/cache/` and automatically:
 - Clean up when exceeding size limit (default: 100 MB)
 - Invalidate on Python version changes
 
-## Requirements
+---
 
-- Python 3.8+
+## 📚 Predefined Aliases
 
-## License
+### Data Science
+`np`, `pd`, `plt`, `sns`, `scipy`
 
-[MIT](LICENSE)
+### Machine Learning
+`torch`, `tf`, `keras`, `sklearn`, `xgboost`, `lightgbm`
+
+### Deep Learning
+`transformers`, `langchain`, `llama_index`
+
+### Web Frameworks
+`flask`, `django`, `fastapi`, `starlette`
+
+### HTTP Clients
+`requests`, `httpx`, `aiohttp`
+
+### Databases
+`sqlalchemy`, `pymongo`, `redis`, `duckdb`
+
+### Cloud Services
+`boto3` (AWS), `google.cloud`, `azure`
+
+### Image Processing
+`cv2`, `PIL.Image`, `skimage`
+
+### GUI
+`PyQt6`, `tkinter`, `flet`, `nicegui`
+
+### DevOps
+`docker`, `kubernetes`, `ansible`
+
+### NLP
+`spacy`, `nltk`, `transformers`
+
+### Visualization
+`plotly`, `bokeh`, `streamlit`, `gradio`
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Check out our [Contributing Guide](CONTRIBUTING.md) for more information.
+
+### 🌱 How to Contribute
+
+1. Fork the repo and create your branch from `main`
+2. Read our [Code of Conduct](CODE_OF_CONDUCT.md)
+3. Make sure your code lints (`flake8`)
+4. Add tests for any new functionality
+5. Ensure the test suite passes (`pytest tests/`)
+6. Commit your changes
+7. Push to your branch and open a Pull Request!
+
+### 🔄 Development Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/ChidcGithub/Laziest-import.git
+cd Laziest-import
+
+# Install in development mode
+pip install -e ".[dev,test]"
+
+# Run tests
+pytest tests/ -v
+
+# Run linting
+flake8 laziest_import/
+```
+
+### 📋 Good First Issues
+
+Looking for a place to start? Check out:
+- Good first issues: [Issues labeled "good first issue"](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+- Help wanted: [Issues labeled "help wanted"](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+
+### ✨ Ways to Contribute
+
+- 🐛 Report bugs
+- 💡 Propose new features
+- 📝 Improve documentation
+- 🔧 Fix existing issues
+- 🧪 Add more tests
+- 🌍 Help with translations
+- 🎨 Design improvements
+
+---
+
+## 🌟 Contributors
+
+Thanks goes to these wonderful people:
+
+<a href="https://github.com/ChidcGithub/Laziest-import/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ChidcGithub/Laziest-import" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
+
+---
+
+## 📝 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ChidcGithub/Laziest-import&type=Date)](https://star-history.com/#ChidcGithub/Laziest-import&Date)
+
+---
+
+## 💬 Get In Touch
+
+- 📧 Email: (your email)
+- 🐙 GitHub: [ChidcGithub/Laziest-import](https://github.com/ChidcGithub/Laziest-import)
+- 💬 Discussions: [GitHub Discussions](https://github.com/ChidcGithub/Laziest-import/discussions)
+- 🐛 Issues: [GitHub Issues](https://github.com/ChidcGithub/Laziest-import/issues)
+
+---
+
+## 🙏 Acknowledgments
+
+- Thanks to all the contributors who have helped make this project better!
+- Inspired by the Python community's love for clean, simple APIs
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## ⭐ Show Your Support
+
+If you find this project useful, please consider:
+
+- ⭐ Starring this repo on GitHub
+- 🐛 Reporting bugs or suggesting features
+- 🔄 Sharing it with friends and colleagues
+- 📝 Blogging about it if you use it
+- 🤝 Contributing to the project
+
+Thank you! ❤️
+
+---
+
+<div align="center">
+  <b>Made with ❤️ by Chidc and contributors</b>
+</div>
