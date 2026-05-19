@@ -265,6 +265,7 @@ _ = os.getcwd()
         assert "os" in loaded
 
     def test_multiple_bare_names_interop(self):
+        pytest.importorskip("numpy")
         namespace = {}
         exec("""
 from laziest_import import *
