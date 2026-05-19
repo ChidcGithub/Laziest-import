@@ -17,6 +17,9 @@ from ._analysis import (
     PreAnalysisResult,
     DependencyPreAnalyzer,
     _NameVisitor,
+    analyze_file,
+    analyze_source,
+    analyze_directory,
     # Profiler
     ModuleProfile,
     ProfileReport,
@@ -63,6 +66,9 @@ __all__ = [
     "PreAnalysisResult",
     "DependencyPreAnalyzer",
     "_NameVisitor",
+    "analyze_file",
+    "analyze_source",
+    "analyze_directory",
     # Profiler
     "ModuleProfile",
     "ProfileReport",

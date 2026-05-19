@@ -11,12 +11,38 @@ Provides:
 - Benchmark: Performance benchmarking
 """
 
+from typing import List, Optional
+
 # Pre-analysis
 from ._preanalyze import (
     PreAnalysisResult,
     DependencyPreAnalyzer,
     _NameVisitor,
 )
+
+
+_analyzer_instance: Optional[DependencyPreAnalyzer] = None
+
+
+def _get_analyzer() -> DependencyPreAnalyzer:
+    global _analyzer_instance
+    if _analyzer_instance is None:
+        _analyzer_instance = DependencyPreAnalyzer()
+    return _analyzer_instance
+
+
+def analyze_file(file_path: str) -> PreAnalysisResult:
+    return _get_analyzer().analyze_file(file_path)
+
+
+def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult:
+    return _get_analyzer().analyze_source(source, file_path)
+
+
+def analyze_directory(
+    dir_path: str, recursive: bool = True, exclude: Optional[set] = None
+) -> List[PreAnalysisResult]:
+    return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
 
 # Profiler
 from ._profiler import (
@@ -81,6 +107,9 @@ __all__ = [
     "PreAnalysisResult",
     "DependencyPreAnalyzer",
     "_NameVisitor",
+    "analyze_file",
+    "analyze_source",
+    "analyze_directory",
     # Profiler
     "ModuleProfile",
     "ProfileReport",

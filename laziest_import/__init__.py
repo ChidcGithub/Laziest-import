@@ -10,7 +10,7 @@ Or:
     arr = lz.np.array([1, 2, 3])
 """
 
-from typing import Dict, List, Optional, Any, Union
+from typing import List, Optional, Any, Union
 
 # Import version
 from ._config import __version__
@@ -33,7 +33,6 @@ from . import _config as _config_module
 from ._config import (
     _AUTO_SEARCH_ENABLED,
     _ALIAS_MAP,
-    _LAZY_MODULES,
     _SYMBOL_RESOLUTION_CONFIG,
     _SYMBOL_SEARCH_CONFIG,
     _SYMBOL_PREFERENCES,
@@ -47,10 +46,6 @@ from ._config import (
     is_init_failed,
     get_init_error,
     reset_init_state,
-    _PRE_IMPORT_HOOKS,
-    _POST_IMPORT_HOOKS,
-    _IMPORT_STATS,
-    _CACHE_STATS,
 )
 
 # Import cache functionality
@@ -153,6 +148,18 @@ from ._analysis import (
     benchmark,
     benchmark_imports,
     print_benchmark_report,
+)
+
+# ═══════════════════════════════════════════════════════════════
+#  Import hooks module (module-level convenience API)
+# ═══════════════════════════════════════════════════════════════
+
+from ._hooks import (
+    add_pre_import_hook,
+    add_post_import_hook,
+    remove_pre_import_hook,
+    remove_post_import_hook,
+    clear_import_hooks,
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -299,197 +306,8 @@ from ._deprecated import (  # noqa: F401, F403
     benchmark,
     benchmark_imports,
     print_benchmark_report,
-    add_pre_import_hook,
-    add_post_import_hook,
-    remove_pre_import_hook,
-    remove_post_import_hook,
-    clear_import_hooks,
     help,
 )
-
-
-# ============== Hook API ==============
-
-
-def add_pre_import_hook(hook) -> None:
-    """Add a hook to be called before a module is imported.
-
-    Pre-import hooks are called with the module name as the argument
-    before the actual import takes place. This allows intercepting or
-    modifying import behavior.
-
-    Args:
-        hook: A callable that accepts a single string argument (module name).
-              The hook should not return anything; its purpose is to perform
-              side effects such as logging, modification, or validation.
-
-    Example:
-        >>> def my_hook(module_name):
-        ...     print(f"About to import: {module_name}")
-        >>> add_pre_import_hook(my_hook)
-    """
-    _PRE_IMPORT_HOOKS.append(hook)
-
-
-def add_post_import_hook(hook) -> None:
-    """Add a hook to be called after a module is imported.
-
-    Post-import hooks are called with the module name and the imported
-    module object as arguments after the import completes successfully.
-
-    Args:
-        hook: A callable that accepts two arguments:
-              - module_name (str): The name of the imported module.
-              - module_obj: The actual imported module object.
-              The hook should not return anything.
-
-    Example:
-        >>> def my_hook(module_name, module_obj):
-        ...     print(f"Imported {module_name}: {type(module_obj)}")
-        >>> add_post_import_hook(my_hook)
-    """
-    _POST_IMPORT_HOOKS.append(hook)
-
-
-def remove_pre_import_hook(hook) -> bool:
-    """Remove a previously registered pre-import hook.
-
-    Args:
-        hook: The callable previously registered with add_pre_import_hook().
-
-    Returns:
-        True if the hook was found and removed, False otherwise.
-    """
-    if hook in _PRE_IMPORT_HOOKS:
-        _PRE_IMPORT_HOOKS.remove(hook)
-        return True
-    return False
-
-
-def remove_post_import_hook(hook) -> bool:
-    """Remove a previously registered post-import hook.
-
-    Args:
-        hook: The callable previously registered with add_post_import_hook().
-
-    Returns:
-        True if the hook was found and removed, False otherwise.
-    """
-    if hook in _POST_IMPORT_HOOKS:
-        _POST_IMPORT_HOOKS.remove(hook)
-        return True
-    return False
-
-
-def clear_import_hooks() -> None:
-    """Remove all registered pre-import and post-import hooks.
-
-    This resets the hook system to its initial state. Use this if you want
-    to remove all hooks without tracking individual hook references.
-    """
-    _PRE_IMPORT_HOOKS.clear()
-    _POST_IMPORT_HOOKS.clear()
-
-
-# ============== Analysis Convenience Functions ==============
-
-_analyzer: Optional[DependencyPreAnalyzer] = None
-
-
-def _get_analyzer() -> DependencyPreAnalyzer:
-    """Get or create the global analyzer instance."""
-    global _analyzer
-    if _analyzer is None:
-        _analyzer = DependencyPreAnalyzer()
-    return _analyzer
-
-
-def analyze_file(file_path: str) -> PreAnalysisResult:
-    """Analyze a Python file to predict required imports."""
-    return _get_analyzer().analyze_file(file_path)
-
-
-def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResult:
-    """Analyze source code to predict required imports."""
-    return _get_analyzer().analyze_source(source, file_path)
-
-
-def analyze_directory(
-    dir_path: str, recursive: bool = True, exclude: Optional[set] = None
-) -> List[PreAnalysisResult]:
-    """Analyze all Python files in a directory."""
-    return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
-
-
-# ============== Lazy Loading Helpers ==============
-
-_SYMBOL_FUNCTIONS: Dict[str, Any] = {}
-
-
-def _ensure_symbol_functions_loaded() -> None:
-    """Ensure symbol-related functions are loaded (lazy loading)."""
-    global _SYMBOL_FUNCTIONS
-
-    if _SYMBOL_FUNCTIONS:
-        return
-
-    from ._symbol import (
-        search_symbol,
-        enable_symbol_search,
-        disable_symbol_search,
-        is_symbol_search_enabled,
-        rebuild_symbol_index,
-        get_symbol_search_config,
-        get_symbol_cache_info,
-        _search_symbol_enhanced,
-        _handle_symbol_not_found,
-        set_symbol_preference,
-        get_symbol_preference,
-        clear_symbol_preference,
-        list_symbol_conflicts,
-        set_module_priority,
-        get_module_priority,
-        enable_auto_symbol_resolution,
-        disable_auto_symbol_resolution,
-        get_symbol_resolution_config,
-        get_loaded_modules_context,
-        build_symbol_index_incremental,
-        search_with_sharding,
-        enable_sharding,
-        disable_sharding,
-        get_sharding_config,
-        clear_shard_cache,
-    )
-
-    _SYMBOL_FUNCTIONS.update(
-        {
-            "search_symbol": search_symbol,
-            "enable_symbol_search": enable_symbol_search,
-            "disable_symbol_search": disable_symbol_search,
-            "is_symbol_search_enabled": is_symbol_search_enabled,
-            "rebuild_symbol_index": rebuild_symbol_index,
-            "get_symbol_search_config": get_symbol_search_config,
-            "get_symbol_cache_info": get_symbol_cache_info,
-            "_search_symbol_enhanced": _search_symbol_enhanced,
-            "_handle_symbol_not_found": _handle_symbol_not_found,
-            "set_symbol_preference": set_symbol_preference,
-            "get_symbol_preference": get_symbol_preference,
-            "clear_symbol_preference": clear_symbol_preference,
-            "list_symbol_conflicts": list_symbol_conflicts,
-            "set_module_priority": set_module_priority,
-            "get_module_priority": get_module_priority,
-            "enable_auto_symbol_resolution": enable_auto_symbol_resolution,
-            "disable_auto_symbol_resolution": disable_auto_symbol_resolution,
-            "get_symbol_resolution_config": get_symbol_resolution_config,
-            "get_loaded_modules_context": get_loaded_modules_context,
-            "build_symbol_index_incremental": build_symbol_index_incremental,
-            "search_with_sharding": search_with_sharding,
-            "enable_sharding": enable_sharding,
-            "disable_sharding": disable_sharding,
-            "get_sharding_config": get_sharding_config,
-            "clear_shard_cache": clear_shard_cache,
-        }
-    )
 
 
 # ============== Module-level __getattr__ ==============
@@ -516,139 +334,54 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
     if name in _RESERVED_NAMES:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
-    # Check negative cache (names already known not to exist)
     if name in _NEGATIVE_CACHE:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
-    # 1. Check for lazy-loaded functions (deferred: only when needed)
-    global _SYMBOL_FUNCTIONS
-    if name in (
-        "search_symbol",
-        "enable_symbol_search",
-        "disable_symbol_search",
-        "is_symbol_search_enabled",
-        "rebuild_symbol_index",
-        "get_symbol_search_config",
-        "get_symbol_cache_info",
-        "clear_symbol_cache",
-        "set_symbol_preference",
-        "get_symbol_preference",
-        "clear_symbol_preference",
-        "list_symbol_conflicts",
-        "set_module_priority",
-        "get_module_priority",
-        "enable_auto_symbol_resolution",
-        "disable_auto_symbol_resolution",
-        "get_symbol_resolution_config",
-        "get_loaded_modules_context",
-        "build_symbol_index_incremental",
-        "search_with_sharding",
-        "enable_sharding",
-        "disable_sharding",
-        "get_sharding_config",
-        "clear_shard_cache",
-    ):
-        _ensure_symbol_functions_loaded()
-        return _SYMBOL_FUNCTIONS[name]
+    # 1. Check lazy function registry (symbol, which, help, config, etc.)
+    from ._lazy_registry import has as _registry_has, resolve as _registry_resolve
 
-    # 2. Check for which / which_all functions
-    if name in ("which", "which_all"):
-        from ._which import which, which_all
+    if _registry_has(name):
+        return _registry_resolve(name)
 
-        _SYMBOL_FUNCTIONS["which"] = which
-        _SYMBOL_FUNCTIONS["which_all"] = which_all
-        return which if name == "which" else which_all
-
-    # 3. Check for help function
-    if name == "help":
-        from ._help import help as help_func
-
-        _SYMBOL_FUNCTIONS["help"] = help_func
-        return help_func
-
-    # 4. Check for background index functions
-    if name in (
-        "start_background_index_build",
-        "is_index_building",
-        "wait_for_index",
-        "set_background_timeout",
-        "get_background_timeout",
-    ):
-        import importlib
-
-        _lazy_index_mod = importlib.import_module("laziest_import._lazy_index")
-        _SYMBOL_FUNCTIONS[name] = getattr(_lazy_index_mod, name)
-        return _SYMBOL_FUNCTIONS[name]
-
-    # 5. Check for RC config functions
-    if name in (
-        "load_rc_config",
-        "get_rc_value",
-        "create_rc_file",
-        "get_rc_info",
-        "reload_rc_config",
-    ):
-        import importlib
-
-        _rcconfig_mod = importlib.import_module("laziest_import._rcconfig")
-        _SYMBOL_FUNCTIONS[name] = getattr(_rcconfig_mod, name)
-        return _SYMBOL_FUNCTIONS[name]
-
-    # 6. Check for introspect functions
-    if name in ("list_module_symbols", "get_module_info", "search_in_module"):
-        import importlib
-
-        _introspect_mod = importlib.import_module("laziest_import._introspect")
-        _SYMBOL_FUNCTIONS[name] = getattr(_introspect_mod, name)
-        return _SYMBOL_FUNCTIONS[name]
-
-    # Check if already loaded in SYMBOL_FUNCTIONS (from a previous call to a related function)
-    if _SYMBOL_FUNCTIONS and name in _SYMBOL_FUNCTIONS:
-        return _SYMBOL_FUNCTIONS[name]
-
-    # 7. Check alias map
+    # 2. Check alias map
     if name in _ALIAS_MAP:
         return _get_lazy_module(name)
 
-    # 8. Try module auto-search
+    # 3. Try module auto-search
     if _AUTO_SEARCH_ENABLED:
         found = _search_module(name)
         if found:
             _ALIAS_MAP[name] = found
             return _get_lazy_module(name)
 
-    # 9. Try symbol auto-resolution
+    # 4. Try symbol auto-resolution
     if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
-        _ensure_symbol_functions_loaded()
+        from ._symbol import _search_symbol_enhanced
 
-        _search_enhanced = _SYMBOL_FUNCTIONS.get("_search_symbol_enhanced")
-        if _search_enhanced is not None:
-            symbol_match = _search_enhanced(name, auto=True)
-            if symbol_match:
-                _SYMBOL_PREFERENCES[name] = symbol_match.module_name
+        symbol_match = _search_symbol_enhanced(name, auto=True)
+        if symbol_match:
+            _SYMBOL_PREFERENCES[name] = symbol_match.module_name
 
-                if _DEBUG_MODE:
-                    import logging
-
-                    logging.info(
-                        f"[laziest-import] Auto-resolved symbol '{name}' -> "
-                        f"{symbol_match.module_name}.{symbol_match.symbol_name}"
-                    )
-
-                return LazySymbol(
-                    symbol_name=symbol_match.symbol_name,
-                    module_name=symbol_match.module_name,
-                    symbol_type=symbol_match.symbol_type,
+            if _DEBUG_MODE:
+                import logging
+                logging.info(
+                    f"[laziest-import] Auto-resolved symbol '{name}' -> "
+                    f"{symbol_match.module_name}.{symbol_match.symbol_name}"
                 )
 
-    # 10. Fall back to interactive symbol search
+            return LazySymbol(
+                symbol_name=symbol_match.symbol_name,
+                module_name=symbol_match.module_name,
+                symbol_type=symbol_match.symbol_type,
+            )
+
+    # 5. Fall back to interactive symbol search
     if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
-        _ensure_symbol_functions_loaded()
-        _handle_not_found = _SYMBOL_FUNCTIONS.get("_handle_symbol_not_found")
-        if _handle_not_found is not None:
-            found_module = _handle_not_found(name)
-            if found_module:
-                return _get_lazy_module(name)
+        from ._symbol import _handle_symbol_not_found
+
+        found_module = _handle_symbol_not_found(name)
+        if found_module:
+            return _get_lazy_module(name)
 
     # Add to negative cache so we don't search again
     with _NEGATIVE_CACHE_LOCK:
@@ -906,6 +639,49 @@ def _do_initialize() -> None:
             from ._cache import _init_file_cache
 
             _init_file_cache()
+
+            # Register lazy-loaded functions
+            from ._lazy_registry import register as _register_lazy
+
+            _symbol_funcs = [
+                "search_symbol", "enable_symbol_search", "disable_symbol_search",
+                "is_symbol_search_enabled", "rebuild_symbol_index",
+                "get_symbol_search_config", "get_symbol_cache_info",
+                "set_symbol_preference", "get_symbol_preference",
+                "clear_symbol_preference", "list_symbol_conflicts",
+                "set_module_priority", "get_module_priority",
+                "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
+                "get_symbol_resolution_config", "get_loaded_modules_context",
+                "build_symbol_index_incremental", "search_with_sharding",
+                "enable_sharding", "disable_sharding", "get_sharding_config",
+                "clear_shard_cache",
+            ]
+            for _fn in _symbol_funcs:
+                _register_lazy(_fn, "laziest_import._symbol")
+
+            _register_lazy("which", "laziest_import._which")
+            _register_lazy("which_all", "laziest_import._which")
+            _register_lazy("help", "laziest_import._help")
+
+            _bg_funcs = [
+                "start_background_index_build", "is_index_building",
+                "wait_for_index", "set_background_timeout", "get_background_timeout",
+            ]
+            for _fn in _bg_funcs:
+                _register_lazy(_fn, "laziest_import._lazy_index")
+
+            _rc_funcs = [
+                "load_rc_config", "get_rc_value", "create_rc_file",
+                "get_rc_info", "reload_rc_config",
+            ]
+            for _fn in _rc_funcs:
+                _register_lazy(_fn, "laziest_import._rcconfig")
+
+            _intro_funcs = [
+                "list_module_symbols", "get_module_info", "search_in_module",
+            ]
+            for _fn in _intro_funcs:
+                _register_lazy(_fn, "laziest_import._introspect")
 
             _config_module._INITIALIZED = True
             __all__ = sorted(set(_BASE_EXPORTS) | set(_ALIAS_MAP.keys()))
