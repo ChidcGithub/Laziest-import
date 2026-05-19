@@ -267,6 +267,7 @@ _SYMBOL_RESOLUTION_CONFIG: Dict[str, Any] = {
     "auto_symbol": True, "auto_threshold": 0.7, "conflict_threshold": 0.3,
     "symbol_misspelling": True, "context_aware": True,
     "warn_on_conflict": True, "save_preferences": True,
+    "strict": False,
 }
 
 # Cache config

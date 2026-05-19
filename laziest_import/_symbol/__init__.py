@@ -41,6 +41,21 @@ import importlib.util
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
+
+class AmbiguousSymbolError(ImportError):
+    """Raised when a symbol is found in multiple modules and strict mode is enabled."""
+    def __init__(self, symbol: str, candidates: List["SymbolMatch"]):
+        self.symbol = symbol
+        self.candidates = candidates
+        details = "; ".join(
+            f"{m.module_name}.{m.symbol_name} ({m.confidence:.0%})" for m in candidates[:5]
+        )
+        super().__init__(
+            f"Symbol '{symbol}' is ambiguous: found in multiple modules: {details}. "
+            f"Set a preference via lz.symbol.prefer('{symbol}', 'desired_module') "
+            f"or disable strict mode via lz.symbol.config.strict = False."
+        )
+
 from .. import _config
 from .._config import SearchResult, SymbolMatch
 from .._fuzzy import (
@@ -698,15 +713,21 @@ def _search_symbol_enhanced(
 
     threshold = _config._SYMBOL_RESOLUTION_CONFIG["auto_threshold"]
     conflict_threshold = _config._SYMBOL_RESOLUTION_CONFIG["conflict_threshold"]
+    strict = _config._SYMBOL_RESOLUTION_CONFIG.get("strict", False)
 
     if best.confidence >= threshold:
         if second and (best.confidence - second.confidence) < conflict_threshold:
+            if strict:
+                raise AmbiguousSymbolError(original_name, scored_results[:3])
             if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
                 _warn_symbol_conflict(original_name, scored_results[:3])
             if best.source in ("user_pref", "context"):
                 return best
             return None
         return best
+
+    if strict:
+        raise AmbiguousSymbolError(original_name, scored_results[:3])
 
     if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
         _warn_symbol_conflict(original_name, scored_results[:3])

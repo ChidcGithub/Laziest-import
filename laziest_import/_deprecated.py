@@ -49,21 +49,21 @@ def _get_lz() -> "LazyImport":
 def list_loaded() -> List[str]:
     """Deprecated -> lz().module.list_loaded()"""
     _warn("list_loaded", "lz().module.list_loaded()")
-    from ._public_api import list_loaded as _list_loaded
+    from ._api._module import list_loaded as _list_loaded
     return _list_loaded()
 
 
 def list_available() -> List[str]:
     """Deprecated -> lz().module.list_available()"""
     _warn("list_available", "lz().module.list_available()")
-    from ._public_api import list_available as _list_available
+    from ._api._module import list_available as _list_available
     return _list_available()
 
 
 def get_module(alias: str) -> Optional[Any]:
     """Deprecated -> lz().module.get(alias) or lz().alias[alias]"""
     _warn("get_module", "lz().module.get(alias)")
-    from ._public_api import get_module as _get_module
+    from ._api._module import get_module as _get_module
     return _get_module(alias)
 
 
@@ -85,14 +85,14 @@ def reset_all() -> None:
 def get_version(alias: str) -> Optional[str]:
     """Deprecated -> lz().version.of(alias)"""
     _warn("get_version", "lz().version.of(alias)")
-    from ._public_api import get_version as _get_version
+    from ._api._version import get_version as _get_version
     return _get_version(alias)
 
 
 def reload_module(alias: str) -> bool:
     """Deprecated -> lz().module.reload(alias)"""
     _warn("reload_module", "lz().module.reload(alias)")
-    from ._public_api import reload_module as _reload_module
+    from ._api._module import reload_module as _reload_module
     return _reload_module(alias)
 
 
@@ -119,14 +119,14 @@ def is_auto_search_enabled() -> bool:
 def search_module(name: str) -> Optional[str]:
     """Deprecated -> lz().symbol.search(name)"""
     _warn("search_module", "lz().symbol.search(name)")
-    from ._public_api import search_module as _search_module
-    return _search_module(name)
+    from ._fuzzy import _search_module as _search_module_impl
+    return _search_module_impl(name)
 
 
 def search_class(class_name: str) -> Optional[tuple]:
     """Deprecated -> lz().symbol.search(name, symbol_type='class')"""
     _warn("search_class", "lz().symbol.search(name, symbol_type='class')")
-    from ._public_api import search_class as _search_class
+    from ._fuzzy import _search_class_in_modules as _search_class
     return _search_class(class_name)
 
 
@@ -155,14 +155,14 @@ def is_debug_mode() -> bool:
 def get_import_stats() -> Dict[str, Any]:
     """Deprecated -> lz.config.import_stats"""
     _warn("get_import_stats", "lz.config.import_stats")
-    from ._public_api import get_import_stats as _get_import_stats
+    from ._api._config import get_import_stats as _get_import_stats
     return _get_import_stats()
 
 
 def reset_import_stats() -> None:
     """Deprecated -> (no direct equivalent, pending)"""
     _warn("reset_import_stats", "no direct equivalent in new API yet")
-    from ._public_api import reset_import_stats as _reset_import_stats
+    from ._api._config import reset_import_stats as _reset_import_stats
     _reset_import_stats()
 
 
@@ -713,7 +713,7 @@ def validate_aliases_importable(
 ) -> Dict[str, Dict[str, Any]]:
     """Deprecated -> lz().alias.validate(aliases)"""
     _warn("validate_aliases_importable", "lz().alias.validate()")
-    from ._public_api import validate_aliases_importable as _validate
+    from ._alias import validate_aliases_importable as _validate
     return _validate(aliases)
 
 

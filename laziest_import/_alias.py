@@ -4,6 +4,7 @@ Alias management for laziest-import.
 
 from typing import Dict, List, Optional, Set, Any, Tuple
 from pathlib import Path
+import importlib
 import sys
 import json
 import time
@@ -551,3 +552,29 @@ def unregister_alias(alias: str) -> bool:
             del _LAZY_MODULES[alias]
         return True
     return False
+
+
+def validate_aliases_importable(
+    aliases: Optional[Dict[str, str]] = None,
+) -> Dict[str, Dict[str, Any]]:
+    """Validate that aliases can actually be imported."""
+    if aliases is None:
+        aliases = _ALIAS_MAP
+
+    importable = {}
+    not_importable = {}
+
+    for alias, module_name in aliases.items():
+        try:
+            spec = importlib.util.find_spec(module_name)
+            if spec is not None:
+                importable[alias] = {"module": module_name, "status": "ok"}
+            else:
+                not_importable[alias] = {
+                    "module": module_name,
+                    "error": "Module not found",
+                }
+        except (ImportError, ModuleNotFoundError, ValueError) as e:
+            not_importable[alias] = {"module": module_name, "error": str(e)}
+
+    return {"importable": importable, "not_importable": not_importable}

@@ -1,0 +1,44 @@
+from typing import Any, Dict, List, Optional
+from pathlib import Path
+
+from .._rcconfig import (
+    load_rc_config,
+    get_rc_value,
+    create_rc_file,
+    get_rc_info,
+    reload_rc_config,
+    save_rc_config,
+    find_rc_file,
+    _LAZIESTRC_PATHS,
+)
+
+
+class RCConfigNamespace:
+    def load(self, force_reload: bool = False) -> Dict[str, Any]:
+        return load_rc_config(force_reload)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return get_rc_value(key, default)
+
+    def create(self, path: Optional[str] = None, template: bool = True) -> Path:
+        return create_rc_file(path, template)
+
+    def save(self, config: Dict[str, Any], path: Optional[str] = None) -> Path:
+        return save_rc_config(config, path)
+
+    def paths(self) -> List[str]:
+        return [str(p) for p in _LAZIESTRC_PATHS]
+
+    @property
+    def paths_list(self) -> List[str]:
+        return self.paths()
+
+    def reload(self) -> Dict[str, Any]:
+        return reload_rc_config()
+
+    def info(self) -> Dict[str, Any]:
+        return get_rc_info()
+
+    def __repr__(self) -> str:
+        active = find_rc_file()
+        return f"<RCConfigNamespace: active={active}>"

@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-933%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-959%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -70,10 +70,12 @@
 | Background Index | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | Symbol index builds in background thread |
 | Auto-Correction | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | Typo correction (`nump` → `numpy`) |
 | Symbol Search | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | Search symbols across all modules |
+| Strict Mode | ![](https://img.shields.io/badge/feature-strict_mode-red.svg) | AmbiguousSymbolError on symbol conflicts |
 | Multi-Level Cache | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | Three-tier caching for speed |
 | Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
 | Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
-| 933+ Tests | ![](https://img.shields.io/badge/tests-933%2B-brightgreen.svg) | Comprehensive test coverage |
+| CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` commands |
+| 959+ Tests | ![](https://img.shields.io/badge/tests-959%2B-brightgreen.svg) | Comprehensive test coverage |
 | 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
 ---
@@ -114,10 +116,10 @@ result = math.sqrt(16) # math
 svd_result = np.linalg.svd(matrix) # numpy.linalg.svd()
 ```
 
-### Method 2: Namespace Prefix
+### Method 2: Namespace Prefix (Recommended)
 
 ```python
-import laziest_import as lz
+from laziest_import import lz
 
 arr = lz.np.array([1, 2, 3])
 df = lz.pd.DataFrame({'a': [1, 2]})
@@ -144,7 +146,7 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 | Feature | Description |
 |---------|-------------|
-| **Modular architecture** | Clean 10-module codebase for maintainability |
+| **Modular architecture** | Clean 13-module `_api/` package for maintainability |
 | **Lazy loading** | Modules import only on first access, reducing startup overhead |
 | **Lazy function loading** | Symbol functions loaded on-demand for faster startup |
 | **Background index build** | Symbol index builds in background thread |
@@ -154,6 +156,8 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 | **Typo correction** | Misspelling auto-correction (`nump` → `numpy`, `matplotlip` → `matplotlib`) |
 | **Abbreviation expansion** | 300+ abbreviations (`nn` → `torch.nn`, `F` → `torch.nn.functional`) |
 | **Fuzzy matching** | Typo correction via Levenshtein distance algorithm |
+| **Strict mode** | Raise `AmbiguousSymbolError` on symbol conflicts |
+| **CLI interface** | `laziest-import freeze` and `laziest-import init` |
 | **Symbol location** | `lz.which()` finds where symbols are defined |
 | **Auto-install** | Optional: missing modules can be pip-installed automatically |
 | **Multi-level cache** | Three-tier caching (stdlib/third-party/memory) for fast lookups |
@@ -169,9 +173,19 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 | **Conflict visualization** | Find and display symbol conflicts across modules |
 | **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **820+ tests** | Comprehensive test coverage |
+| **959+ tests** | Comprehensive test coverage |
 
-## What's New in v0.1.0
+## What's New
+
+### v0.1.0-pre9 (Current)
+
+- **Strict Mode**: `lz.symbol.config.strict = True` — raises `AmbiguousSymbolError` when a symbol name matches multiple modules; use `lz.symbol.prefer()` to resolve
+- **CLI Interface**: `laziest-import freeze` scans source files to generate `imports.laziest.json`; `laziest-import init` creates `.laziestrc`
+- **Phase 1 API Merge**: 2196-line `_api.py` refactored into 13 files under `_api/` package; `_public_api.py` deleted
+- **Shorthand Alias Tests**: 28 tests covering stdlib aliases, third-party aliases, bare-name lazy loading, and edge cases
+- **959+ tests**: Comprehensive test coverage
+
+### v0.1.0
 
 - **New Object-Oriented API**: `LazyImport` class with sub-namespaces (`lz.module`, `lz.config`, `lz.symbol`, etc.)
 - **Backward Compatible**: All old functions still work with `FutureWarning` deprecation notices
@@ -181,16 +195,14 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 - **Module-level Singleton**: `from laziest_import import lz` — access everything via `lz.*`
 - **See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** for full old→new API mapping
 
-## What's New in v0.1.0-pre2
+### v0.1.0-pre2
 
 - **Major Refactor**: Restructured architecture for maintainability
 - **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
 - **820+ tests**: Comprehensive test coverage across 17+ test files
 
-## What's New
-
-### v0.0.5-pre8 (Latest)
+### v0.0.5-pre8
 
 - **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
 - **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
@@ -270,6 +282,34 @@ print(f"Max: {result.max_time*1000:.4f}ms")
 report = lz.benchmark_imports(['numpy', 'pandas', 'matplotlib'])
 lz.print_benchmark_report(report)
 ```
+
+### Strict Mode (Symbol Conflict Detection)
+
+```python
+from laziest_import import lz
+
+# Enable strict mode
+lz.symbol.config.strict = True
+
+# Multiple modules define `sqrt` — raises AmbiguousSymbolError
+# result = lz.sqrt  # Error: sqrt found in numpy, math, scipy, ...
+
+# Use prefer() to resolve ambiguity
+lz.symbol.prefer("sqrt", "numpy")
+result = lz.sqrt(16)  # Now resolves to numpy.sqrt
+```
+
+### CLI: Freeze & Init
+
+```bash
+# Scan project and freeze alias usage
+laziest-import freeze
+
+# Generate .laziestrc config file
+laziest-import init
+```
+
+The `freeze` command produces `imports.laziest.json` — a manifest of all lazy imports used across your project, ideal for CI validation.
 
 ### Auto-Install (Optional)
 

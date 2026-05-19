@@ -221,6 +221,9 @@ def _get_default_config_template() -> Dict[str, Any]:
             "max_results": 5,
             "interactive": False,
         },
+        "symbol_resolution": {
+            "strict": False,
+        },
         "auto_install": {
             "enabled": False,
             "interactive": True,

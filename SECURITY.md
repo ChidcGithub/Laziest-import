@@ -4,12 +4,12 @@
 
 We are committed to maintaining the security of laziest-import. Currently, we support the following versions:
 
-| Version | Supported          |
-| ------- | ------------------ |
+| Version | Supported         |
+| ------- | ----------------- |
 | 0.0.5-pre8 | ✅ |
 | 0.0.5-pre7 | ✅ |
 | 0.0.4 | ✅ |
-| 0.0.3 | ✅ |
+| 0.0.3 | ❌ |
 | < 0.0.3 | ❌ |
 
 ## Reporting a Vulnerability

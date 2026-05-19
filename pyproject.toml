@@ -35,6 +35,9 @@ dev = [
     "pytest-asyncio>=0.21",
 ]
 
+[project.scripts]
+laziest-import = "laziest_import.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/ChidcGithub/Laziest-import"
 Repository = "https://github.com/ChidcGithub/Laziest-import.git"
