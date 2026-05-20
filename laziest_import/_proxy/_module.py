@@ -181,7 +181,7 @@ class LazyModule:
             except ImportError as e:
                 auto_searched = object.__getattribute__(self, "_auto_searched")
                 if c._AUTO_SEARCH_ENABLED and not auto_searched:
-                    found_name = _search_module(alias)
+                    found_name = _search_module(module_name.split(".")[0])
                     if found_name and found_name != module_name:
                         try:
                             start_time = time.perf_counter()

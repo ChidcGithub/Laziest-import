@@ -177,7 +177,19 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ## What's New
 
-### v0.1.0-pre12 (Current)
+### v0.1.0-rc1 (Current)
+
+- **Phase 4 — Alias System Upgrade**: Data unification, JSON format upgrade, smart suggestions, filtered search, smart error hints, context-aware fuzzy matching, and conflict resolution
+- **Data Unification**: 108 aliases merged from `mappings/abbreviations.json` into `aliases/*.json`; `abbreviations.json` and `submodules.json` removed
+- **JSON Format Upgrade**: `_meta` metadata (category, description) added to all 27 alias letter files
+- **AliasNamespace API**: `lz.alias.list(category=)`, `lz.alias.search(pattern, by_module=)`, `lz.alias.suggest(package=/installed=/pattern=)`
+- **Smart Error Hints**: Typo detection with Levenshtein distance — `lz.nummpy` suggests `Did you mean numpy?`
+- **Context-Aware Fuzzy Matching**: Loaded modules get priority bonus during auto-search
+- **Conflict Detection**: `register_alias()` warns on alias overwrite
+- **Bug Fixes**: Fixed `__repr__` NameError crash (critical); fixed alias search fallback importing wrong module (critical); fixed opencv/cv2 infinite cycle; fixed sage/sagemath pointing to non-existent module; fixed 4 circular alias chains; fixed 80+ hyphenated alias values (used PyPI names instead of importable module names); fixed 70+ hyphenated alias keys (unreachable via Python syntax); fixed indentation bug hiding symbol-not-found fallback; removed 48 lines of dead code; fixed `_suggest_for_package()` duplicate return bug
+- **985+ tests**: Comprehensive test coverage
+
+### v0.1.0-pre12
 
 - **Phase 3 — API Semantic Simplification**: Flattened cache namespace — `lz.cache.clear_symbols()`, `lz.cache.file_info()`, `lz.cache.symbol_count` replace 3-level paths; `lz.cache.stats` now returns a plain dict
 - **Config Dataclass Caching**: Dataclass instances (`lz.config.symbol_search`, `lz.config.cache`, etc.) are now cached after first access with bidirectional sync to internal state
@@ -662,5 +674,5 @@ Thank you!
 ---
 
 <div align="center">
- <b>Made by Chidc and contributors</b>
+ <b>Made by Chidc and contributors with LOVE</b>
 </div>

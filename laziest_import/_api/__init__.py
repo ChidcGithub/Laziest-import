@@ -8,12 +8,12 @@ Usage:
     lz.config.debug = True
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .. import _config as _config_module
 from .._alias import _ALIAS_MAP
 from .._proxy import _get_lazy_module
-from .._fuzzy import _search_module
+from .._fuzzy import _search_module, _levenshtein_distance
 from .._symbol import _search_symbol_enhanced, _handle_symbol_not_found
 from .._cache import get_package_version
 
@@ -219,15 +219,39 @@ class LazyImport:
                     symbol_type=match.symbol_type,
                 )
 
-            if _config_module._SYMBOL_SEARCH_CONFIG["enabled"]:
-                found_module = _handle_symbol_not_found(name)
-                if found_module:
-                    return _get_lazy_module(name)
+        if _config_module._SYMBOL_SEARCH_CONFIG["enabled"]:
+            found_module = _handle_symbol_not_found(name)
+            if found_module:
+                return _get_lazy_module(name)
 
-        raise AttributeError(
-            f"'{type(self).__name__}' object has no attribute '{name}'. "
-            f"Try lz.module.{name} or lz.symbol.search('{name}')"
-        )
+        # Smart error hint with nearest alias
+        msg = f"'{type(self).__name__}' object has no attribute '{name}'."
+        name_lower = name.lower()
+        best_match: Optional[Tuple[str, str, int]] = None
+        for alias, module in _ALIAS_MAP.items():
+            alias_lower = alias.lower()
+            module_lower = module.split(".")[0].lower()
+            if alias_lower == name_lower or module_lower == name_lower:
+                best_match = (alias, module, 0)
+                break
+            dist_a = _levenshtein_distance(name_lower, alias_lower)
+            dist_m = _levenshtein_distance(name_lower, module_lower)
+            min_dist = min(dist_a, dist_m)
+            if min_dist == 0:
+                best_match = (alias, module, 0)
+                break
+            threshold = max(1, len(name_lower) // 3)
+            if min_dist <= threshold:
+                if best_match is None or min_dist < best_match[2]:
+                    best_match = (alias, module, min_dist)
+
+        if best_match and best_match[2] == 0:
+            msg += f" Did you mean `{best_match[1]}`? (alias: `{best_match[0]}`)"
+        elif best_match:
+            msg += f" Did you mean `{best_match[0]}` (-> {best_match[1]})?"
+        else:
+            msg += f" Try lz.module.{name} or lz.symbol.search('{name}')"
+        raise AttributeError(msg)
 
     def __dir__(self) -> List[str]:
         base = [
@@ -246,7 +270,7 @@ class LazyImport:
     def __repr__(self) -> str:
         return (
             f"<LazyImport: v{_config_module.__version__}, "
-            f"{len(_list_loaded())} loaded, "
+            f"{len(list_loaded())} loaded, "
             f"{len(_ALIAS_MAP)} aliases>"
         )
 

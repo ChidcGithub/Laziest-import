@@ -1,17 +1,22 @@
 {
-    "qcloud": "tencentcloud",
-    "qdrant": "qdrant",
-    "qt": "PyQt6",
-    "quart": "quart",
-    "questionary": "questionary",
-    "queue": "queue",
-    "quopri": "quopri",
-    "qdarkstyle": "qdarkstyle",
-    "qrcode": "qrcode",
-    "qtawesome": "qtawesome",
-    "qtconsole": "qtconsole",
-    "qtpy": "qtpy",
-    "quantecon": "quantecon",
-    "queuelib": "queuelib",
-    "quickjs": "quickjs"
+  "_meta": {
+    "category": "gui",
+    "description": "Graphical user interface libraries"
+  },
+  "qcloud": "tencentcloud",
+  "qdrant": "qdrant",
+  "qt": "PyQt6",
+  "quart": "quart",
+  "questionary": "questionary",
+  "queue": "queue",
+  "quopri": "quopri",
+  "qdarkstyle": "qdarkstyle",
+  "qrcode": "qrcode",
+  "qtawesome": "qtawesome",
+  "qtconsole": "qtconsole",
+  "qtpy": "qtpy",
+  "quantecon": "quantecon",
+  "queuelib": "queuelib",
+  "quickjs": "quickjs",
+  "quantlib": "QuantLib"
 }

@@ -25,6 +25,10 @@ from ._config import (
 )
 
 
+# Global alias metadata: alias -> {category, description}
+_ALIAS_META: Dict[str, Dict[str, str]] = {}
+
+
 def _get_alias_dir() -> Path:
     """Get the package aliases directory."""
     return Path(__file__).parent / "aliases"
@@ -87,13 +91,18 @@ def _get_config_dirs() -> List[Path]:
     return dirs
 
 
-def _load_aliases_from_letter_file(dir_path: Path, letter: str) -> Dict[str, str]:
+def _load_aliases_from_letter_file(
+    dir_path: Path, letter: str, collect_meta: bool = False,
+) -> Dict[str, str]:
     """
     Load aliases from a specific letter file (e.g., A.json, B.json).
+    
+    Supports _meta key at the top level for category/description metadata.
     
     Args:
         dir_path: Path to the aliases directory
         letter: The letter (A-Z) or '_' for non-alphabetic aliases
+        collect_meta: If True, populate _ALIAS_META from _meta entries
         
     Returns:
         Dictionary of alias -> module_name mappings
@@ -113,9 +122,17 @@ def _load_aliases_from_letter_file(dir_path: Path, letter: str) -> Dict[str, str
             data = json.load(f)
         
         if isinstance(data, dict):
+            file_meta: Optional[Dict[str, str]] = None
             for key, value in data.items():
-                if isinstance(value, str):
+                if key == '_meta' and isinstance(value, dict):
+                    file_meta = value
+                elif isinstance(value, str):
                     aliases[key] = value
+            
+            if collect_meta and file_meta:
+                for alias in aliases:
+                    if alias not in _ALIAS_META:
+                        _ALIAS_META[alias] = dict(file_meta)
     except (json.JSONDecodeError, OSError) as e:
         if _DEBUG_MODE:
             logging.warning(f"Failed to load aliases from {file_path}: {e}")
@@ -190,7 +207,7 @@ def _load_aliases_from_dir(dir_path: Path, check_duplicates: bool = True) -> Dic
         return aliases
     
     for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_':
-        letter_aliases = _load_aliases_from_letter_file(dir_path, letter)
+        letter_aliases = _load_aliases_from_letter_file(dir_path, letter, collect_meta=True)
         if letter_aliases:
             for alias, module in letter_aliases.items():
                 if alias in aliases and aliases[alias] != module:
@@ -427,38 +444,68 @@ def get_config_dirs() -> List[str]:
     return [str(p) for p in _get_config_dirs()]
 
 
+def get_alias_category(alias: str) -> Optional[str]:
+    """Get the category for an alias, if available."""
+    meta = _ALIAS_META.get(alias)
+    if meta is not None:
+        return meta.get("category")
+    return None
+
+
+def get_alias_meta(alias: str) -> Dict[str, str]:
+    """Get all metadata for an alias, or empty dict if none."""
+    return _ALIAS_META.get(alias, {})
+
+
 def reload_aliases() -> None:
     """Reload aliases from all configuration sources."""
-    global _ALIAS_MAP, _ALIASES_VERSION_CHECKED
+    global _ALIAS_MAP, _ALIAS_META, _ALIASES_VERSION_CHECKED
     
     # Reset version check flag so it will be re-checked on reload
     _ALIASES_VERSION_CHECKED = False
     
     _ALIAS_MAP.clear()
+    _ALIAS_META.clear()
     _ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
     _rebuild_global_namespace()
 
 
-def export_aliases(path: Optional[str] = None, include_categories: bool = True) -> str:
+def export_aliases(
+    path: Optional[str] = None,
+    include_categories: bool = True,
+    with_meta: bool = False,
+) -> str:
     """
     Export current aliases to a JSON file.
     
     Args:
         path: Output file path (optional, returns string if None)
-        include_categories: Include category information
+        include_categories: Group by first letter (letter-based categorization)
+        with_meta: Include _meta category metadata in output
         
     Returns:
         JSON string of aliases
     """
     if include_categories:
-        # Group by first letter
-        categorized: Dict[str, Dict[str, str]] = {}
+        categorized: Dict[str, Any] = {}
         for alias, module in sorted(_ALIAS_MAP.items()):
-            category = alias[0].upper() if alias else '_'
-            if category not in categorized:
-                categorized[category] = {}
-            categorized[category][alias] = module
+            letter = alias[0].upper() if alias else '_'
+            if letter not in categorized:
+                categorized[letter] = {}
+            categorized[letter][alias] = module
         output = json.dumps(categorized, indent=2, ensure_ascii=False)
+    elif with_meta:
+        letter_groups: Dict[str, Dict[str, Any]] = {}
+        for alias, module in sorted(_ALIAS_MAP.items()):
+            letter = alias[0].upper() if alias else '_'
+            if letter not in letter_groups:
+                letter_groups[letter] = {}
+            entry: Dict[str, Any] = {"module": module}
+            meta = _ALIAS_META.get(alias)
+            if meta:
+                entry["_meta"] = meta
+            letter_groups[letter][alias] = entry
+        output = json.dumps(letter_groups, indent=2, ensure_ascii=False)
     else:
         output = json.dumps(_ALIAS_MAP, indent=2, ensure_ascii=False)
     
@@ -497,18 +544,35 @@ def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List
     return result
 
 
-def register_alias(alias: str, module_name: str) -> None:
+def register_alias(
+    alias: str, module_name: str, category: Optional[str] = None,
+) -> None:
     """
     Register a new alias.
     
     Args:
         alias: The alias name
         module_name: The actual module name
+        category: Optional category for the alias
     """
     if not _validate_alias(alias, module_name):
         raise ValueError(f"Invalid alias: {alias} -> {module_name}")
     
+    if alias in _ALIAS_MAP and _ALIAS_MAP[alias] != module_name:
+        import warnings as _w
+        _w.warn(
+            f"Alias '{alias}' is already registered to '{_ALIAS_MAP[alias]}'. "
+            f"Overwriting with '{module_name}'.",
+            UserWarning,
+            stacklevel=2,
+        )
+    
     _ALIAS_MAP[alias] = module_name
+    
+    if category is not None:
+        if alias not in _ALIAS_META:
+            _ALIAS_META[alias] = {}
+        _ALIAS_META[alias]["category"] = category
     
     # Create lazy module proxy
     from ._proxy import LazyModule

@@ -1,13 +1,13 @@
 {
     "_comment": "Version compatibility configuration for laziest-import",
-    "_current_version": "0.1.0-pre12",
-    "_cache_version": "0.1.0-pre12",
+    "_current_version": "0.1.0-rc1",
+    "_cache_version": "0.1.0-rc1",
     "aliases": {
         "_min_version": "0.0.3",
-        "_max_version": "0.1.0"
+        "_max_version": "0.1.0-rc1"
     },
     "mappings": {
         "_min_version": "0.0.3",
-        "_max_version": "0.1.0"
+        "_max_version": "0.1.0-rc1"
     }
 }

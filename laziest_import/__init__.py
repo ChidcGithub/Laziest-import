@@ -86,6 +86,7 @@ from ._alias import (
     register_alias,
     register_aliases,
     unregister_alias,
+    get_alias_category,
 )
 
 # Import fuzzy matching
@@ -93,6 +94,7 @@ from ._fuzzy import (
     _search_module,
     _search_class_in_modules,
     reload_mappings,
+    _levenshtein_distance,
 )
 
 # Import install functionality
@@ -387,11 +389,40 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
     with _NEGATIVE_CACHE_LOCK:
         _NEGATIVE_CACHE.add(name)
 
-    # Not found - show more relevant modules (filter out single-letter stdlib noise)
-    popular = [k for k in _ALIAS_MAP if len(k) > 1][:15]
+    # Not found - generate smart suggestion
     msg = f"module '{__name__}' has no attribute '{name}'."
-    if popular:
-        msg += f" Available: {popular}..."
+
+    # Find closest alias by Levenshtein distance
+    best_match: Optional[Tuple[str, str, int]] = None
+    name_lower = name.lower()
+    for alias, module in _ALIAS_MAP.items():
+        alias_lower = alias.lower()
+        module_lower = module.split(".")[0].lower()
+        if alias_lower == name_lower or module_lower == name_lower:
+            best_match = (alias, module, 0)
+            break
+        dist_a = _levenshtein_distance(name_lower, alias_lower)
+        dist_m = _levenshtein_distance(name_lower, module_lower)
+        min_dist = min(dist_a, dist_m)
+        if min_dist == 0:
+            best_match = (alias, module, 0)
+            break
+        threshold = max(1, len(name_lower) // 3)
+        if min_dist <= threshold:
+            if best_match is None or min_dist < best_match[2]:
+                best_match = (alias, module, min_dist)
+
+    if best_match and best_match[2] == 0:
+        msg += f" Did you mean `{best_match[1]}`? (alias: `{best_match[0]}`)"
+        cat = get_alias_category(best_match[0])
+        if cat:
+            msg += f", category: {cat}"
+    elif best_match:
+        msg += f" Did you mean `{best_match[0]}` (→ {best_match[1]})?"
+    else:
+        popular = [k for k in _ALIAS_MAP if len(k) > 1][:15]
+        if popular:
+            msg += f" Available: {popular}..."
     raise AttributeError(msg)
 
 

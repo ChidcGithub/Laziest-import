@@ -130,7 +130,19 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 
 --- ## 最新更新
 
-### v0.1.0-pre12（当前）
+### v0.1.0-rc1（当前）
+
+- **阶段四 — 别名系统升级**：数据统一、JSON 格式升级、智能建议、过滤搜索、智能错误提示、上下文感知模糊匹配、冲突检测
+- **数据统一**：108 个别名从 `mappings/abbreviations.json` 合并到 `aliases/*.json`；删除 `abbreviations.json` 和 `submodules.json`
+- **JSON 格式升级**：所有 27 个别名字母文件增加 `_meta` 元数据（类别、描述）
+- **AliasNamespace API**：`lz.alias.list(category=)`、`lz.alias.search(pattern, by_module=)`、`lz.alias.suggest(package=/installed=/pattern=)`
+- **智能错误提示**：基于 Levenshtein 距离的拼写检测 — `lz.nummpy` 提示 `Did you mean numpy?`
+- **上下文感知模糊匹配**：已加载模块在自动搜索中获得优先级加成
+- **冲突检测**：`register_alias()` 在别名覆盖时发出警告
+- **Bug 修复**：修复 `__repr__` 抛 `NameError`（严重）；修复别名搜索回退时错误导入模块（严重）；修复 opencv/cv2 无限循环；修复 sage/sagemath 指向不存在模块；修复 4 个环形别名链；修复 80+ 个连字符化别名值（使用 PyPI 名而非可导入模块名）；修复 70+ 个连字符化别名键（Python 语法不可达）；修复缩进错误导致 symbol-not-found 回退被隐藏；删除 48 行死代码；修复 `_suggest_for_package()` 返回重复项错误
+- **985+ 测试**：全面的测试覆盖
+
+### v0.1.0-pre12
 
 - **阶段三 — API 语义简化**：展平缓存命名空间 — `lz.cache.clear_symbols()`、`lz.cache.file_info()`、`lz.cache.symbol_count` 替代 3 级路径；`lz.cache.stats` 现在直接返回字典
 - **配置数据类缓存**：数据类实例（`lz.config.symbol_search`、`lz.config.cache` 等）首次访问后缓存，与内部状态双向同步

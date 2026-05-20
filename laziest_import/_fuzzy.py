@@ -96,9 +96,7 @@ def _load_all_mappings() -> None:
             return
 
         _MAPPING_CACHE = {
-            "abbreviations": _load_mapping_file("abbreviations.json"),
             "misspellings": _load_mapping_file("misspellings.json"),
-            "submodules": _load_mapping_file("submodules.json"),
             "package_rename": _load_mapping_file("package_rename.json"),
             "symbol_misspellings": _load_mapping_file("symbol_misspellings.json"),
         }
@@ -136,9 +134,8 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
 
 
 def _get_module_abbreviations() -> Dict[str, str]:
-    """Get common module abbreviations mapping from file."""
-    _load_all_mappings()
-    return _MAPPING_CACHE.get("abbreviations", {})
+    """Get alias-to-module mapping from the unified alias system."""
+    return dict(_config._ALIAS_MAP)
 
 
 def _get_package_rename_map() -> Dict[str, str]:
@@ -148,14 +145,17 @@ def _get_package_rename_map() -> Dict[str, str]:
 
 
 def _get_common_submodules() -> Dict[str, Tuple[str, str]]:
-    """Get common submodule mappings from file."""
-    _load_all_mappings()
-    submodules = _MAPPING_CACHE.get("submodules", {})
-    # Convert lists to tuples
+    """Get submodule mappings from the unified alias system.
+
+    Returns dict of alias -> (parent_module, full_module_path).
+    """
     result: Dict[str, Tuple[str, str]] = {}
-    for alias, value in submodules.items():
-        if isinstance(value, list) and len(value) == 2:
-            result[alias] = (value[0], value[1])
+    for alias, module in _config._ALIAS_MAP.items():
+        parts = module.rsplit(".", 1)
+        if len(parts) == 2:
+            parent, sub = parts
+            if parent != alias and sub:
+                result[alias] = (parent, module)
     return result
 
 
@@ -184,11 +184,12 @@ def _infer_context() -> Set[str]:
              loaded.add(base_module)
 
      # Check sys.modules for already imported modules
+     alias_values = set(_config._ALIAS_MAP.values())
      for mod_name in sys.modules.keys():
          if mod_name and not mod_name.startswith("_"):
              base_module = mod_name.split(".")[0]
-             if base_module in _config._MODULE_PRIORITY or base_module in _config._ALIAS_MAP.values():
-                 loaded.add(base_module)
+             # Consider all loaded modules as context, not just known ones
+             loaded.add(base_module)
 
      return loaded
 
@@ -245,16 +246,16 @@ def _check_common_suffix_match(name: str, module: str) -> bool:
         lambda n, m: m == n.replace("-", "").replace("_", ""),
         lambda n, m: n == "pillow" and m == "pil",
         lambda n, m: n == "pil" and m == "pillow",
-        lambda n, m: n == "opencv" and m.startswith("cv"),
-        lambda n, m: m == "opencv" and n.startswith("cv"),
+        lambda n, m: n == "opencv" and m == "cv2",
+        lambda n, m: m == "opencv" and n == "cv2",
         lambda n, m: "beautiful" in n and m == "bs4",
         lambda n, m: n == "bs4" and "beautiful" in m,
         lambda n, m: n == "pytorch" and m == "torch",
         lambda n, m: m == "pytorch" and n == "torch",
         lambda n, m: n == "tf" and m == "tensorflow",
         lambda n, m: m == "tf" and n == "tensorflow",
-        lambda n, m: n.startswith("sk") and m.startswith("scikit"),
-        lambda n, m: m.startswith("sk") and n.startswith("scikit"),
+        lambda n, m: n == "sklearn" and m == "scikit-learn",
+        lambda n, m: m == "sklearn" and n == "scikit-learn",
     ]
 
     for pattern in patterns:
@@ -274,13 +275,13 @@ def _search_module(name: str) -> Optional[str]:
     Matching priority:
     1. Exact match in known modules
     2. Direct import test
-    3. Abbreviation expansion
-    4. Submodule mapping
-    5. Common misspelling correction
-    6. Package rename mapping
-    7. Case-insensitive match
-    8. Underscore/hyphen variants
-    9. Prefix/suffix match
+    3. Common misspelling correction
+    4. Case-insensitive exact match
+    5. Abbreviation / stripped match
+    6. Underscore/hyphen variant match
+    7. Common suffix patterns
+    8. Prefix/suffix match
+    9. Contains match
     10. Levenshtein distance fuzzy match
     """
     from ._alias import _build_known_modules_cache
@@ -304,33 +305,7 @@ def _search_module(name: str) -> Optional[str]:
     except (ImportError, ModuleNotFoundError, ValueError):
         pass
 
-    # 3. Check abbreviations
-    abbrev_map = _get_module_abbreviations()
-    if name_lower in abbrev_map:
-        target = abbrev_map[name_lower]
-        if target in known_modules:
-            return target
-        try:
-            spec = importlib.util.find_spec(target)
-            if spec is not None:
-                return target
-        except (ImportError, ModuleNotFoundError, ValueError):
-            pass
-
-    # 4. Check submodule mappings
-    submodule_map = _get_common_submodules()
-    if name in submodule_map:
-        parent_module, submodule_path = submodule_map[name]
-        if parent_module in known_modules:
-            return submodule_path
-        try:
-            spec = importlib.util.find_spec(parent_module)
-            if spec is not None:
-                return submodule_path
-        except (ImportError, ModuleNotFoundError, ValueError):
-            pass
-
-    # 5. Check common misspellings
+    # 3. Check common misspellings
     misspellings = _get_common_misspellings()
     if name_lower in misspellings:
         corrected = misspellings[name_lower]
@@ -347,6 +322,9 @@ def _search_module(name: str) -> Optional[str]:
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
 
+    # Determine user context: which modules are already loaded
+    context_modules = _infer_context()
+
     # Collect candidates with priority scores
     candidates: List[Tuple[int, int, str]] = []
 
@@ -354,38 +332,42 @@ def _search_module(name: str) -> Optional[str]:
         mod_lower = mod_name.lower()
         mod_stripped = mod_lower.replace("_", "").replace("-", "")
 
+        # Check if this module is in user context (loaded previously)
+        mod_base = mod_name.split(".")[0]
+        context_bonus = -1 if mod_base in context_modules else 0
+
         # Priority 0: Case-insensitive exact match
         if mod_lower == name_lower:
-            candidates.append((0, 0, mod_name))
+            candidates.append((0 + context_bonus, 0, mod_name))
         # Priority 1: Abbreviation match
         elif mod_lower == name_stripped or mod_stripped == name_lower:
-            candidates.append((1, 0, mod_name))
+            candidates.append((1 + context_bonus, 0, mod_name))
         # Priority 2: Underscore/hyphen variant match
         elif mod_stripped == name_stripped and mod_stripped != mod_lower:
-            candidates.append((2, 0, mod_name))
+            candidates.append((2 + context_bonus, 0, mod_name))
         # Priority 3: Common suffix patterns
         elif _check_common_suffix_match(name_lower, mod_lower):
-            candidates.append((3, 0, mod_name))
+            candidates.append((3 + context_bonus, 0, mod_name))
         # Priority 4: Prefix match
-        elif mod_lower.startswith(name_lower) and len(name_lower) >= 3:
+        elif mod_lower.startswith(name_lower) and len(name_lower) >= 2:
             distance = len(mod_lower) - len(name_lower)
-            candidates.append((4, distance, mod_name))
+            candidates.append((4 + context_bonus, distance, mod_name))
         # Priority 5: Suffix match
-        elif mod_lower.endswith(name_lower) and len(name_lower) >= 3:
+        elif mod_lower.endswith(name_lower) and len(name_lower) >= 2:
             distance = len(mod_lower) - len(name_lower)
-            candidates.append((5, distance, mod_name))
+            candidates.append((5 + context_bonus, distance, mod_name))
         # Priority 6: Contains match
-        elif name_lower in mod_lower and len(name_lower) >= 4:
+        elif name_lower in mod_lower and len(name_lower) >= 3:
             distance = mod_lower.index(name_lower)
-            candidates.append((6, distance, mod_name))
+            candidates.append((6 + context_bonus, distance, mod_name))
         # Priority 7: Fuzzy match
-        elif len(name_lower) >= 3 and len(mod_lower) >= 3:
+        elif len(name_lower) >= 2 and len(mod_lower) >= 2:
             length_ratio = len(name_lower) / len(mod_lower) if len(mod_lower) > 0 else 0
             if 0.5 <= length_ratio <= 2.0:
                 distance = _levenshtein_distance(name_lower, mod_lower)
                 max_distance = min(3, max(len(name_lower), len(mod_lower)) // 3)
                 if distance <= max_distance:
-                    candidates.append((7, distance, mod_name))
+                    candidates.append((7 + context_bonus, distance, mod_name))
 
     if candidates:
         candidates.sort(key=lambda x: (x[0], x[1]))
