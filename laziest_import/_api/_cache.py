@@ -215,6 +215,8 @@ class CacheConfigNamespace:
 
 
 class CacheNamespace:
+    # ── Backward-compat sub-namespaces ────────────────────────
+
     @property
     def symbols(self) -> CacheSymbolsNamespace:
         return _CACHE_SYMBOLS_NS
@@ -224,12 +226,34 @@ class CacheNamespace:
         return _CACHE_FILES_NS
 
     @property
-    def stats(self) -> CacheStatsNamespace:
-        return _CACHE_STATS_NS
+    def stats(self) -> Dict[str, Any]:
+        return get_cache_stats()
 
     @property
     def config(self) -> CacheConfigNamespace:
         return _CACHE_CONFIG_NS
+
+    # ── Flattened convenience API (2-level) ──────────────────
+
+    def clear_symbols(self) -> None:
+        clear_symbol_cache()
+
+    def reset_symbols(self) -> None:
+        clear_symbol_cache()
+        rebuild_symbol_index()
+
+    @property
+    def symbol_count(self) -> int:
+        return len(_config._SYMBOL_CACHE)
+
+    def file_info(self) -> Dict[str, Any]:
+        return get_file_cache_info()
+
+    def clear_file_cache(self, file_path: Optional[str] = None) -> int:
+        return clear_file_cache(file_path)
+
+    def force_save(self) -> bool:
+        return force_save_cache()
 
     def clear(self) -> None:
         clear_symbol_cache()
@@ -260,6 +284,11 @@ class CacheNamespace:
 
     def __repr__(self) -> str:
         return f"<CacheNamespace: dir={self.dir}>"
+
+
+# Keep old CacheStatsNamespace for backward compat
+# (importable via _api._cache.CacheStatsNamespace)
+# The .stats property now returns a dict directly.
 
 
 _CACHE_SYMBOLS_NS = CacheSymbolsNamespace()

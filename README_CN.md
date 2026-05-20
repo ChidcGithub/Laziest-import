@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-933%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-985%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -31,23 +31,19 @@
 [![中文版](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-README_CN-blue.svg)](README_CN.md)
 [![English](https://img.shields.io/badge/English-README-blue.svg)](README.md)
 
----
+--- <div align="center">
 
-<div align="center">
-
-## 🚀 零配置懒加载导入库
+## 零配置懒加载导入库
 
 **一行代码即可导入和使用任何已安装的模块**
 
 <p align="center">
-  <b>一个神奇的方式来导入 Python 模块 - 直接用就行！</b>
+<b>一个神奇的方式来导入 Python 模块 - 直接用就行！</b>
 </p>
 
 </div>
 
----
-
-## 📖 目录
+--- ## 目录
 
 - [功能特性](#-核心功能)
 - [快速开始](#-快速开始)
@@ -60,25 +56,21 @@
 - [贡献指南](#-贡献指南)
 - [许可证](#-许可证)
 
----
-
-## 🎯 核心功能
+--- ## 核心功能
 
 | 功能 | 徽章 | 描述 |
 |---------|-------|-------------|
-| 🚀 懒加载 | ![](https://img.shields.io/badge/feature-lazy_loading-green.svg) | 模块只在第一次访问时导入 |
-| 🔄 后台索引 | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | 符号索引在后台线程中构建 |
-| ✏️ 自动纠错 | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | 拼写错误自动纠正（`nump` → `numpy`） |
-| 📝 符号搜索 | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | 在所有模块中搜索符号 |
-| 💾 多层缓存 | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | 三层缓存系统提供高速访问 |
-| 📊 依赖分析 | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | 分析模块依赖关系 |
-| ⚡ 性能基准 | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | 基准测试导入和函数 |
-| 🛠️ 933+ 测试 | ![](https://img.shields.io/badge/tests-933%2B-brightgreen.svg) | 全面的测试覆盖 |
-| 📦 1000+ 别名 | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | 为常用包预定义的别名 |
+| 懒加载 | ![](https://img.shields.io/badge/feature-lazy_loading-green.svg) | 模块只在第一次访问时导入 |
+| 后台索引 | ![](https://img.shields.io/badge/feature-background_index-blue.svg) | 符号索引在后台线程中构建 |
+| 自动纠错 | ![](https://img.shields.io/badge/feature-auto_correction-purple.svg) | 拼写错误自动纠正（`nump` → `numpy`） |
+| 符号搜索 | ![](https://img.shields.io/badge/feature-symbol_search-orange.svg) | 在所有模块中搜索符号 |
+| 多层缓存 | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | 三层缓存系统提供高速访问 |
+| 依赖分析 | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | 分析模块依赖关系 |
+| 性能基准 | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | 基准测试导入和函数 |
+| 985+ 测试 | ![](https://img.shields.io/badge/tests-985%2B-brightgreen.svg) | 全面的测试覆盖 |
+| 1000+ 别名 | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | 为常用包预定义的别名 |
 
----
-
-## 📦 安装方法
+--- ## 安装方法
 
 ```bash
 # 稳定版本
@@ -91,11 +83,9 @@ pip install --pre laziest-import
 pip install git+https://github.com/ChidcGithub/Laziest-import.git
 ```
 
----
+--- ## 快速开始
 
-## ⚡ 快速开始
-
-### 🎯 方法 1：通配符导入（推荐）
+### 方法 1：通配符导入（推荐）
 
 ```python
 from laziest_import import *
@@ -114,7 +104,7 @@ result = math.sqrt(16)              # math
 svd_result = np.linalg.svd(matrix)  # numpy.linalg.svd()
 ```
 
-### 🛠️ 方法 2：命名空间前缀
+### 方法 2：命名空间前缀
 
 ```python
 import laziest_import as lz
@@ -123,52 +113,49 @@ arr = lz.np.array([1, 2, 3])
 df = lz.pd.DataFrame({'a': [1, 2]})
 ```
 
-### ✨ 方法 3：懒代理（自动纠错）
+### 方法 3：懒代理（自动纠错）
 
 ```python
 from laziest_import import lazy
 
 # 自动拼写纠错
-arr = lazy.nump.array([1, 2, 3])    # nump -> numpy ✅
-df = lazy.pnda.DataFrame()          # pnda -> pandas ✅
-arr2 = lazy.nupi.array([4, 5, 6])   # nupi -> numpy ✅
+arr = lazy.nump.array([1, 2, 3])    # nump -> numpy 
+df = lazy.pnda.DataFrame()          # pnda -> pandas 
+arr2 = lazy.nupi.array([4, 5, 6])   # nupi -> numpy 
 
 # 子模块快捷方式
-layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn ✅
-relu = lazy.F.relu(tensor)          # F -> torch.nn.functional ✅
+layer = lazy.nn.Linear(10, 5)       # nn -> torch.nn 
+relu = lazy.F.relu(tensor)          # F -> torch.nn.functional 
 ```
 
----
+--- ## 最新更新
 
-## 📚 最新更新
+### v0.1.0-pre12（当前）
 
-### 🚀 v0.0.5-pre8（最新）
+- **阶段三 — API 语义简化**：展平缓存命名空间 — `lz.cache.clear_symbols()`、`lz.cache.file_info()`、`lz.cache.symbol_count` 替代 3 级路径；`lz.cache.stats` 现在直接返回字典
+- **配置数据类缓存**：数据类实例（`lz.config.symbol_search`、`lz.config.cache` 等）首次访问后缓存，与内部状态双向同步
+- **修复 ConfigContext**：`with lz.config.temp_config(debug=True):` 现在正确保存和恢复状态
+- **985+ 测试**：全面的测试覆盖
 
-- **依赖树分析**：`lz.dependency_tree()` - 分析模块依赖树
-- **性能基准测试**：`lz.benchmark()` - 基准测试函数和导入
-- **933+ 测试**：跨 17+ 个测试文件的全面测试覆盖
+### v0.1.0-pre10
 
-### 🎯 v0.0.4
+- **阶段二 — `__init__.py` 瘦身**：从 965 行缩减至 741 行（−23%）
+- **提取 `_hooks.py`**：模块级钩子 API（`add_pre_import_hook` 等）移至独立模块
+- **提取 `_lazy_registry.py`**：懒加载函数注册/替换机制
+- **提取 `_analysis/`**：分析便利函数（`analyze_file`、`analyze_source`、`analyze_directory`）
+- **简化 `__getattr__`**：统一 5 步解析链（替代原来的 10 步链）
+- **985+ 测试**：全面的测试覆盖
 
-- **后台索引构建**：符号索引在后台线程中构建，无阻塞
-- **懒加载函数**：通过懒加载符号函数减少启动时间
-- **符号分片**：大型包的符号存储在分片中以加快访问速度
-- **符号定位器**：`lz.which()` - 查找符号定义位置
-- **交互式帮助**：`lz.help()` - 带主题的全面帮助系统
-- **Jupyter 魔术命令**：`%%lazy`、`%lazyimport`、`%lazylist`、`%lazysearch`
-- **用户配置文件**：`~/.laziestrc` 持久化配置
-- **类型提示支持**：`LazySymbol.__class_getitem__` 用于泛型类型提示
-- **依赖预分析**：扫描代码以预测所需导入
-- **导入分析器**：记录模块加载时间和内存使用
-- **环境检测**：检测虚拟环境（venv/conda/virtualenv）
-- **冲突可视化**：查找并显示跨模块的符号冲突
-- **持久化偏好设置**：保存/加载用户偏好到 `~/.laziestrc`
+### v0.1.0-pre9
 
----
+- **严格模式**：`lz.symbol.config.strict = True` — 符号冲突时抛出 `AmbiguousSymbolError`；使用 `lz.symbol.prefer()` 解决
+- **CLI 接口**：`laziest-import freeze` 扫描源文件生成 `imports.laziest.json`；`laziest-import init` 创建 `.laziestrc`
+- **阶段一 API 合并**：2196 行的 `_api.py` 重构为 `_api/` 包下的 13 个文件；删除 `_public_api.py`
+- **985+ 测试**：全面的测试覆盖
 
-## 🎮 使用示例
+--- ## 使用示例
 
-### 🔍 符号搜索与定位
+### 符号搜索与定位
 
 ```python
 import laziest_import as lz
@@ -176,7 +163,7 @@ import laziest_import as lz
 # 在所有模块中搜索一个符号
 results = lz.search_symbol('DataFrame')
 for result in results:
-    print(f"{result.module_name}.{result.symbol_name}")
+print(f"{result.module_name}.{result.symbol_name}")
 
 # 查找符号定义位置
 loc = lz.which('sqrt')
@@ -185,10 +172,10 @@ print(f"找到位置：{loc}")  # numpy.sqrt
 # 查找所有出现位置
 locs = lz.which_all('sqrt')
 for loc in locs:
-    print(f"{loc.module_name}.{loc.symbol_name}")
+print(f"{loc.module_name}.{loc.symbol_name}")
 ```
 
-### 🌲 依赖树分析
+### 依赖树分析
 
 ```python
 import laziest_import as lz
@@ -202,17 +189,17 @@ print(f"标准库：{tree.stdlib_count}，第三方：{tree.third_party_count}")
 lz.print_dependency_tree(tree)
 ```
 
-### 🏋️ 性能基准测试
+### 性能基准测试
 
 ```python
 import laziest_import as lz
 
 # 基准测试一个函数
 result = lz.benchmark(
-    lambda: sum(range(10000)),
-    name="sum_test",
-    iterations=100,
-    warmup=10
+lambda: sum(range(10000)),
+name="sum_test",
+iterations=100,
+warmup=10
 )
 print(f"平均：{result.avg_time*1000:.4f}ms")
 print(f"最小：{result.min_time*1000:.4f}ms")
@@ -223,7 +210,7 @@ report = lz.benchmark_imports(['numpy', 'pandas', 'matplotlib'])
 lz.print_benchmark_report(report)
 ```
 
-### 📦 自动安装（可选）
+### 自动安装（可选）
 
 ```python
 from laziest_import import *
@@ -235,11 +222,9 @@ lz.enable_auto_install()
 arr = np.array([1, 2, 3])  # 如果 numpy 缺失，提示安装
 ```
 
----
+--- ## 配置说明
 
-## 🛠️ 配置说明
-
-### 📋 用户配置
+### 用户配置
 
 ```python
 import laziest_import as lz
@@ -257,7 +242,7 @@ value = lz.get_rc_value('debug', default=False)
 info = lz.get_rc_info()
 ```
 
-### 💾 缓存配置
+### 缓存配置
 
 ```python
 import laziest_import as lz
@@ -267,9 +252,9 @@ lz.set_cache_dir('./my_cache')
 
 # 配置缓存设置
 lz.set_cache_config(
-    symbol_index_ttl=3600,       # 符号索引 TTL：1 小时
-    stdlib_cache_ttl=2592000,    # 标准库缓存 TTL：30 天
-    max_cache_size_mb=200        # 最大缓存大小：200 MB
+symbol_index_ttl=3600,       # 符号索引 TTL：1 小时
+stdlib_cache_ttl=2592000,    # 标准库缓存 TTL：30 天
+max_cache_size_mb=200        # 最大缓存大小：200 MB
 )
 
 # 获取缓存统计
@@ -281,11 +266,9 @@ info = lz.get_file_cache_info()
 print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 ```
 
----
+--- ## API 参考
 
-## 📖 API 参考
-
-### 🔧 别名管理
+### 别名管理
 
 | 函数 | 描述 |
 |----------|-------------|
@@ -295,9 +278,7 @@ print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 | `list_loaded()` | 列出已加载的模块 |
 | `list_available()` | 列出所有可用的别名 |
 | `get_module(alias)` | 获取模块对象 |
-| `clear_cache()` | 清除内存缓存 |
-
-### 🔍 符号搜索
+| `clear_cache()` | 清除内存缓存 | ### 符号搜索
 
 | 函数 | 描述 |
 |----------|-------------|
@@ -306,18 +287,14 @@ print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 | `search_symbol(name)` | 搜索类/函数 |
 | `rebuild_symbol_index()` | 重建符号索引 |
 | `which(symbol)` | 查找符号位置 |
-| `which_all(symbol)` | 查找所有符号位置 |
-
-### 🔄 自动安装
+| `which_all(symbol)` | 查找所有符号位置 | ### 自动安装
 
 | 函数 | 描述 |
 |----------|-------------|
 | `enable_auto_install()` | 启用自动安装 |
 | `disable_auto_install()` | 禁用自动安装 |
 | `install_package(name)` | 手动安装包 |
-| `set_pip_index(url)` | 设置镜像 URL |
-
-### 💾 缓存管理
+| `set_pip_index(url)` | 设置镜像 URL | ### 缓存管理
 
 | 函数 | 描述 |
 |----------|-------------|
@@ -329,9 +306,7 @@ print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 | `invalidate_package_cache(pkg)` | 失效包缓存 |
 | `get_file_cache_info()` | 获取文件缓存信息 |
 | `clear_file_cache()` | 清除文件缓存 |
-| `set_cache_dir(path)` | 设置缓存目录 |
-
-### 📊 分析与性能分析
+| `set_cache_dir(path)` | 设置缓存目录 | ### 分析与性能分析
 
 | 函数 | 描述 |
 |----------|-------------|
@@ -349,9 +324,7 @@ print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 | `detect_environment()` | 检测 Python 环境 |
 | `show_environment()` | 显示环境信息 |
 | `find_symbol_conflicts()` | 查找符号冲突 |
-| `show_conflicts()` | 显示冲突表格 |
-
-### ⚙️ 偏好设置
+| `show_conflicts()` | 显示冲突表格 | ### 偏好设置
 
 | 函数 | 描述 |
 |----------|-------------|
@@ -361,11 +334,7 @@ print(f"缓存大小：{info['cache_size_mb']:.2f} MB")
 | `save_preferences()` | 保存偏好到文件 |
 | `load_preferences()` | 从文件加载偏好 |
 | `apply_preferences(prefs)` | 应用已加载的偏好 |
-| `clear_preferences()` | 清除所有偏好 |
-
----
-
-## 🔧 常见问题
+| `clear_preferences()` | 清除所有偏好 | --- ## 常见问题
 
 ### 常见问题
 
@@ -424,9 +393,7 @@ lz.rebuild_symbol_index()  # 重建符号索引
 3. 使用 `lz.enable_background_build()` 避免第一次导入时阻塞
 4. 对于 CI/CD，设置 `LAZY_BG_BUILD=1` 预构建缓存
 
----
-
-## 🔬 工作原理
+--- ## 工作原理
 
 ### 架构
 
@@ -444,16 +411,12 @@ lz.rebuild_symbol_index()  # 重建符号索引
 |-------------|-------------|-------------|
 | **标准库缓存** | 标准库符号 | 7 天 |
 | **第三方缓存** | 已安装的包符号 | 24 小时 |
-| **内存缓存** | 当前会话的热缓存 | 会话期间 |
-
-缓存文件存储在 `~/.laziest_import/cache/` 并自动：
+| **内存缓存** | 当前会话的热缓存 | 会话期间 | 缓存文件存储在 `~/.laziest_import/cache/` 并自动：
 - 根据 TTL 设置过期
 - 超过大小限制时清理（默认：100 MB）
 - Python 版本变更时失效
 
----
-
-## 📚 预定义别名
+--- ## 预定义别名
 
 ### 数据科学
 `np`、`pd`、`plt`、`sns`、`scipy`
@@ -491,13 +454,11 @@ lz.rebuild_symbol_index()  # 重建符号索引
 ### 可视化
 `plotly`、`bokeh`、`streamlit`、`gradio`
 
----
-
-## 🤝 贡献指南
+--- ## 贡献指南
 
 我们喜欢贡献！查看我们的 [贡献指南](CONTRIBUTING.md) 获取更多信息。
 
-### 🌱 如何贡献
+### 如何贡献
 
 1. Fork 这个仓库，从 `main` 创建你的分支
 2. 阅读我们的 [行为准则](CODE_OF_CONDUCT.md)
@@ -507,7 +468,7 @@ lz.rebuild_symbol_index()  # 重建符号索引
 6. 提交你的更改
 7. 推送到你的分支并打开 Pull Request！
 
-### 🔄 开发设置
+### 开发设置
 
 ```bash
 # 克隆仓库
@@ -524,78 +485,65 @@ pytest tests/ -v
 flake8 laziest_import/
 ```
 
-### 📋 好的入门问题
+### 好的入门问题
 
 在找一个开始的地方？查看：
 - 好的入门问题：[标记为 "good first issue" 的问题](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 - 需要帮助：[标记为 "help wanted" 的问题](https://github.com/ChidcGithub/Laziest-import/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
-### ✨ 贡献方式
+### 贡献方式
 
-- 🐛 报告 Bug
-- 💡 提议新功能
-- 📝 改进文档
-- 🔧 修复现有问题
-- 🧪 添加更多测试
-- 🌍 帮助翻译
-- 🎨 设计改进
+- 报告 Bug
+- 提议新功能
+- 改进文档
+- 修复现有问题
+- 添加更多测试
+- 帮助翻译
+- 设计改进
 
----
-
-## 🌟 贡献者
+--- ## 贡献者
 
 感谢这些了不起的人们：
 
 <a href="https://github.com/ChidcGithub/Laziest-import/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ChidcGithub/Laziest-import" />
+<img src="https://contrib.rocks/image?repo=ChidcGithub/Laziest-import" />
 </a>
 
 使用 [contrib.rocks](https://contrib.rocks) 制作。
 
----
-
-## 📝 Star 历史
+--- ## Star 历史
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ChidcGithub/Laziest-import&type=Date)](https://star-history.com/#ChidcGithub/Laziest-import&Date)
 
----
+--- ## 联系我们
 
-## 💬 联系我们
+- 邮箱：(你的邮箱)
+- GitHub：[ChidcGithub/Laziest-import](https://github.com/ChidcGithub/Laziest-import)
+- 讨论：[GitHub Discussions](https://github.com/ChidcGithub/Laziest-import/discussions)
+- 问题：[GitHub Issues](https://github.com/ChidcGithub/Laziest-import/issues)
 
-- 📧 邮箱：(你的邮箱)
-- 🐙 GitHub：[ChidcGithub/Laziest-import](https://github.com/ChidcGithub/Laziest-import)
-- 💬 讨论：[GitHub Discussions](https://github.com/ChidcGithub/Laziest-import/discussions)
-- 🐛 问题：[GitHub Issues](https://github.com/ChidcGithub/Laziest-import/issues)
-
----
-
-## 🙏 致谢
+--- ## 致谢
 
 - 感谢所有帮助改进这个项目的贡献者！
 - 受到 Python 社区对简洁、简单 API 的热爱的启发
 
----
-
-## 📄 许可证
+--- ## 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
----
-
-## ⭐ 支持我们
+--- ## 支持我们
 
 如果你觉得这个项目有用，请考虑：
 
-- ⭐ 在 GitHub 上给这个仓库加星标
-- 🐛 报告 Bug 或建议功能
-- 🔄 与朋友和同事分享
-- 📝 如果你使用了，请在博客上写文章介绍
-- 🤝 为项目做贡献
+- 在 GitHub 上给这个仓库加星标
+- 报告 Bug 或建议功能
+- 与朋友和同事分享
+- 如果你使用了，请在博客上写文章介绍
+- 为项目做贡献
 
-谢谢！❤️
-
+谢谢！
 ---
 
 <div align="center">
-  <b>由 Chidc 和贡献者用 ❤️ 制作</b>
+<b>由 Chidc 和贡献者用心制作</b>
 </div>

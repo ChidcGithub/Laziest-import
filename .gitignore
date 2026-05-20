@@ -68,3 +68,7 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Internal planning
+plan.md
+PLAN.md

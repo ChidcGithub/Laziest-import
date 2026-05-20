@@ -87,7 +87,9 @@ class LazyImport:
         lz.module.numpy
         lz.config.debug = True
         lz.symbol.search('DataFrame')
-        lz.cache.symbols.clear()
+        lz.cache.clear_symbols()
+        lz.cache.file_info()
+        lz.cache.stats            # returns dict
         lz.hooks.pre += my_hook
     """
 

@@ -148,6 +148,24 @@ def reset_import_stats() -> None:
 # ─── ConfigNamespace ─────────────────────────────────────────
 
 class ConfigNamespace:
+    def __init__(self) -> None:
+        self._auto_install_cache: Optional[AutoInstallConfig] = None
+        self._retry_cache: Optional[RetryConfig] = None
+        self._symbol_search_cache: Optional[SymbolSearchConfig] = None
+        self._symbol_resolution_cache: Optional[SymbolResolutionConfig] = None
+        self._cache_config_cache: Optional[CacheConfig] = None
+        self._module_skip_cache: Optional[ModuleSkipConfig] = None
+
+    def refresh(self) -> None:
+        """Invalidate all cached dataclass instances.
+        Next access will re-read from internal config dicts."""
+        self._auto_install_cache = None
+        self._retry_cache = None
+        self._symbol_search_cache = None
+        self._symbol_resolution_cache = None
+        self._cache_config_cache = None
+        self._module_skip_cache = None
+
     @property
     def debug(self) -> bool:
         return _config._DEBUG_MODE
@@ -166,15 +184,17 @@ class ConfigNamespace:
 
     @property
     def auto_install(self) -> AutoInstallConfig:
-        c = _config._AUTO_INSTALL_CONFIG
-        return AutoInstallConfig(
-            enabled=c["enabled"],
-            interactive=c["interactive"],
-            index=c["index"],
-            extra_args=list(c["extra_args"]),
-            prefer_uv=c["prefer_uv"],
-            silent=c["silent"],
-        )
+        if self._auto_install_cache is None:
+            c = _config._AUTO_INSTALL_CONFIG
+            self._auto_install_cache = AutoInstallConfig(
+                enabled=c["enabled"],
+                interactive=c["interactive"],
+                index=c["index"],
+                extra_args=list(c["extra_args"]),
+                prefer_uv=c["prefer_uv"],
+                silent=c["silent"],
+            )
+        return self._auto_install_cache
 
     @auto_install.setter
     def auto_install(self, cfg: AutoInstallConfig) -> None:
@@ -184,6 +204,7 @@ class ConfigNamespace:
         _config._AUTO_INSTALL_CONFIG["extra_args"] = list(cfg.extra_args)
         _config._AUTO_INSTALL_CONFIG["prefer_uv"] = cfg.prefer_uv
         _config._AUTO_INSTALL_CONFIG["silent"] = cfg.silent
+        self._auto_install_cache = cfg
 
     @property
     def auto_install_enabled(self) -> bool:
@@ -192,43 +213,58 @@ class ConfigNamespace:
     @auto_install_enabled.setter
     def auto_install_enabled(self, value: bool) -> None:
         _config._AUTO_INSTALL_CONFIG["enabled"] = value
+        if self._auto_install_cache is not None:
+            self._auto_install_cache.enabled = value
 
     @property
     def retry(self) -> RetryConfig:
-        c = _config._RETRY_CONFIG
-        return RetryConfig(
-            enabled=c["enabled"],
-            max_retries=c["max_retries"],
-            retry_delay=c["retry_delay"],
-            modules=set(c["retry_modules"]),
-        )
+        if self._retry_cache is None:
+            c = _config._RETRY_CONFIG
+            self._retry_cache = RetryConfig(
+                enabled=c["enabled"],
+                max_retries=c["max_retries"],
+                retry_delay=c["retry_delay"],
+                modules=set(c["retry_modules"]),
+            )
+        return self._retry_cache
 
     @retry.setter
     def retry(self, cfg: RetryConfig) -> None:
         _config._RETRY_CONFIG["enabled"] = cfg.enabled
         _config._RETRY_CONFIG["max_retries"] = cfg.max_retries
         _config._RETRY_CONFIG["retry_delay"] = cfg.retry_delay
-        _config._RETRY_CONFIG["retry_modules"] = cfg.modules
+        _config._RETRY_CONFIG["retry_modules"] = set(cfg.modules)
+        self._retry_cache = cfg
 
     @property
     def symbol_search(self) -> SymbolSearchConfig:
-        return SymbolSearchConfig(**get_symbol_search_config())
+        if self._symbol_search_cache is None:
+            self._symbol_search_cache = SymbolSearchConfig(**get_symbol_search_config())
+        return self._symbol_search_cache
 
     @symbol_search.setter
     def symbol_search(self, cfg: SymbolSearchConfig) -> None:
         _apply_search_config(cfg)
+        self._symbol_search_cache = cfg
 
     @property
     def symbol_resolution(self) -> SymbolResolutionConfig:
-        return SymbolResolutionConfig(**get_symbol_resolution_config())
+        if self._symbol_resolution_cache is None:
+            self._symbol_resolution_cache = SymbolResolutionConfig(**get_symbol_resolution_config())
+        return self._symbol_resolution_cache
 
     @symbol_resolution.setter
     def symbol_resolution(self, cfg: SymbolResolutionConfig) -> None:
         _apply_resolution_config(cfg)
+        self._symbol_resolution_cache = cfg
 
     @property
     def cache(self) -> CacheConfig:
-        return CacheConfig(**get_cache_config())
+        if self._cache_config_cache is None:
+            raw = get_cache_config()
+            raw["max_size_mb"] = raw.pop("max_cache_size_mb", 100)
+            self._cache_config_cache = CacheConfig(**raw)
+        return self._cache_config_cache
 
     @cache.setter
     def cache(self, cfg: CacheConfig) -> None:
@@ -239,10 +275,13 @@ class ConfigNamespace:
             third_party_cache_ttl=cfg.third_party_cache_ttl,
             enable_compression=cfg.enable_compression,
         )
+        self._cache_config_cache = cfg
 
     @property
     def module_skip(self) -> ModuleSkipConfig:
-        return ModuleSkipConfig(**get_module_skip_config())
+        if self._module_skip_cache is None:
+            self._module_skip_cache = ModuleSkipConfig(**get_module_skip_config())
+        return self._module_skip_cache
 
     @module_skip.setter
     def module_skip(self, cfg: ModuleSkipConfig) -> None:
@@ -252,6 +291,7 @@ class ConfigNamespace:
             skip_large_modules=cfg.skip_large_modules,
             large_module_threshold=cfg.large_module_threshold,
         )
+        self._module_skip_cache = cfg
 
     @property
     def import_stats(self) -> Dict[str, Any]:
@@ -270,6 +310,7 @@ class ConfigNamespace:
         }
 
     def restore(self, snapshot: Dict[str, Any]) -> None:
+        self.refresh()
         if "debug" in snapshot:
             self.debug = snapshot["debug"]
         if "auto_search" in snapshot:
@@ -296,22 +337,24 @@ class ConfigNamespace:
         return json.dumps(data, indent=2)
 
     def temp_config(self, **kwargs: Any) -> "ConfigContext":
-        return ConfigContext(kwargs)
+        return ConfigContext(self, kwargs)
 
     def __repr__(self) -> str:
         return f"<ConfigNamespace: debug={self.debug}, auto_search={self.auto_search}>"
 
 
 class ConfigContext:
-    def __init__(self, overrides: Dict[str, Any]) -> None:
+    def __init__(self, config_ns: ConfigNamespace, overrides: Dict[str, Any]) -> None:
+        self._config_ns = config_ns
         self._overrides = overrides
         self._snap: Dict[str, Any] = {}
-        self._entered = False
 
     def __enter__(self) -> "ConfigContext":
-        from . import _global_config
+        self._snap = self._config_ns.snapshot()
+        for key, value in self._overrides.items():
+            if hasattr(self._config_ns, key) and not key.startswith("_"):
+                setattr(self._config_ns, key, value)
+        return self
 
     def __exit__(self, *args: Any) -> None:
-        if self._entered:
-            from . import _global_config
-            _global_config.restore(self._snap)
+        self._config_ns.restore(self._snap)

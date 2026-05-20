@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-959%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-985%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -75,7 +75,7 @@
 | Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
 | Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
 | CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` commands |
-| 959+ Tests | ![](https://img.shields.io/badge/tests-959%2B-brightgreen.svg) | Comprehensive test coverage |
+| 985+ Tests | ![](https://img.shields.io/badge/tests-985%2B-brightgreen.svg) | Comprehensive test coverage |
 | 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
 ---
@@ -173,56 +173,33 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 | **Conflict visualization** | Find and display symbol conflicts across modules |
 | **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **959+ tests** | Comprehensive test coverage |
+| **985+ tests** | Comprehensive test coverage |
 
 ## What's New
 
-### v0.1.0-pre9 (Current)
+### v0.1.0-pre12 (Current)
 
-- **Strict Mode**: `lz.symbol.config.strict = True` — raises `AmbiguousSymbolError` when a symbol name matches multiple modules; use `lz.symbol.prefer()` to resolve
+- **Phase 3 — API Semantic Simplification**: Flattened cache namespace — `lz.cache.clear_symbols()`, `lz.cache.file_info()`, `lz.cache.symbol_count` replace 3-level paths; `lz.cache.stats` now returns a plain dict
+- **Config Dataclass Caching**: Dataclass instances (`lz.config.symbol_search`, `lz.config.cache`, etc.) are now cached after first access with bidirectional sync to internal state
+- **Fixed ConfigContext**: `with lz.config.temp_config(debug=True):` now correctly saves and restores state
+- **985+ tests**: Comprehensive test coverage
+
+### v0.1.0-pre10
+
+- **Phase 2 — `__init__.py` Slim**: Collapsed from 965 to 741 lines (−23%)
+- **Extracted `_hooks.py`**: Module-level hook API (`add_pre_import_hook`, etc.) moved to dedicated module
+- **Extracted `_lazy_registry.py`**: Lazy function registration/replacement mechanism
+- **Extracted `_analysis/`**: Analysis convenience functions (`analyze_file`, `analyze_source`, `analyze_directory`)
+- **Simplified `__getattr__`**: Unified 5-step resolution chain (replaced 10-step chain)
+- **985+ tests**: Comprehensive test coverage
+
+### v0.1.0-pre9
+
+- **Strict Mode**: `lz.symbol.config.strict = True` — raises `AmbiguousSymbolError` on symbol conflicts; use `lz.symbol.prefer()` to resolve
 - **CLI Interface**: `laziest-import freeze` scans source files to generate `imports.laziest.json`; `laziest-import init` creates `.laziestrc`
 - **Phase 1 API Merge**: 2196-line `_api.py` refactored into 13 files under `_api/` package; `_public_api.py` deleted
 - **Shorthand Alias Tests**: 28 tests covering stdlib aliases, third-party aliases, bare-name lazy loading, and edge cases
-- **959+ tests**: Comprehensive test coverage
-
-### v0.1.0
-
-- **New Object-Oriented API**: `LazyImport` class with sub-namespaces (`lz.module`, `lz.config`, `lz.symbol`, etc.)
-- **Backward Compatible**: All old functions still work with `FutureWarning` deprecation notices
-- **Config Dataclasses**: `AutoInstallConfig`, `RetryConfig`, `CacheConfig`, etc.
-- **HookList**: Supports `+=`/`-=` operators for hook management
-- **ConfigContext**: `with lz.config.temp_config(debug=True):` for temporary overrides
-- **Module-level Singleton**: `from laziest_import import lz` — access everything via `lz.*`
-- **See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** for full old→new API mapping
-
-### v0.1.0-pre2
-
-- **Major Refactor**: Restructured architecture for maintainability
-- **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
-- **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
-- **820+ tests**: Comprehensive test coverage across 17+ test files
-
-### v0.0.5-pre8
-
-- **Dependency Tree Analysis**: `lz.dependency_tree()` - analyze module dependency trees
-- **Performance Benchmarking**: `lz.benchmark()` - benchmark functions and imports
-- **933+ tests**: Comprehensive test coverage across 17+ test files
-
-### v0.0.4
-
-- **Background Index Building**: Symbol index builds in background thread, no blocking
-- **Lazy-loaded Functions**: Reduced startup time by lazy-loading symbol functions
-- **Symbol Sharding**: Large package symbols stored in shards for faster access
-- **Symbol Location Finder**: `lz.which()` - find where symbols are defined
-- **Interactive Help**: `lz.help()` - comprehensive help system with topics
-- **Jupyter Magics**: `%%lazy`, `%lazyimport`, `%lazylist`, `%lazysearch`
-- **User Config File**: `~/.laziestrc` for persistent configuration
-- **Type Hints Support**: `LazySymbol.__class_getitem__` for generic type hints
-- **Dependency Pre-Analysis**: Scan code to predict required imports
-- **Import Profiler**: Record module load times and memory usage
-- **Environment Detection**: Detect virtual environments (venv/conda/virtualenv)
-- **Conflict Visualization**: Find and display symbol conflicts across modules
-- **Persistent Preferences**: Save/load user preferences to `~/.laziestrc`
+- **985+ tests**: Comprehensive test coverage
 
 ---
 
