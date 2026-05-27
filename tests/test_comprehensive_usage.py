@@ -68,15 +68,16 @@ section("2. LAZY MODULE ACCESS VIA ALIASES")
 lz.cache.clear()
 
 # Standard library aliases
-np = lz.np
-print(f"np = {np}, type = {type(np).__name__}")
 _have_numpy = True
 try:
+    np = lz.np
+    print(f"np = {np}, type = {type(np).__name__}")
     _test_arr = np.array([1, 2, 3])
     print(f"  np.array([1,2,3]) = {_test_arr}")
 except (ImportError, NameError):
     _have_numpy = False
-    print(f"  np.array([1,2,3]) = (numpy not installed)")
+    np = None
+    print(f"np = (numpy not installed)")
 if _have_numpy:
     del _test_arr
 
