@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-985%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-1055%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -75,7 +75,7 @@
 | Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
 | Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
 | CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` commands |
-| 985+ Tests | ![](https://img.shields.io/badge/tests-985%2B-brightgreen.svg) | Comprehensive test coverage |
+| 1055+ Tests | ![](https://img.shields.io/badge/tests-1055%2B-brightgreen.svg) | Comprehensive test coverage |
 | 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
 ---
@@ -173,11 +173,29 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 | **Conflict visualization** | Find and display symbol conflicts across modules |
 | **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **985+ tests** | Comprehensive test coverage |
+| **1055+ tests** | Comprehensive test coverage |
 
 ## What's New
 
-### v0.1.0-rc1 (Current)
+### v0.1.0-rc3 (Current)
+
+- **Phase 5 — Fake Code Audit & Fix**: All placeholder/fake code replaced with real logic
+- **Fixed `assert True` tests**: 4 tests replaced with real assertions
+- **Fixed silent `except Exception: pass`**: 4 tests, `HookList.__call__()`, `_benchmark.py` warmup/measure, `_state_setters.py` narrowed to `except ImportError`
+- **Fixed 48 zero-assertion smoke tests**: Added type/value assertions
+- **Fixed `_jupyter.py` `unload_ipython_extension()`**: No-op `pass` replaced with `unregister_magics()`
+- **Fixed `_cache/_api.py` `invalidate_package_cache()`**: Added missing `_STDLIB_SYMBOL_CACHE` cleanup
+- **Fixed circular import in `_build_known_modules_cache()`**: Skip scanning CWD (`''`/`'.'` paths) to prevent re-import of scripts in working directory
+- **1055 tests**: All passing, comprehensive coverage
+
+### v0.1.0-rc2
+
+- **OOP API Migration**: 23 test files migrated from module-level API to `lz` singleton
+- **Fixed `LazyImport.__getattr__`**: Negative cache check before expensive lookups
+- **Fixed `reset_all()`**: Now reloads aliases, updates `__all__`, AND rebuilds symbol index
+- **Raised `_build_symbol_index` defaults**: `max_modules=500`, `timeout=60.0` for complete index coverage
+
+### v0.1.0-rc1
 
 - **Phase 4 — Alias System Upgrade**: Data unification, JSON format upgrade, smart suggestions, filtered search, smart error hints, context-aware fuzzy matching, and conflict resolution
 - **Data Unification**: 108 aliases merged from `mappings/abbreviations.json` into `aliases/*.json`; `abbreviations.json` and `submodules.json` removed
@@ -187,31 +205,8 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 - **Context-Aware Fuzzy Matching**: Loaded modules get priority bonus during auto-search
 - **Conflict Detection**: `register_alias()` warns on alias overwrite
 - **Bug Fixes**: Fixed `__repr__` NameError crash (critical); fixed alias search fallback importing wrong module (critical); fixed opencv/cv2 infinite cycle; fixed sage/sagemath pointing to non-existent module; fixed 4 circular alias chains; fixed 80+ hyphenated alias values (used PyPI names instead of importable module names); fixed 70+ hyphenated alias keys (unreachable via Python syntax); fixed indentation bug hiding symbol-not-found fallback; removed 48 lines of dead code; fixed `_suggest_for_package()` duplicate return bug
-- **985+ tests**: Comprehensive test coverage
+- **1055+ tests**: Comprehensive test coverage
 
-### v0.1.0-pre12
-
-- **Phase 3 — API Semantic Simplification**: Flattened cache namespace — `lz.cache.clear_symbols()`, `lz.cache.file_info()`, `lz.cache.symbol_count` replace 3-level paths; `lz.cache.stats` now returns a plain dict
-- **Config Dataclass Caching**: Dataclass instances (`lz.config.symbol_search`, `lz.config.cache`, etc.) are now cached after first access with bidirectional sync to internal state
-- **Fixed ConfigContext**: `with lz.config.temp_config(debug=True):` now correctly saves and restores state
-- **985+ tests**: Comprehensive test coverage
-
-### v0.1.0-pre10
-
-- **Phase 2 — `__init__.py` Slim**: Collapsed from 965 to 741 lines (−23%)
-- **Extracted `_hooks.py`**: Module-level hook API (`add_pre_import_hook`, etc.) moved to dedicated module
-- **Extracted `_lazy_registry.py`**: Lazy function registration/replacement mechanism
-- **Extracted `_analysis/`**: Analysis convenience functions (`analyze_file`, `analyze_source`, `analyze_directory`)
-- **Simplified `__getattr__`**: Unified 5-step resolution chain (replaced 10-step chain)
-- **985+ tests**: Comprehensive test coverage
-
-### v0.1.0-pre9
-
-- **Strict Mode**: `lz.symbol.config.strict = True` — raises `AmbiguousSymbolError` on symbol conflicts; use `lz.symbol.prefer()` to resolve
-- **CLI Interface**: `laziest-import freeze` scans source files to generate `imports.laziest.json`; `laziest-import init` creates `.laziestrc`
-- **Phase 1 API Merge**: 2196-line `_api.py` refactored into 13 files under `_api/` package; `_public_api.py` deleted
-- **Shorthand Alias Tests**: 28 tests covering stdlib aliases, third-party aliases, bare-name lazy loading, and edge cases
-- **985+ tests**: Comprehensive test coverage
 
 ---
 

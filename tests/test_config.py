@@ -13,6 +13,7 @@ Tests cover:
 import pytest
 import json
 from pathlib import Path
+from laziest_import import is_initialized, is_initializing, is_init_failed, get_init_error, get_init_lock, __version__, reset_init_state
 
 
 class TestModuleVersion:
@@ -20,30 +21,26 @@ class TestModuleVersion:
 
     def test_version_exists(self):
         """Test that version attribute exists."""
-        import laziest_import as lz
 
-        assert hasattr(lz, "__version__")
-        assert isinstance(lz.__version__, str)
+        assert isinstance(__version__, str)
 
     def test_version_format(self):
         """Test version format is valid."""
-        import laziest_import as lz
 
         # Should be semantic version or similar
-        version = lz.__version__
+        version = __version__
         parts = version.split(".")
         assert len(parts) >= 2
 
     def test_version_matches_file(self):
         """Test version matches version.json."""
-        import laziest_import as lz
 
         version_file = Path(__file__).parent.parent / "laziest_import" / "version.json"
         with open(version_file, encoding="utf-8") as f:
             data = json.load(f)
 
         expected = data.get("_current_version")
-        assert lz.__version__ == expected
+        assert __version__ == expected
 
 
 class TestDebugMode:
@@ -51,29 +48,29 @@ class TestDebugMode:
 
     def test_debug_mode_off_by_default(self):
         """Test that debug mode is off by default."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Make sure it's off
-        lz.disable_debug_mode()
-        assert lz.is_debug_mode() is False
+        lz.config.debug = False
+        assert lz.config.debug is False
 
     def test_enable_debug_mode(self):
         """Test enabling debug mode."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_debug_mode()
-        assert lz.is_debug_mode() is True
+        lz.config.debug = True
+        assert lz.config.debug is True
 
         # Disable for other tests
-        lz.disable_debug_mode()
+        lz.config.debug = False
 
     def test_disable_debug_mode(self):
         """Test disabling debug mode."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_debug_mode()
-        lz.disable_debug_mode()
-        assert lz.is_debug_mode() is False
+        lz.config.debug = True
+        lz.config.debug = False
+        assert lz.config.debug is False
 
 
 class TestImportStatistics:
@@ -81,9 +78,9 @@ class TestImportStatistics:
 
     def test_get_import_stats(self):
         """Test getting import statistics."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        stats = lz.get_import_stats()
+        stats = lz.config.import_stats
         assert isinstance(stats, dict)
         assert "total_imports" in stats
         assert "total_time" in stats
@@ -92,34 +89,36 @@ class TestImportStatistics:
 
     def test_reset_import_stats(self):
         """Test resetting import statistics."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._config import reset_import_stats
 
-        lz.reset_import_stats()
-        stats = lz.get_import_stats()
+        reset_import_stats()
+        stats = lz.config.import_stats
         assert stats["total_imports"] == 0
         assert stats["total_time"] == 0.0
 
     def test_stats_updated_on_import(self):
         """Test that stats are updated on import."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._config import reset_import_stats
 
-        lz.reset_import_stats()
-        lz.clear_cache()
+        reset_import_stats()
+        lz.cache.clear()
 
         _ = lz.math.pi
 
-        stats = lz.get_import_stats()
+        stats = lz.config.import_stats
         # Stats may be 0 if module was already imported
         assert isinstance(stats["total_imports"], int)
 
     def test_module_times_tracking(self):
         """Test that module times are tracked."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.json.dumps
 
-        stats = lz.get_import_stats()
+        stats = lz.config.import_stats
         assert isinstance(stats["module_times"], dict)
 
 
@@ -128,27 +127,27 @@ class TestAutoSearchToggle:
 
     def test_auto_search_enabled_by_default(self):
         """Test that auto-search is enabled by default."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert lz.is_auto_search_enabled() is True
+        assert lz.config.auto_search is True
 
     def test_enable_auto_search(self):
         """Test enabling auto-search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_auto_search()
-        lz.enable_auto_search()
-        assert lz.is_auto_search_enabled() is True
+        lz.config.auto_search = False
+        lz.config.auto_search = True
+        assert lz.config.auto_search is True
 
     def test_disable_auto_search(self):
         """Test disabling auto-search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_auto_search()
-        assert lz.is_auto_search_enabled() is False
+        lz.config.auto_search = False
+        assert lz.config.auto_search is False
 
         # Re-enable for other tests
-        lz.enable_auto_search()
+        lz.config.auto_search = True
 
 
 class TestInitializationState:
@@ -156,34 +155,34 @@ class TestInitializationState:
 
     def test_is_initialized(self):
         """Test checking if module is initialized."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Should be initialized after import
-        assert lz.is_initialized() is True
+        assert is_initialized() is True
 
     def test_is_not_initializing(self):
         """Test that module is not currently initializing."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert lz.is_initializing() is False
+        assert is_initializing() is False
 
     def test_is_not_failed(self):
         """Test that initialization did not fail."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert lz.is_init_failed() is False
+        assert is_init_failed() is False
 
     def test_get_init_error_none(self):
         """Test that no init error exists."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert lz.get_init_error() is None
+        assert get_init_error() is None
 
     def test_get_init_lock(self):
         """Test getting initialization lock."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lock = lz.get_init_lock()
+        lock = get_init_lock()
         assert lock is not None
 
 
@@ -292,7 +291,7 @@ class TestConfigThreadSafety:
 
     def test_concurrent_config_access(self):
         """Test concurrent access to configuration."""
-        import laziest_import as lz
+        from laziest_import import lz
         import threading
 
         errors = []
@@ -300,10 +299,10 @@ class TestConfigThreadSafety:
         def config_op():
             try:
                 for _ in range(10):
-                    _ = lz.is_debug_mode()
-                    _ = lz.is_auto_search_enabled()
-                    lz.enable_debug_mode()
-                    lz.disable_debug_mode()
+                    _ = lz.config.debug
+                    _ = lz.config.auto_search
+                    lz.config.debug = True
+                    lz.config.debug = False
             except Exception as e:
                 errors.append(e)
 
@@ -321,27 +320,26 @@ class TestConfigEdgeCases:
 
     def test_reset_init_state(self):
         """Test resetting init state."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        # Should not raise (but may be protected)
-        try:
-            lz.reset_init_state()
-        except Exception:
-            pass  # May be protected
+        reset_init_state()
+        from laziest_import._config import is_initialized
+        assert is_initialized() is False
 
     def test_repeated_enable_disable(self):
         """Test repeated enable/disable calls."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         for _ in range(10):
-            lz.enable_debug_mode()
-            lz.disable_debug_mode()
-            lz.enable_auto_search()
-            lz.disable_auto_search()
+            lz.config.debug = True
+            lz.config.debug = False
+            lz.config.auto_search = True
+            lz.config.auto_search = False
 
-        # Should end in consistent state
-        lz.enable_auto_search()
-        lz.disable_debug_mode()
+        assert lz.config.debug is False
+        assert lz.config.auto_search is False
+        lz.config.auto_search = True
+        assert lz.config.auto_search is True
 
 
 if __name__ == "__main__":

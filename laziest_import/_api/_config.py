@@ -330,7 +330,17 @@ class ConfigNamespace:
 
     def export(self, path: Optional[str] = None) -> str:
         import json
-        data = self.snapshot()
+
+        def _convert(obj):
+            if isinstance(obj, set):
+                return sorted(obj)
+            if isinstance(obj, dict):
+                return {k: _convert(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [_convert(i) for i in obj]
+            return obj
+
+        data = _convert(self.snapshot())
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

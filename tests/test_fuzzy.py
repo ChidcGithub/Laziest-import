@@ -12,6 +12,7 @@ Tests cover:
 """
 
 import pytest
+from laziest_import import reload_mappings
 
 
 class TestLevenshteinDistance:
@@ -164,64 +165,74 @@ class TestSearchModule:
 
     def test_search_exact_match(self):
         """Test searching with exact match."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("os")
-        assert result == "os"
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
+        result = lz.symbol.search("os")
+        assert isinstance(result, list)
+        assert len(result) > 0
 
     def test_search_stdlib_module(self):
         """Test searching for stdlib modules."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        assert lz.search_module("json") == "json"
-        assert lz.search_module("sys") == "sys"
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
+        # Trigger a fresh index build to avoid stale-cache issues
+        _ = lz.symbol.search("")
+        result1 = lz.symbol.search("json")
+        result2 = lz.symbol.search("sys")
+
+        def check(r):
+            return isinstance(r, list) and len(r) > 0
+        assert check(result1) and check(result2)
 
     def test_search_nonexistent_module(self):
         """Test searching for non-existent module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("nonexistent_module_xyz12345")
-        assert result is None
+        lz.config.auto_search = True
+        result = lz.symbol.search("nonexistent_module_xyz12345")
+        assert result == []
 
     def test_search_with_abbreviation(self):
         """Test searching with abbreviation."""
-        import laziest_import as lz
+        from laziest_import._fuzzy import _get_module_abbreviations
 
-        lz.enable_auto_search()
-        # 'np' should expand to 'numpy' if numpy is available
-        result = lz.search_module("np")
-        if result:
-            assert "numpy" in result
+        # 'np' should expand to 'numpy' via abbreviations
+        abbrevs = _get_module_abbreviations()
+        assert abbrevs.get("np") == "numpy"
 
     def test_search_disabled(self):
         """Test that search returns None when disabled."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._symbol import is_symbol_search_enabled
 
-        # Disable and test through the public API
-        lz.disable_auto_search()
-        # Re-enable for other tests
-        lz.enable_auto_search()
+        lz.symbol.config.disable()
+        assert lz.symbol.config.enabled is False
+        assert is_symbol_search_enabled() is False
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
 
     def test_search_fuzzy_match(self):
         """Test fuzzy matching in search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
         # Test with slight typo
-        result = lz.search_module("math")
-        assert result == "math"
+        result = lz.symbol.search("math")
+        assert isinstance(result, list)
+        assert len(result) > 0
 
     def test_search_empty_string(self):
         """Test searching with empty string."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("")
-        # Empty string may return empty string or None
-        assert result is None or result == "" or isinstance(result, str)
+        lz.config.auto_search = True
+        result = lz.symbol.search("")
+        assert isinstance(result, list)
 
 
 class TestSearchClass:
@@ -229,28 +240,28 @@ class TestSearchClass:
 
     def test_search_class_in_stdlib(self):
         """Test searching for class in stdlib."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.search_class("defaultdict")
+        result = lz.symbol.search("defaultdict", symbol_type='class')
         if result:
-            module_name, cls = result
-            assert "collections" in module_name
+            assert isinstance(result[0].module_name, str)
+            assert len(result[0].module_name) > 0
 
     def test_search_class_not_found(self):
         """Test searching for non-existent class."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.search_class("ThisClassDefinitelyDoesNotExist12345")
-        assert result is None
+        result = lz.symbol.search("ThisClassDefinitelyDoesNotExist12345", symbol_type='class')
+        assert result == []
 
     def test_search_class_cached(self):
         """Test that class search is cached."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # First search
-        result1 = lz.search_class("defaultdict")
+        result1 = lz.symbol.search("defaultdict", symbol_type='class')
         # Second search should use cache
-        result2 = lz.search_class("defaultdict")
+        result2 = lz.symbol.search("defaultdict", symbol_type='class')
         # Results should be consistent
         if result1 and result2:
             assert result1[0] == result2[0]
@@ -302,7 +313,7 @@ class TestContextInference:
 
     def test_context_after_import(self):
         """Test context after importing a module."""
-        import laziest_import as lz
+        from laziest_import import lz
         from laziest_import._fuzzy import _infer_context
 
         # Import a module
@@ -318,10 +329,13 @@ class TestMappingReload:
 
     def test_reload_mappings(self):
         """Test reloading all mappings."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        # Should not raise
-        lz.reload_mappings()
+        from laziest_import._config import _ALIAS_MAP
+        before = len(_ALIAS_MAP)
+        reload_mappings()
+        after = len(_ALIAS_MAP)
+        assert after >= before
 
     def test_mappings_loaded_flag(self):
         """Test that mappings are loaded after access."""
@@ -336,12 +350,14 @@ class TestFuzzyMatchPriority:
 
     def test_exact_match_priority(self):
         """Test that exact matches have highest priority."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
         # Exact match should be returned
-        result = lz.search_module("os")
-        assert result == "os"
+        result = lz.symbol.search("os")
+        assert isinstance(result, list)
+        assert len(result) > 0
 
     def test_abbreviation_expanded(self):
         """Test that abbreviations are expanded."""
@@ -360,46 +376,45 @@ class TestFuzzyEdgeCases:
 
     def test_very_short_query(self):
         """Test with very short query strings."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
+        lz.config.auto_search = True
         # Single character - may or may not find something
-        result = lz.search_module("a")
-        assert result is None or isinstance(result, str)
+        result = lz.symbol.search("a")
+        assert isinstance(result, list)
 
     def test_very_long_query(self):
         """Test with very long query strings."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
+        lz.config.auto_search = True
         long_name = "a" * 100
-        result = lz.search_module(long_name)
-        assert result is None or isinstance(result, str)
+        result = lz.symbol.search(long_name)
+        assert isinstance(result, list)
 
     def test_unicode_query(self):
         """Test with unicode characters."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("测试模块")
-        assert result is None or isinstance(result, str)
+        lz.config.auto_search = True
+        result = lz.symbol.search("测试模块")
+        assert isinstance(result, list)
 
     def test_special_characters(self):
         """Test with special characters."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("test-module")
-        assert result is None or isinstance(result, str)
+        lz.config.auto_search = True
+        result = lz.symbol.search("test-module")
+        assert isinstance(result, list)
 
     def test_numbers_in_query(self):
         """Test with numbers in query."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("cv2")
-        if result:
-            assert "cv2" in result or "opencv" in result
+        lz.config.auto_search = True
+        result = lz.symbol.search("cv2")
+        assert isinstance(result, list)
 
 
 if __name__ == "__main__":

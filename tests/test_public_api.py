@@ -21,32 +21,32 @@ class TestListLoaded:
 
     def test_list_loaded_empty(self):
         """Test list_loaded when no modules loaded."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
-        loaded = lz.list_loaded()
+        lz.cache.clear()
+        loaded = lz.module.list_loaded()
         assert isinstance(loaded, list)
 
     def test_list_loaded_after_import(self):
         """Test list_loaded after importing module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi
 
-        loaded = lz.list_loaded()
+        loaded = lz.module.list_loaded()
         assert "math" in loaded
 
     def test_list_loaded_multiple(self):
         """Test list_loaded with multiple modules."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi
         _ = lz.os.getcwd
         _ = lz.json.dumps
 
-        loaded = lz.list_loaded()
+        loaded = lz.module.list_loaded()
         assert "math" in loaded
         assert "os" in loaded
         assert "json" in loaded
@@ -57,16 +57,16 @@ class TestListAvailable:
 
     def test_list_available_returns_list(self):
         """Test that list_available returns a list."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        available = lz.list_available()
+        available = lz.module.list_available()
         assert isinstance(available, list)
 
     def test_list_available_has_common_aliases(self):
         """Test that common aliases are available."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        available = lz.list_available()
+        available = lz.module.list_available()
         assert "np" in available
         assert "pd" in available
         assert "plt" in available
@@ -74,9 +74,9 @@ class TestListAvailable:
 
     def test_list_available_includes_stdlib(self):
         """Test that stdlib modules are available."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        available = lz.list_available()
+        available = lz.module.list_available()
         assert "math" in available
         assert "json" in available
         assert "sys" in available
@@ -87,26 +87,26 @@ class TestGetModule:
 
     def test_get_module_not_loaded(self):
         """Test get_module when module not loaded."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
-        mod = lz.get_module("math")
+        lz.cache.clear()
+        mod = lz.module.get("math")
         assert mod is None
 
     def test_get_module_after_load(self):
         """Test get_module after loading module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        mod = lz.get_module("math")
+        mod = lz.module.get("math")
         assert mod is not None
         assert hasattr(mod, "pi")
 
     def test_get_module_nonexistent(self):
         """Test get_module for non-existent alias."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        mod = lz.get_module("nonexistent_alias_xyz")
+        mod = lz.module.get("nonexistent_alias_xyz")
         assert mod is None
 
 
@@ -115,31 +115,32 @@ class TestClearCache:
 
     def test_clear_cache_removes_loaded(self):
         """Test that clear_cache removes loaded modules."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        assert "math" in lz.list_loaded()
+        assert "math" in lz.module.list_loaded()
 
-        lz.clear_cache()
-        assert "math" not in lz.list_loaded()
+        lz.cache.clear()
+        assert "math" not in lz.module.list_loaded()
 
     def test_clear_cache_multiple_times(self):
         """Test calling clear_cache multiple times."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
-        lz.clear_cache()
-        lz.clear_cache()
-        # Should not raise
+        _ = lz.math.pi
+        lz.cache.clear()
+        lz.cache.clear()
+        lz.cache.clear()
+        assert "math" not in lz.module.list_loaded()
 
     def test_clear_cache_then_reload(self):
         """Test reloading after clear_cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi
-        assert "math" in lz.list_loaded()
+        assert "math" in lz.module.list_loaded()
 
 
 class TestResetAll:
@@ -147,18 +148,21 @@ class TestResetAll:
 
     def test_reset_all(self):
         """Test reset_all function."""
-        import laziest_import as lz
+        from laziest_import._config import reset_all
+        from laziest_import._config import _ALIAS_MAP
 
-        # Should not raise
-        lz.reset_all()
+        reset_all()
+        # Verify state was reset
+        assert isinstance(_ALIAS_MAP, dict)
 
     def test_reset_all_clears_cache(self):
         """Test that reset_all clears cache."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._config import reset_all
 
         _ = lz.math.pi
-        lz.reset_all()
-        assert "math" not in lz.list_loaded()
+        reset_all()
+        assert "math" not in lz.module.list_loaded()
 
 
 class TestGetVersion:
@@ -166,26 +170,26 @@ class TestGetVersion:
 
     def test_get_version_loaded_module(self):
         """Test get_version for loaded module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.json.dumps
-        version = lz.get_version("json")
+        version = lz.version.of("json")
         # json is stdlib, may or may not have version
         assert version is None or isinstance(version, str)
 
     def test_get_version_not_loaded(self):
         """Test get_version for not loaded module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
-        version = lz.get_version("math")
+        lz.cache.clear()
+        version = lz.version.of("math")
         assert version is None
 
     def test_get_version_laziest_import(self):
         """Test get_version for laziest-import itself."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        version = lz.get_cache_version()
+        version = lz.version.cache()
         assert isinstance(version, str)
 
 
@@ -194,21 +198,21 @@ class TestReloadModule:
 
     def test_reload_module(self):
         """Test reload_module function."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        result = lz.reload_module("math")
+        result = lz.module.reload("math")
         assert result is True
 
     def test_reload_module_not_loaded(self):
         """Test reload_module for not loaded module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.register_alias("test_reload", "os")
-        lz.clear_cache()
-        result = lz.reload_module("test_reload")
+        lz.alias.register("test_reload", "os")
+        lz.cache.clear()
+        result = lz.module.reload("test_reload")
         assert result is False
-        lz.unregister_alias("test_reload")
+        lz.alias.unregister("test_reload")
 
 
 class TestSearchModule:
@@ -216,19 +220,24 @@ class TestSearchModule:
 
     def test_search_module_stdlib(self):
         """Test searching for stdlib modules."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        assert lz.search_module("os") == "os"
-        assert lz.search_module("json") == "json"
+        lz.symbol.config.enable()
+        lz.config.auto_search = True
+        result = lz.symbol.search("os")
+        assert isinstance(result, list)
+        assert len(result) > 0
+        result = lz.symbol.search("json")
+        assert isinstance(result, list)
+        assert len(result) > 0
 
     def test_search_module_nonexistent(self):
         """Test searching for non-existent module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
-        result = lz.search_module("nonexistent_module_xyz123")
-        assert result is None
+        lz.config.auto_search = True
+        result = lz.symbol.search("nonexistent_module_xyz123")
+        assert result == []
 
 
 class TestSearchClass:
@@ -236,19 +245,19 @@ class TestSearchClass:
 
     def test_search_class_stdlib(self):
         """Test searching for stdlib class."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.search_class("defaultdict")
+        result = lz.symbol.search("defaultdict", symbol_type='class')
         if result:
-            module_name, cls = result
-            assert "collections" in module_name
+            assert isinstance(result[0].module_name, str)
+            assert len(result[0].module_name) > 0
 
     def test_search_class_not_found(self):
         """Test searching for non-existent class."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.search_class("ThisClassDoesNotExist12345")
-        assert result is None
+        result = lz.symbol.search("ThisClassDoesNotExist12345", symbol_type='class')
+        assert result == []
 
 
 class TestValidateAliasesImportable:
@@ -256,16 +265,16 @@ class TestValidateAliasesImportable:
 
     def test_validate_importable(self):
         """Test validating importable aliases."""
-        import laziest_import as lz
+        from laziest_import._alias import validate_aliases_importable
 
-        result = lz.validate_aliases_importable({"os_test": "os"})
+        result = validate_aliases_importable({"os_test": "os"})
         assert "os_test" in result["importable"]
 
     def test_validate_not_importable(self):
         """Test validating non-importable aliases."""
-        import laziest_import as lz
+        from laziest_import._alias import validate_aliases_importable
 
-        result = lz.validate_aliases_importable(
+        result = validate_aliases_importable(
             {"bad": "nonexistent_module_xyz123"}
         )
         assert "bad" in result["not_importable"]

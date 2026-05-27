@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-985%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-1055%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -67,7 +67,7 @@
 | 多层缓存 | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | 三层缓存系统提供高速访问 |
 | 依赖分析 | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | 分析模块依赖关系 |
 | 性能基准 | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | 基准测试导入和函数 |
-| 985+ 测试 | ![](https://img.shields.io/badge/tests-985%2B-brightgreen.svg) | 全面的测试覆盖 |
+| 1055+ 测试 | ![](https://img.shields.io/badge/tests-1055%2B-brightgreen.svg) | 全面的测试覆盖 |
 | 1000+ 别名 | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | 为常用包预定义的别名 |
 
 --- ## 安装方法
@@ -130,7 +130,25 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 
 --- ## 最新更新
 
-### v0.1.0-rc1（当前）
+### v0.1.0-rc3（当前）
+
+- **阶段五 — 假代码审计与修复**：所有占位符/假代码替换为真正的逻辑
+- **修复 `assert True` 测试**：4 个测试替换为真正的断言
+- **修复无声 `except Exception: pass`**：4 个测试、`HookList.__call__()`、`_benchmark.py` 预热/测量、`_state_setters.py` 缩小为 `except ImportError`
+- **修复 48 个零断言冒烟测试**：添加了类型/值断言
+- **修复 `_jupyter.py` `unload_ipython_extension()`**：无操作 `pass` 替换为 `unregister_magics()`
+- **修复 `_cache/_api.py` `invalidate_package_cache()`**：添加了缺失的 `_STDLIB_SYMBOL_CACHE` 清理
+- **修复 `_build_known_modules_cache()` 中的循环导入**：跳过扫描 CWD（`''`/`'.'` 路径）以防止重新导入工作目录中的脚本
+- **1055 项测试**：全部通过，全面覆盖
+
+### v0.1.0-rc2
+
+- **OOP API 迁移**：23 个测试文件从模块级 API 迁移到 `lz` 单例
+- **修复 `LazyImport.__getattr__`**：在昂贵查找之前进行负缓存检查
+- **修复 `reset_all()`**：现在重新加载别名、更新 `__all__` 并重建符号索引
+- **提高 `_build_symbol_index` 默认值**：`max_modules=500`，`timeout=60.0` 以实现完整的索引覆盖
+
+### v0.1.0-rc1
 
 - **阶段四 — 别名系统升级**：数据统一、JSON 格式升级、智能建议、过滤搜索、智能错误提示、上下文感知模糊匹配、冲突检测
 - **数据统一**：108 个别名从 `mappings/abbreviations.json` 合并到 `aliases/*.json`；删除 `abbreviations.json` 和 `submodules.json`
@@ -140,30 +158,8 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 - **上下文感知模糊匹配**：已加载模块在自动搜索中获得优先级加成
 - **冲突检测**：`register_alias()` 在别名覆盖时发出警告
 - **Bug 修复**：修复 `__repr__` 抛 `NameError`（严重）；修复别名搜索回退时错误导入模块（严重）；修复 opencv/cv2 无限循环；修复 sage/sagemath 指向不存在模块；修复 4 个环形别名链；修复 80+ 个连字符化别名值（使用 PyPI 名而非可导入模块名）；修复 70+ 个连字符化别名键（Python 语法不可达）；修复缩进错误导致 symbol-not-found 回退被隐藏；删除 48 行死代码；修复 `_suggest_for_package()` 返回重复项错误
-- **985+ 测试**：全面的测试覆盖
+- **1055+ 测试**：全面的测试覆盖
 
-### v0.1.0-pre12
-
-- **阶段三 — API 语义简化**：展平缓存命名空间 — `lz.cache.clear_symbols()`、`lz.cache.file_info()`、`lz.cache.symbol_count` 替代 3 级路径；`lz.cache.stats` 现在直接返回字典
-- **配置数据类缓存**：数据类实例（`lz.config.symbol_search`、`lz.config.cache` 等）首次访问后缓存，与内部状态双向同步
-- **修复 ConfigContext**：`with lz.config.temp_config(debug=True):` 现在正确保存和恢复状态
-- **985+ 测试**：全面的测试覆盖
-
-### v0.1.0-pre10
-
-- **阶段二 — `__init__.py` 瘦身**：从 965 行缩减至 741 行（−23%）
-- **提取 `_hooks.py`**：模块级钩子 API（`add_pre_import_hook` 等）移至独立模块
-- **提取 `_lazy_registry.py`**：懒加载函数注册/替换机制
-- **提取 `_analysis/`**：分析便利函数（`analyze_file`、`analyze_source`、`analyze_directory`）
-- **简化 `__getattr__`**：统一 5 步解析链（替代原来的 10 步链）
-- **985+ 测试**：全面的测试覆盖
-
-### v0.1.0-pre9
-
-- **严格模式**：`lz.symbol.config.strict = True` — 符号冲突时抛出 `AmbiguousSymbolError`；使用 `lz.symbol.prefer()` 解决
-- **CLI 接口**：`laziest-import freeze` 扫描源文件生成 `imports.laziest.json`；`laziest-import init` 创建 `.laziestrc`
-- **阶段一 API 合并**：2196 行的 `_api.py` 重构为 `_api/` 包下的 13 个文件；删除 `_public_api.py`
-- **985+ 测试**：全面的测试覆盖
 
 --- ## 使用示例
 

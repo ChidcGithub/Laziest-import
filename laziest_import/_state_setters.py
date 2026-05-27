@@ -67,6 +67,28 @@ def reset_all() -> None:
     c._CACHE_STATS["last_build_time"] = 0.0
     c._CACHE_STATS["build_count"] = 0
 
+    # Rebuild symbol index after clearing cache
+    try:
+        from laziest_import._symbol import rebuild_symbol_index
+        rebuild_symbol_index()
+    except ImportError:
+        pass
+
+    # Reload built-in aliases and update __all__
+    try:
+        from laziest_import._alias import _load_all_aliases
+        c._ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
+    except ImportError:
+        pass
+    try:
+        import laziest_import as _lz_mod
+        from laziest_import._config import _BASE_EXPORTS, _OLD_API_NAMES
+        _lz_mod.__all__ = sorted(
+            set(_BASE_EXPORTS) | set(_OLD_API_NAMES) | set(c._ALIAS_MAP.keys())
+        )
+    except ImportError:
+        pass
+
 
 def _load_priorities_from_file() -> Dict[str, int]:
     """Load module priorities from JSON file."""
@@ -94,5 +116,5 @@ def get_importing_modules() -> Set[str]:
     if not hasattr(ctx, "__importing"):
         with c._IMPORT_CONTEXT_LOCK:
             if not hasattr(ctx, "__importing"):
-                ctx.__importing = set()  # type: ignore
-    return ctx.__importing  # type: ignore
+                ctx.__importing = set()
+    return ctx.__importing

@@ -54,7 +54,7 @@ class AppState:
     @property
     def lazy_modules(self) -> Dict[str, Any]: return self._cfg()._LAZY_MODULES
     @property
-    def negative_cache(self) -> Set[str]: return self._cfg()._NEGATIVE_CACHE
+    def negative_cache(self) -> Dict[str, float]: return self._cfg()._NEGATIVE_CACHE
 
     @property
     def symbol_cache(self): return self._cfg()._SYMBOL_CACHE

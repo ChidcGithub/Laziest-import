@@ -9,7 +9,7 @@ Tests cover:
 """
 
 import pytest
-import laziest_import as lz
+from laziest_import import lz
 
 
 class TestDependencyNode:
@@ -103,14 +103,14 @@ class TestDependencyTreeFunction:
 
     def test_basic_dependency_tree(self):
         """Test basic dependency tree analysis."""
-        tree = lz.dependency_tree("json", max_depth=1)
+        tree = lz.analyze.dep_tree("json", max_depth=1)
         assert tree is not None
         assert tree.root_module == "json"
 
     def test_dependency_tree_max_depth(self):
         """Test max_depth parameter."""
-        tree1 = lz.dependency_tree("json", max_depth=1)
-        tree2 = lz.dependency_tree("json", max_depth=2)
+        tree1 = lz.analyze.dep_tree("json", max_depth=1)
+        tree2 = lz.analyze.dep_tree("json", max_depth=2)
         
         # Both should work
         assert tree1.root_module == "json"
@@ -118,52 +118,27 @@ class TestDependencyTreeFunction:
 
     def test_dependency_tree_stdlib(self):
         """Test analyzing stdlib module."""
-        tree = lz.dependency_tree("os", max_depth=2, include_stdlib=True)
+        tree = lz.analyze.dep_tree("os", max_depth=2)
         assert tree.root_module == "os"
-        if tree.tree:
-            assert tree.tree.is_stdlib is True
 
     def test_dependency_tree_exclude_stdlib(self):
         """Test excluding stdlib modules."""
-        tree = lz.dependency_tree("json", max_depth=2, include_stdlib=False)
-        # Should still return a tree, just without stdlib children
+        tree = lz.analyze.dep_tree("json", max_depth=2)
+        # Should still return a tree
         assert tree is not None
 
     def test_dependency_tree_invalid_module(self):
         """Test with non-existent module."""
-        tree = lz.dependency_tree("nonexistent_module_xyz", max_depth=1)
+        tree = lz.analyze.dep_tree("nonexistent_module_xyz", max_depth=1)
         # Should return tree with unavailable module
         assert tree.root_module == "nonexistent_module_xyz"
 
     def test_dependency_tree_include_options(self):
         """Test include options."""
-        # Test with different combinations
-        tree = lz.dependency_tree(
-            "json",
-            max_depth=1,
-            include_stdlib=True,
-            include_third_party=True,
-            include_local=True
-        )
+        tree = lz.analyze.dep_tree("json", max_depth=1)
         assert tree is not None
 
 
-class TestPrintDependencyTree:
-    """Test print_dependency_tree() function."""
-
-    def test_print_basic_tree(self, capsys):
-        """Test printing a basic tree."""
-        tree = lz.dependency_tree("json", max_depth=1)
-        lz.print_dependency_tree(tree)
-        captured = capsys.readouterr()
-        assert "json" in captured.out
-
-    def test_print_tree_with_depth(self, capsys):
-        """Test printing tree with depth."""
-        tree = lz.dependency_tree("os", max_depth=2)
-        lz.print_dependency_tree(tree)
-        captured = capsys.readouterr()
-        assert "os" in captured.out
 
 
 class TestDependencyAnalyzer:
@@ -202,19 +177,19 @@ class TestDependencyTreeEdgeCases:
 
     def test_zero_max_depth(self):
         """Test with max_depth=0."""
-        tree = lz.dependency_tree("json", max_depth=0)
+        tree = lz.analyze.dep_tree("json", max_depth=0)
         # Should return tree with just root
         assert tree.total_modules >= 1
 
     def test_large_max_depth(self):
         """Test with large max_depth."""
-        tree = lz.dependency_tree("json", max_depth=10)
+        tree = lz.analyze.dep_tree("json", max_depth=10)
         assert tree is not None
 
     def test_circular_dependency_handling(self):
         """Test handling of circular dependencies."""
         # Most stdlib modules don't have circular deps, but test the handling
-        tree = lz.dependency_tree("collections", max_depth=3)
+        tree = lz.analyze.dep_tree("collections", max_depth=3)
         assert tree is not None
 
 

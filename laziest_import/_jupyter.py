@@ -229,7 +229,8 @@ def load_ipython_extension(ipython: Any) -> None:
 
 def unload_ipython_extension(ipython: Any) -> None:
     """Unload the IPython extension."""
-    pass
+    if LazyMagics is not None:
+        ipython.unregister_magics(LazyMagics)
 
 
 def enable_in_jupyter() -> bool:

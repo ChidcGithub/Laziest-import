@@ -44,8 +44,8 @@ class TestJupyterMagics:
         try:
             from laziest_import._jupyter import unload_ipython_extension
 
-            # Should not raise
-            unload_ipython_extension(None)
+            result = unload_ipython_extension(None)
+            assert result is None
         except ImportError:
             pytest.skip("IPython not available")
 
@@ -115,8 +115,9 @@ class TestJupyterEdgeCases:
         """Test enabling twice should not raise."""
         from laziest_import._jupyter import enable_in_jupyter
 
-        enable_in_jupyter()
-        enable_in_jupyter()
+        result1 = enable_in_jupyter()
+        result2 = enable_in_jupyter()
+        assert result2 is result1 or result2 is True
 
     def test_extension_module_exists(self):
         """Test that extension module exists."""

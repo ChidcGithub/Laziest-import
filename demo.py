@@ -1,158 +1,148 @@
 """
-laziest-import Demo: Lazy Imports + Strict Mode + Freeze Report
-
-Demonstrates:
-  - Bare-name aliases (np, pd, plt) via `from laziest_import import *`
-  - Profile & analyze
-  - Symbol search with conflict detection
-  - Strict mode (AmbiguousSymbolError)
-  - Freeze report (alias -> module mapping)
-  - RC config
+Demo: exercise laziest-import from a user's perspective.
 """
+import os as _os
+_RUN_ID = _os.urandom(4).hex()
 
-from laziest_import import *
-
-
-def main():
-    print("=" * 58)
-    print("1. Profiled lazy imports")
-    print("=" * 58)
-
-    lz.profile.start()
-    _ = np.array([1, 2, 3])
-    _ = pd.DataFrame({"a": [1]})
-    lz.profile.stop()
-
-    report = lz.profile.report()
-    for name, profile in report.modules.items():
-        print(f"  {name}: {profile.load_time * 1000:.2f}ms")
-
-    lz.profile.print_report()
-
-    print()
-    print("=" * 58)
-    print("2. Dependency tree")
-    print("=" * 58)
-    print(lz.version.current)
-    print(f"   Modules: {lz.analyze.dep_tree('numpy').total_modules}")
-
-    print()
-    print("=" * 58)
-    print("3. 3D Graphics (bare-name plt / np)")
-    print("=" * 58)
-
-    fig = plt.figure(figsize=(12, 5))
-    ax1 = fig.add_subplot(121, projection="3d")
-    x = np.linspace(-5, 5, 100)
-    y = np.linspace(-5, 5, 100)
-    X, Y = np.meshgrid(x, y)
-    Z = np.sin(np.sqrt(X**2 + Y**2))
-    ax1.plot_surface(X, Y, Z, cmap="viridis", alpha=0.8)
-    ax1.set_title("3D Surface")
-
-    ax2 = fig.add_subplot(122, projection="3d")
-    theta = np.linspace(0, 2 * np.pi, 30)
-    phi = np.linspace(0, np.pi, 30)
-    Theta, Phi = np.meshgrid(theta, phi)
-    Xs = 2 * np.sin(Phi) * np.cos(Theta)
-    Ys = 2 * np.sin(Phi) * np.sin(Theta)
-    Zs = 2 * np.cos(Phi)
-    ax2.plot_wireframe(Xs, Ys, Zs, color="cyan", alpha=0.6)
-    ax2.set_title("Wireframe Sphere")
-
-    plt.tight_layout()
-    plt.savefig("demo_output.png", dpi=100)
-    print("  [OK] Figure saved to demo_output.png")
-
-    stats = lz.cache.stats
-    print(f"  Cache: {stats['total_requests']} req, {stats['hit_rate']:.0%} hit rate")
-    print(f"  Loaded: {lz.module.list_loaded()}")
-
-    print()
-    print("=" * 58)
-    print("4. Symbol search & conflicts")
-    print("=" * 58)
-
-    results = lz.symbol.search("array", max_results=5)
-    if results:
-        print(f"  Symbol 'array' found in:")
-        for r in results[:3]:
-            print(f"    - {r.module_name}")
-        conflicts = lz.symbol.conflicts("array")
-        if conflicts:
-            print(f"  Total conflicts: {len(conflicts)}")
-
-    lz.symbol.prefer("array", "numpy")
-    pref = lz.symbol.preference("array")
-    print(f"  Preference: array -> {pref}")
-
-    print()
-    print("=" * 58)
-    print("5. Strict mode (AmbiguousSymbolError)")
-    print("=" * 58)
-
-    from laziest_import._symbol import _search_symbol_enhanced, AmbiguousSymbolError, _build_symbol_index
-    from laziest_import._config import _SYMBOL_RESOLUTION_CONFIG
-
-    print("  Enabling strict mode & building symbol index...")
-    _SYMBOL_RESOLUTION_CONFIG["strict"] = True
-    _build_symbol_index(force=True)
-
-    try:
-        result = _search_symbol_enhanced("array", auto=True)
-        print(f"  array -> {result.module_name}.{result.symbol_name} (unambiguous)")
-    except AmbiguousSymbolError as e:
-        print(f"  [OK] Strict mode caught:")
-        for c in e.candidates[:3]:
-            print(f"    - {c.module_name}.{c.symbol_name} ({c.confidence:.0%})")
-
-    lz.symbol.prefer("array", "numpy")
-    print("  Set preference: array -> numpy")
-    try:
-        result = _search_symbol_enhanced("array", auto=True)
-        if result:
-            print(f"  array now resolves to: {result.module_name}.{result.symbol_name}")
-    except AmbiguousSymbolError as e:
-        print(f"  Still ambiguous: {e}")
-
-    _SYMBOL_RESOLUTION_CONFIG["strict"] = False
-    print("  Strict mode disabled.")
-
-    print()
-    print("=" * 58)
-    print("6. Freeze report (alias -> module mapping)")
-    print("=" * 58)
-
-    import json
-    from laziest_import._config import _ALIAS_MAP
-
-    freeze = {"version": "1.0", "aliases": {}, "files": {}}
-    for alias, module in sorted(_ALIAS_MAP.items()):
-        if len(alias) <= 6 or alias in ("numpy", "pandas", "matplotlib"):
-            freeze["aliases"][alias] = module
-
-    print(json.dumps(freeze, indent=2, ensure_ascii=False))
-
-    print()
-    print("=" * 58)
-    print("7. RC config preview")
-    print("=" * 58)
-
-    print(f"  Paths checked:")
-    for p in lz.rc.paths():
-        print(f"    - {p}")
-    print(f"  Active: {lz.rc.paths_list}")
-    info = lz.rc.info()
-    if info.get("active_path"):
-        print(f"  Loaded from: {info['active_path']}")
-    else:
-        print("  (no .laziestrc found — using defaults)")
-
-    print()
-    print("=" * 58)
-    print("[OK] Demo completed successfully!")
-    print("=" * 58)
+from laziest_import import lz
 
 
-if __name__ == "__main__":
-    main()
+def section(title: str) -> None:
+    print(f"\n{'='*60}")
+    print(f"  {title}")
+    print(f"{'='*60}")
+
+
+# ── 1. Basic info ──────────────────────────────────────────────
+section("1. Basic Info")
+print(f"lz object : {lz}")
+print(f"version   : {lz.__version__}")
+print(f"version_of: {lz.version_of('laziest-import')}")
+print(f"version_ns: {lz.version}")
+
+
+# ── 2. Lazy module access via __getattr__ ──────────────────────
+section("2. Lazy Module Access (by name)")
+os_mod = lz.os
+print(f"lz.os == os: {os_mod.__name__}")
+
+np_mod = lz.module.numpy
+print(f"lz.module.numpy: {np_mod.__name__}, array: {np_mod.array([1,2,3])}")
+
+try:
+    lz.nonexistent_xyzzy
+except AttributeError as e:
+    print(f"AttributeError for unknown name: {e}")
+
+
+# ── 3. Module namespace ────────────────────────────────────────
+section("3. Module Namespace")
+print(f"module:           {lz.module}")
+print(f"available (≤5):   {lz.module.list_available()[:5]}")
+print(f"loaded:           {lz.module.list_loaded()}")
+print(f"is_loaded('os'): {lz.module.is_loaded('os')}")
+
+json_mod = lz.module.load("json")
+print(f"load('json'):      {json_mod.__name__}")
+
+
+# ── 4. Config namespace ────────────────────────────────────────
+section("4. Config Namespace")
+print(f"config:        {lz.config}")
+print(f"debug:         {lz.config.debug}")
+print(f"auto_search:   {lz.config.auto_search}")
+print(f"auto_install:  {lz.config.auto_install}")
+print(f"retry:         {lz.config.retry}")
+print(f"symbol_search: {lz.config.symbol_search}")
+print(f"import_stats:  {lz.config.import_stats}")
+
+lz.config.debug = True
+print(f"debug (after True):  {lz.config.debug}")
+lz.config.debug = False
+print(f"debug (after False): {lz.config.debug}")
+
+with lz.config.temp_config(debug=True, auto_search=False):
+    print(f"  inside temp: debug={lz.config.debug}, auto_search={lz.config.auto_search}")
+print(f"outside temp: debug={lz.config.debug}, auto_search={lz.config.auto_search}")
+
+snap = lz.config.snapshot()
+print(f"snapshot keys: {list(snap.keys())}")
+
+
+# ── 5. Symbol search ───────────────────────────────────────────
+section("5. Symbol Search")
+lz.symbol.config.enable()
+results = lz.symbol.search("json")
+print(f"search('json'): {len(results)} results")
+if results:
+    print(f"  first: {results[0]}")
+
+conflicts = lz.symbol.conflicts("json") or []
+print(f"conflicts('json'): {len(conflicts)}")
+
+summary = lz.symbol.conflict_summary()
+print(f"conflict_summary keys: {list(summary.keys())}")
+
+where = lz.symbol.which("json")
+print(f"which('json'): {where}")
+
+all_where = lz.symbol.which_all("json")
+print(f"which_all('json'): {len(all_where)} found")
+
+print(f"symbol.config:        {lz.symbol.config}")
+print(f"symbol.index:         {lz.symbol.index}")
+print(f"symbol.cache_info:     {lz.symbol.cache_info()}")
+
+
+# ── 6. Cache operations ────────────────────────────────────────
+section("6. Cache Operations")
+print(f"cache:            {lz.cache}")
+print(f"cache.dir:        {lz.cache.dir}")
+print(f"cache.symbols:    {lz.cache.symbols}")
+print(f"cache.files:      {lz.cache.files}")
+print(f"cache.config:     {lz.cache.config}")
+print(f"cache.config['max_cache_size_mb']: {lz.cache.config['max_cache_size_mb']}")
+print(f"cache.config.max_size_mb:          {lz.cache.config.max_size_mb}")
+
+
+# ── 7. Alias operations ────────────────────────────────────────
+section("7. Alias Operations")
+result = lz.alias.validate()
+valid = result.get('valid', [])
+print(f"alias.validate(): {len(valid)} valid")
+print(f"aliases:           {lz.alias}")
+
+
+# ── 8. Hooks ───────────────────────────────────────────────────
+section("8. Hooks")
+called = False
+
+def my_hook(name: str) -> None:
+    global called
+    called = f"Hook fired for '{name}'"
+
+lz.hooks.pre.add(my_hook)
+lz.hooks.pre("pandas")
+print(f"hook_called:  {called}")
+lz.hooks.pre.remove(my_hook)
+print(f"hooks:        {lz.hooks}")
+
+
+# ── 9. Background index ────────────────────────────────────────
+section("9. Background Index")
+print(f"background:   {lz.background}")
+lz.background.enable(True)
+
+
+# ── 10. Analyze namespace ──────────────────────────────────────
+section("10. Analyze Namespace")
+print(f"analyze:  {lz.analyze}")
+print(f"profile:  {lz.profile}")
+print(f"install:  {lz.install}")
+print(f"rc:       {lz.rc}")
+
+
+# ── Done ───────────────────────────────────────────────────────
+print(f"\n{'='*60}")
+print("  ALL DEMO SECTIONS COMPLETED SUCCESSFULLY")
+print(f"{'='*60}")

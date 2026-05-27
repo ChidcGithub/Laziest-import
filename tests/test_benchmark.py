@@ -11,7 +11,8 @@ Tests cover:
 
 import pytest
 import time
-import laziest_import as lz
+from laziest_import import lz
+from laziest_import._analysis._benchmark import benchmark, benchmark_imports, print_benchmark_report
 
 
 class TestBenchmarkResult:
@@ -78,7 +79,7 @@ class TestBenchmarkFunction:
         def simple_func():
             return sum(range(100))
 
-        result = lz.benchmark(simple_func, iterations=5)
+        result = benchmark(simple_func, iterations=5)
         assert result is not None
         assert result.name == "simple_func"
         assert result.iterations == 5
@@ -89,7 +90,7 @@ class TestBenchmarkFunction:
         def test_func():
             return 42
 
-        result = lz.benchmark(test_func, name="custom_name", iterations=3)
+        result = benchmark(test_func, name="custom_name", iterations=3)
         assert result.name == "custom_name"
 
     def test_benchmark_iterations(self):
@@ -97,8 +98,8 @@ class TestBenchmarkFunction:
         def func():
             return 1
 
-        result5 = lz.benchmark(func, iterations=5)
-        result10 = lz.benchmark(func, iterations=10)
+        result5 = benchmark(func, iterations=5)
+        result10 = benchmark(func, iterations=10)
 
         assert result5.iterations == 5
         assert result10.iterations == 10
@@ -108,13 +109,13 @@ class TestBenchmarkFunction:
         def func():
             return sum(range(1000))
 
-        result = lz.benchmark(func, iterations=5, warmup=2)
+        result = benchmark(func, iterations=5, warmup=2)
         assert result is not None
         assert result.avg_time > 0
 
     def test_benchmark_lambda(self):
         """Test benchmarking lambda function."""
-        result = lz.benchmark(lambda: sum(range(100)), name="lambda_test", iterations=5)
+        result = benchmark(lambda: sum(range(100)), name="lambda_test", iterations=5)
         assert result.name == "lambda_test"
 
 
@@ -123,18 +124,18 @@ class TestBenchmarkImports:
 
     def test_benchmark_single_import(self):
         """Test benchmarking single module import."""
-        report = lz.benchmark_imports(["json"], iterations=3)
+        report = benchmark_imports(["json"], iterations=3)
         assert report is not None
         assert len(report.results) >= 1
 
     def test_benchmark_multiple_imports(self):
         """Test benchmarking multiple module imports."""
-        report = lz.benchmark_imports(["json", "os", "math"], iterations=2)
+        report = benchmark_imports(["json", "os", "math"], iterations=2)
         assert report is not None
 
     def test_benchmark_imports_with_options(self):
         """Test benchmark_imports with options."""
-        report = lz.benchmark_imports(
+        report = benchmark_imports(
             ["json"],
             iterations=3,
             compare_lazy=True
@@ -143,7 +144,7 @@ class TestBenchmarkImports:
 
     def test_benchmark_imports_empty_list(self):
         """Test with empty module list."""
-        report = lz.benchmark_imports([], iterations=3)
+        report = benchmark_imports([], iterations=3)
         assert report is not None
 
 
@@ -155,10 +156,10 @@ class TestPrintBenchmarkReport:
         def func():
             return sum(range(100))
 
-        result = lz.benchmark(func, iterations=5)
+        result = benchmark(func, iterations=5)
         from laziest_import._analysis._benchmark import BenchmarkReport
         report = BenchmarkReport(results=[result])
-        lz.print_benchmark_report(report)
+        print_benchmark_report(report)
         captured = capsys.readouterr()
         assert "Benchmark" in captured.out
 
@@ -207,7 +208,7 @@ class TestBenchmarkEdgeCases:
         def instant():
             return 1
 
-        result = lz.benchmark(instant, iterations=10)
+        result = benchmark(instant, iterations=10)
         assert result.avg_time >= 0  # May be very small
 
     def test_benchmark_slow_function(self):
@@ -216,7 +217,7 @@ class TestBenchmarkEdgeCases:
             time.sleep(0.01)
             return True
 
-        result = lz.benchmark(slow, iterations=2, warmup=1)
+        result = benchmark(slow, iterations=2, warmup=1)
         assert result.avg_time >= 0.01  # At least sleep time
 
     def test_benchmark_function_with_args(self):
@@ -225,7 +226,7 @@ class TestBenchmarkEdgeCases:
             return a + b
 
         # Wrap in lambda for benchmarking
-        result = lz.benchmark(lambda: add(1, 2), name="add", iterations=5)
+        result = benchmark(lambda: add(1, 2), name="add", iterations=5)
         assert result is not None
 
     def test_benchmark_single_iteration(self):
@@ -233,7 +234,7 @@ class TestBenchmarkEdgeCases:
         def func():
             return 42
 
-        result = lz.benchmark(func, iterations=1)
+        result = benchmark(func, iterations=1)
         assert result.iterations == 1
 
 
@@ -245,7 +246,7 @@ class TestBenchmarkStatistics:
         def func():
             return sum(range(1000))
 
-        result = lz.benchmark(func, iterations=10)
+        result = benchmark(func, iterations=10)
         assert hasattr(result, "avg_time")
         assert hasattr(result, "min_time")
         assert hasattr(result, "max_time")
@@ -257,7 +258,7 @@ class TestBenchmarkStatistics:
         def func():
             return sum(range(100))
 
-        result = lz.benchmark(func, iterations=10)
+        result = benchmark(func, iterations=10)
         assert result.min_time <= result.avg_time <= result.max_time
 
     def test_std_dev_non_negative(self):
@@ -265,7 +266,7 @@ class TestBenchmarkStatistics:
         def func():
             return sum(range(100))
 
-        result = lz.benchmark(func, iterations=10)
+        result = benchmark(func, iterations=10)
         assert result.std_dev >= 0
 
 

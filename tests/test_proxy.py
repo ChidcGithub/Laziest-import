@@ -13,6 +13,7 @@ Tests cover:
 
 import pytest
 import os
+from laziest_import import reset_import_stats
 
 
 class TestLazyModule:
@@ -20,69 +21,78 @@ class TestLazyModule:
 
     def test_lazy_module_not_loaded_initially(self):
         """Test that module is not loaded until first access."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._module import _get_lazy_module
 
-        lz.clear_cache()
-        repr_str = repr(lz.math)
+        lz.cache.clear()
+        lm = _get_lazy_module("math")
+        repr_str = repr(lm)
         assert "not loaded" in repr_str
 
     def test_lazy_module_loaded_after_access(self):
         """Test that module is loaded after first attribute access."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._module import _get_lazy_module
 
-        lz.clear_cache()
-        _ = lz.math.pi
-        repr_str = repr(lz.math)
+        lz.cache.clear()
+        lm = _get_lazy_module("math")
+        _ = lm.pi
+        repr_str = repr(lm)
         assert "loaded" in repr_str
 
     def test_lazy_module_attribute_access(self):
         """Test accessing attributes on lazy module."""
-        import laziest_import as lz
+        from laziest_import._api._module import _get_lazy_module
 
-        assert lz.math.pi > 3.14
-        assert lz.math.sqrt(16) == 4.0
+        lm = _get_lazy_module("math")
+        assert lm.pi > 3.14
+        assert lm.sqrt(16) == 4.0
 
     def test_lazy_module_caching(self):
         """Test that module is cached after first load."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._module import _get_lazy_module
 
-        lz.clear_cache()
+        lz.cache.clear()
+        lm = _get_lazy_module("math")
         # First access
-        pi1 = lz.math.pi
+        pi1 = lm.pi
         # Second access - should use cached module
-        pi2 = lz.math.pi
+        pi2 = lm.pi
         assert pi1 == pi2
 
     def test_lazy_module_dir(self):
         """Test dir() on lazy module."""
-        import laziest_import as lz
+        from laziest_import._api._module import _get_lazy_module
 
-        dir_result = dir(lz.math)
+        lm = _get_lazy_module("math")
+        dir_result = dir(lm)
         assert isinstance(dir_result, list)
         assert "pi" in dir_result
         assert "sqrt" in dir_result
 
     def test_lazy_module_repr_not_loaded(self):
         """Test repr when module not loaded."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._api._module import _get_lazy_module
 
-        lz.clear_cache()
-        repr_str = repr(lz.json)
-        assert "LazyModule" in repr_str
+        lz.cache.clear()
+        lm = _get_lazy_module("json")
+        repr_str = repr(lm)
         assert "not loaded" in repr_str
 
     def test_lazy_module_repr_loaded(self):
         """Test repr when module is loaded."""
-        import laziest_import as lz
+        from laziest_import._api._module import _get_lazy_module
 
-        _ = lz.os.getcwd
-        repr_str = repr(lz.os)
-        assert "LazyModule" in repr_str
+        lm = _get_lazy_module("os")
+        _ = lm.getcwd
+        repr_str = repr(lm)
         assert "loaded" in repr_str
 
     def test_lazy_module_call_non_callable(self):
         """Test calling non-callable module raises TypeError."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(TypeError) as excinfo:
             lz.math()
@@ -90,7 +100,7 @@ class TestLazyModule:
 
     def test_lazy_module_private_attribute_access(self):
         """Test that private attributes are handled correctly."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Some dunder attributes should work
         assert hasattr(lz.math, "__name__")
@@ -98,7 +108,7 @@ class TestLazyModule:
 
     def test_lazy_module_invalid_private_attribute(self):
         """Test that invalid private attributes raise AttributeError."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(AttributeError):
             _ = lz.math._nonexistent_private_attr
@@ -109,7 +119,7 @@ class TestLazySubmodule:
 
     def test_submodule_access(self):
         """Test accessing submodule."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         path = lz.os.path
         assert path is not None
@@ -117,14 +127,14 @@ class TestLazySubmodule:
 
     def test_submodule_attribute_access(self):
         """Test accessing attributes on submodule."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         result = lz.os.path.join("a", "b")
         assert result == os.path.join("a", "b")
 
     def test_nested_submodule(self):
         """Test accessing nested submodule."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         abc = lz.collections.abc
         assert abc is not None
@@ -132,7 +142,7 @@ class TestLazySubmodule:
 
     def test_submodule_dir(self):
         """Test dir() on submodule."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         dir_result = dir(lz.os.path)
         assert isinstance(dir_result, list)
@@ -140,14 +150,14 @@ class TestLazySubmodule:
 
     def test_submodule_repr(self):
         """Test submodule repr."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         repr_str = repr(lz.os.path)
         assert "LazySubmodule" in repr_str or "path" in repr_str
 
     def test_submodule_cache(self):
         """Test that submodules are cached."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         path1 = lz.os.path
         path2 = lz.os.path
@@ -224,9 +234,9 @@ class TestLazyProxy:
     def test_lazy_proxy_misspelling_correction(self):
         """Test misspelling correction through lazy proxy."""
         from laziest_import._proxy import lazy
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_search()
+        lz.config.auto_search = True
         # Try accessing with typo (if supported)
         # This depends on the misspelling mappings
 
@@ -236,20 +246,20 @@ class TestModuleLoading:
 
     def test_module_load_timing(self):
         """Test that module load is recorded."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.reset_import_stats()
-        lz.clear_cache()
+        reset_import_stats()
+        lz.cache.clear()
 
         _ = lz.math.pi
 
-        stats = lz.get_import_stats()
+        stats = lz.config.import_stats
         assert stats["total_imports"] >= 1
         assert "math" in stats["module_times"]
 
     def test_module_load_hooks(self):
         """Test that hooks are called during load."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         called = []
 
@@ -259,20 +269,20 @@ class TestModuleLoading:
         def post_hook(name, mod):
             called.append(("post", name))
 
-        lz.add_pre_import_hook(pre_hook)
-        lz.add_post_import_hook(post_hook)
+        lz.hooks.pre.add(pre_hook)
+        lz.hooks.post.add(post_hook)
 
-        lz.clear_cache()
+        lz.cache.symbols.clear()
         _ = lz.json.dumps
 
         assert any("json" in c for c in called)
 
-        lz.remove_pre_import_hook(pre_hook)
-        lz.remove_post_import_hook(post_hook)
+        lz.hooks.pre.remove(pre_hook)
+        lz.hooks.post.remove(post_hook)
 
     def test_module_load_error_handling(self):
         """Test error handling during module load."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Try to access non-existent module
         with pytest.raises((AttributeError, ImportError)):
@@ -284,28 +294,24 @@ class TestAttributeAccess:
 
     def test_getattr_on_module(self):
         """Test __getattr__ on module level."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         math = lz.__getattr__("math")
         assert math is not None
 
     def test_getattr_nonexistent(self):
         """Test __getattr__ for non-existent attribute."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(AttributeError):
             lz.__getattr__("nonexistent_attr_xyz123")
 
     def test_reserved_names(self):
         """Test that reserved names raise AttributeError."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        # Some names may be reserved
-        # Test that the mechanism works
-        try:
-            _ = lz.__getattr__("__path__")
-        except AttributeError:
-            pass  # Expected for some reserved names
+        with pytest.raises(AttributeError):
+            lz.__getattr__("__path__")  # Expected for some reserved names
 
 
 class TestModuleCaching:
@@ -313,32 +319,32 @@ class TestModuleCaching:
 
     def test_cache_clear_unloads(self):
         """Test that clear_cache unloads modules."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        assert "math" in lz.list_loaded()
+        assert "math" in lz.module.list_loaded()
 
-        lz.clear_cache()
-        assert "math" not in lz.list_loaded()
+        lz.cache.clear()
+        assert "math" not in lz.module.list_loaded()
 
     def test_get_module(self):
         """Test get_module function."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_cache()
-        assert lz.get_module("math") is None
+        lz.cache.clear()
+        assert lz.module.get("math") is None
 
         _ = lz.math.pi
-        mod = lz.get_module("math")
+        mod = lz.module.get("math")
         assert mod is not None
         assert hasattr(mod, "pi")
 
     def test_reload_module(self):
         """Test module reload."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         _ = lz.math.pi
-        result = lz.reload_module("math")
+        result = lz.module.reload("math")
         assert result is True
 
 
@@ -347,7 +353,7 @@ class TestProxyThreadSafety:
 
     def test_concurrent_access(self):
         """Test concurrent access to lazy modules."""
-        import laziest_import as lz
+        from laziest_import import lz
         import threading
 
         errors = []
@@ -373,33 +379,34 @@ class TestProxyEdgeCases:
 
     def test_access_dunder_name(self):
         """Test accessing __name__."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         name = lz.math.__name__
         assert name == "math"
 
     def test_access_dunder_doc(self):
         """Test accessing __doc__."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         doc = lz.math.__doc__
         assert doc is not None or doc is None  # May or may not exist
 
     def test_module_with_no_attr(self):
         """Test accessing non-existent attribute on module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(AttributeError):
             _ = lz.math.nonexistent_attr_xyz
 
     def test_cyclic_import_protection(self):
         """Test that cyclic imports are handled."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Should not cause infinite loop
-        _ = lz.math.pi
-        _ = lz.math.sqrt(4)
-        assert True
+        pi = lz.math.pi
+        sqrt_val = lz.math.sqrt(4)
+        assert pi > 3
+        assert abs(sqrt_val - 2) < 1e-10
 
 
 if __name__ == "__main__":

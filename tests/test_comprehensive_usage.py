@@ -11,7 +11,29 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import laziest_import as lz
+from laziest_import import lz
+
+# "import directly" cases (migrated from deprecated API)
+from laziest_import._cache._api import invalidate_package_cache, reset_cache_stats
+from laziest_import._api._config import reset_import_stats
+from laziest_import._state_setters import reset_all
+from laziest_import._symbol import (
+    enable_sharding, disable_sharding, get_sharding_config, clear_shard_cache,
+    set_module_priority, get_module_priority, get_loaded_modules_context,
+)
+from laziest_import._cache._incremental import get_incremental_config
+from laziest_import._install import set_pip_index, set_pip_extra_args
+from laziest_import._analysis import detect_environment
+from laziest_import._analysis._environment import show_environment
+from laziest_import._analysis._preferences import save_preferences, load_preferences, apply_preferences, clear_preferences
+from laziest_import._analysis._benchmark import benchmark, benchmark_imports, print_benchmark_report, BenchmarkResult, BenchmarkReport
+from laziest_import._alias import get_config_paths, get_config_dirs, validate_aliases_importable
+from laziest_import._analysis._preanalyze import DependencyPreAnalyzer
+from laziest_import._analysis._profiler import ImportProfiler
+from laziest_import._analysis._dependency import DependencyNode, DependencyTree
+from laziest_import._introspect import list_module_symbols, get_module_info, search_in_module
+from laziest_import import easter_egg
+
 
 
 def section(title):
@@ -33,9 +55,9 @@ print(f"Version: {lz.__version__}")
 print(f"laziest-import loaded: {lz}")
 
 # from laziest_import import * style
-from laziest_import import clear_cache, list_loaded, help as lzhelp
+from laziest_import import help as lzhelp
 
-print(f"Direct import of functions works: clear_cache={callable(clear_cache)}")
+print(f"Direct import of functions works: lzhelp={callable(lzhelp)}")
 
 
 # =============================================================================
@@ -43,7 +65,7 @@ print(f"Direct import of functions works: clear_cache={callable(clear_cache)}")
 # =============================================================================
 section("2. LAZY MODULE ACCESS VIA ALIASES")
 
-lz.clear_cache()
+lz.cache.clear()
 
 # Standard library aliases
 np = lz.np
@@ -90,8 +112,11 @@ print(f"  random.randint(1,10) = {random_mod.randint(1, 10)}")
 for alias in ["pd", "plt", "tf", "torch"]:
     try:
         mod = getattr(lz, alias)
-        print(f"{alias} = {mod}")
-    except AttributeError:
+        if mod is not None:
+            print(f"{alias} = {mod}")
+        else:
+            print(f"{alias} = (not installed)")
+    except (AttributeError, ImportError):
         print(f"{alias} = (not installed)")
 
 
@@ -100,7 +125,7 @@ for alias in ["pd", "plt", "tf", "torch"]:
 # =============================================================================
 section("3. SUBMODULE ACCESS")
 
-lz.clear_cache()
+lz.cache.clear()
 
 os_path = lz.os.path
 print(f"os.path = {os_path}")
@@ -126,7 +151,7 @@ print(f"os.path already loaded via os: {os_path}")
 # =============================================================================
 section("4. MODULE ATTRIBUTE ACCESS")
 
-lz.clear_cache()
+lz.cache.clear()
 
 # Direct attribute access without intermediate variable
 pi_value = lz.math.pi
@@ -145,37 +170,37 @@ print(f"lz.json.dumps({{'hello': 'world'}}) = {dumps_result}")
 section("5. ALIAS MANAGEMENT")
 
 # register_alias
-lz.register_alias("my_math", "math")
+lz.alias.register("my_math", "math")
 print(f"Registered 'my_math' -> 'math'")
 print(f"  lz.my_math.pi = {lz.my_math.pi}")
 
 # register_aliases batch
-lz.register_aliases({"my_os": "os", "my_json": "json"})
+lz.alias.register_many({"my_os": "os", "my_json": "json"})
 print(f"Batch registered: my_os, my_json")
 
 # unregister_alias
-lz.unregister_alias("my_os")
+lz.alias.unregister("my_os")
 print(f"Unregistered 'my_os'")
 
 # list_loaded
-print(f"Loaded modules: {lz.list_loaded()}")
+print(f"Loaded modules: {lz.module.list_loaded()}")
 
 # list_available
-available = lz.list_available()
+available = lz.module.list_available()
 print(f"Available aliases (sample): {available[:10]}... ({len(available)} total)")
 
 # get_module
-lz.clear_cache()
+lz.cache.clear()
 _ = lz.math.pi  # trigger load
-mod = lz.get_module("math")
+mod = lz.module.get("math")
 print(f"get_module('math'): {mod}, pi = {mod.pi}")
 
 # validate_aliases_importable
-result = lz.validate_aliases_importable(
+result = validate_aliases_importable(
     {"numpy": "numpy", "os": "os", "fake_mod_xyz": "fake_mod_xyz"}
 )
 print(
-    f"validate_aliases_importable: {result['importable'].keys()} importable, {result['not_importable'].keys()} not"
+    f"validate_aliases_importable: {list(result['importable'].keys())} importable, {list(result['not_importable'].keys())} not"
 )
 
 
@@ -184,24 +209,24 @@ print(
 # =============================================================================
 section("6. AUTO SEARCH")
 
-lz.enable_auto_search()
-print(f"auto_search enabled: {lz.is_auto_search_enabled()}")
+lz.config.auto_search = True
+print(f"auto_search enabled: {lz.config.auto_search}")
 
 # Search for a module by name
-found = lz.search_module("typing")
+found = lz.symbol.search("typing")
 print(f"search_module('typing') = {found}")
 
-found = lz.search_module("pathlib")
+found = lz.symbol.search("pathlib")
 print(f"search_module('pathlib') = {found}")
 
 # search_class
-result = lz.search_class("defaultdict")
+result = lz.symbol.search("defaultdict", symbol_type="class")
 print(f"search_class('defaultdict') = {result}")
 
 # Disable
-lz.disable_auto_search()
-print(f"auto_search disabled: {not lz.is_auto_search_enabled()}")
-lz.enable_auto_search()
+lz.config.auto_search = False
+print(f"auto_search disabled: {not lz.config.auto_search}")
+lz.config.auto_search = True
 
 
 # =============================================================================
@@ -209,47 +234,47 @@ lz.enable_auto_search()
 # =============================================================================
 section("7. CACHE MANAGEMENT")
 
-lz.clear_cache()
+lz.cache.clear()
 
 # File cache
-lz.enable_file_cache()
-print(f"file_cache enabled: {lz.is_file_cache_enabled()}")
+lz.cache.files.enabled = True
+print(f"file_cache enabled: {lz.cache.files.enabled}")
 
-cache_info = lz.get_file_cache_info()
+cache_info = lz.cache.files.info()
 print(f"file_cache_info: {cache_info}")
 
-lz.force_save_cache()
+lz.cache.files.force_save()
 print(f"force_save_cache() done")
 
-lz.disable_file_cache()
-print(f"file_cache disabled: {not lz.is_file_cache_enabled()}")
+lz.cache.files.enabled = False
+print(f"file_cache disabled: {not lz.cache.files.enabled}")
 
 # Cache config
-lz.set_cache_config(
-    symbol_index_ttl=3600, stdlib_cache_ttl=7200, enable_compression=True
-)
-config = lz.get_cache_config()
+lz.cache.config.symbol_index_ttl = 3600
+lz.cache.config.stdlib_cache_ttl = 7200
+lz.cache.config.compression = True
+config = lz.cache.config
 print(f"cache_config: {config}")
 
 # Cache stats
-stats = lz.get_cache_stats()
+stats = lz.cache.stats
 print(f"cache_stats hit_rate: {stats['hit_rate']:.2%}")
 
-lz.reset_cache_stats()
+reset_cache_stats()
 print(f"cache_stats reset")
 
-lz.invalidate_package_cache("math")
+invalidate_package_cache("math")
 print(f"invalidate_package_cache('math') done")
 
 # Cache directory
-orig_dir = lz.get_cache_dir()
+orig_dir = lz.cache.dir
 print(f"original cache_dir: {orig_dir}")
 
 with tempfile.TemporaryDirectory() as tmpdir:
-    lz.set_cache_dir(tmpdir)
-    print(f"temp cache_dir set: {lz.get_cache_dir()}")
-    lz.reset_cache_dir()
-print(f"cache_dir reset: {lz.get_cache_dir()}")
+    lz.cache.dir = tmpdir
+    print(f"temp cache_dir set: {lz.cache.dir}")
+    lz.cache.reset_dir()
+print(f"cache_dir reset: {lz.cache.dir}")
 
 
 # =============================================================================
@@ -257,10 +282,10 @@ print(f"cache_dir reset: {lz.get_cache_dir()}")
 # =============================================================================
 section("8. VERSION INFORMATION")
 
-lz.clear_cache()
+lz.cache.clear()
 _ = lz.math.pi  # ensure loaded
 
-ver = lz.get_version("math")
+ver = lz.version.of("math")
 print(f"get_version('math') = {ver}")
 
 # Trigger more loads
@@ -268,16 +293,16 @@ _ = lz.json.dumps({})
 _ = lz.os.getcwd()
 
 # Package versions
-cv = lz.get_cache_version()
+cv = lz.version.cache()
 print(f"cache_version: {cv}")
 
-pv = lz.get_package_version("math")
+pv = lz.version.of("math")
 print(f"package_version('math'): {pv}")
 
-all_v = lz.get_all_package_versions()
+all_v = lz.version.all_packages()
 print(f"all_package_versions keys: {list(all_v.keys())}")
 
-lz_v = lz.get_laziest_import_version()
+lz_v = lz.version.current
 print(f"laziest_import_version: {lz_v}")
 
 
@@ -286,9 +311,9 @@ print(f"laziest_import_version: {lz_v}")
 # =============================================================================
 section("9. IMPORT STATISTICS")
 
-lz.clear_cache()
+lz.cache.clear()
 
-stats = lz.get_import_stats()
+stats = lz.config.import_stats
 print(
     f"import_stats before: total={stats['total_imports']}, avg={stats['average_time'] * 1000:.4f}ms"
 )
@@ -297,15 +322,15 @@ _ = lz.math.pi
 _ = lz.math.sqrt(4)
 _ = lz.json.dumps({})
 
-stats = lz.get_import_stats()
+stats = lz.config.import_stats
 print(
     f"import_stats after: total={stats['total_imports']}, avg={stats['average_time'] * 1000:.4f}ms"
 )
 print(f"  module_times: {stats['module_times']}")
 print(f"  module_access_counts: {stats['module_access_counts']}")
 
-lz.reset_import_stats()
-stats = lz.get_import_stats()
+reset_import_stats()
+stats = lz.config.import_stats
 print(f"import_stats reset: total={stats['total_imports']}")
 
 
@@ -314,12 +339,12 @@ print(f"import_stats reset: total={stats['total_imports']}")
 # =============================================================================
 section("10. DEBUG MODE")
 
-print(f"debug_mode: {lz.is_debug_mode()}")
-lz.enable_debug_mode()
-print(f"debug_mode enabled: {lz.is_debug_mode()}")
+print(f"debug_mode: {lz.config.debug}")
+lz.config.debug = True
+print(f"debug_mode enabled: {lz.config.debug}")
 _ = lz.math.pi  # will log debug info
-lz.disable_debug_mode()
-print(f"debug_mode disabled: {not lz.is_debug_mode()}")
+lz.config.debug = False
+print(f"debug_mode disabled: {not lz.config.debug}")
 
 
 # =============================================================================
@@ -338,19 +363,19 @@ def post_hook(name):
     hook_log.append(f"post:{name}")
 
 
-lz.add_pre_import_hook(pre_hook)
-lz.add_post_import_hook(post_hook)
+lz.hooks.pre.add(pre_hook)
+lz.hooks.post.add(post_hook)
 print(f"hooks registered")
 
-lz.clear_cache()
+lz.cache.clear()
 _ = lz.collections.Counter
 print(f"hook_log: {hook_log}")
 
-lz.remove_pre_import_hook(pre_hook)
-lz.remove_post_import_hook(post_hook)
+lz.hooks.pre.remove(pre_hook)
+lz.hooks.post.remove(post_hook)
 print(f"hooks removed")
 
-lz.clear_import_hooks()
+lz.hooks.clear()
 print(f"all hooks cleared")
 
 
@@ -363,20 +388,22 @@ import asyncio
 
 
 async def demo_async():
-    mod = await lz.import_async("math")
+    mod = await lz.async_.get("math")
     print(f"async import 'math': {mod.pi}")
 
-    mods = await lz.import_multiple_async(["os", "json", "re"])
+    mods = await lz.async_.fetch(["os", "json", "re"])
     print(f"async batch import: {list(mods.keys())}")
 
 
 asyncio.run(demo_async())
 
 # Retry config
-lz.enable_retry(max_retries=3, retry_delay=0.1)
-print(f"retry enabled: {lz.is_retry_enabled()}")
-lz.disable_retry()
-print(f"retry disabled: {not lz.is_retry_enabled()}")
+lz.config.retry.enabled = True
+lz.config.retry.max_retries = 3
+lz.config.retry.retry_delay = 0.1
+print(f"retry enabled: {lz.config.retry.enabled}")
+lz.config.retry.enabled = False
+print(f"retry disabled: {not lz.config.retry.enabled}")
 
 
 # =============================================================================
@@ -384,52 +411,53 @@ print(f"retry disabled: {not lz.is_retry_enabled()}")
 # =============================================================================
 section("13. SYMBOL SEARCH")
 
-print(f"symbol_search enabled: {lz.is_symbol_search_enabled()}")
+print(f"symbol_search enabled: {lz.symbol.config.enabled}")
 
-lz.enable_symbol_search(interactive=False)
+lz.symbol.config.enable()
+lz.symbol.config.interactive = False
 print(f"symbol_search explicitly enabled")
 
 # Search for symbols
-symbols = lz.search_symbol("sqrt", max_results=5)
+symbols = lz.symbol.search("sqrt", max_results=5)
 print(f"search_symbol('sqrt'): {len(symbols)} results")
 for s in symbols[:3]:
     print(f"  {s.module_name}.{s.symbol_name} ({s.symbol_type})")
 
-symbols2 = lz.search_symbol("DataFrame", max_results=5)
+symbols2 = lz.symbol.search("DataFrame", max_results=5)
 print(f"search_symbol('DataFrame'): {len(symbols2)} results")
 for s in symbols2[:3]:
     print(f"  {s.module_name}.{s.symbol_name} ({s.symbol_type})")
 
 # Symbol search config
-sc = lz.get_symbol_search_config()
+sc = lz.symbol.config.snapshot()
 print(f"symbol_search_config: {sc}")
 
 # Symbol cache info
-ci = lz.get_symbol_cache_info()
+ci = lz.symbol.cache_info()
 print(f"symbol_cache_info keys: {list(ci.keys())}")
 
 # rebuild
-lz.rebuild_symbol_index()
+lz.symbol.index.rebuild()
 print(f"symbol_index rebuilt")
 
 # clear
-lz.clear_symbol_cache()
+lz.cache.symbols.clear()
 print(f"symbol_cache cleared")
 
 # sharding
-lz.enable_sharding()
+enable_sharding()
 print(f"sharding enabled")
 
-ss = lz.search_with_sharding("sin", max_results=3)
+ss = lz.symbol.sharded("sin", max_results=3)
 print(f"search_with_sharding('sin'): {len(ss)} results")
 
-shard_config = lz.get_sharding_config()
+shard_config = get_sharding_config()
 print(f"sharding_config: {shard_config}")
 
-lz.clear_shard_cache()
+clear_shard_cache()
 print(f"shard_cache cleared")
 
-lz.disable_sharding()
+disable_sharding()
 print(f"sharding disabled")
 
 
@@ -438,33 +466,33 @@ print(f"sharding disabled")
 # =============================================================================
 section("14. SYMBOL PREFERENCES & RESOLUTION")
 
-lz.set_symbol_preference("array", "numpy")
-pref = lz.get_symbol_preference("array")
+lz.symbol.prefer("array", "numpy")
+pref = lz.symbol.preference("array")
 print(f"symbol preference for 'array': {pref}")
 
-lz.clear_symbol_preference("array")
+lz.symbol.clear_preference("array")
 print(f"symbol preference for 'array' cleared")
 
-lz.set_module_priority("numpy", 100)
-prio = lz.get_module_priority("numpy")
+set_module_priority("numpy", 100)
+prio = get_module_priority("numpy")
 print(f"module priority for 'numpy': {prio}")
 
-conflicts = lz.list_symbol_conflicts("sqrt")
+conflicts = lz.symbol.conflicts("sqrt") or []
 print(f"symbol conflicts for 'sqrt': {len(conflicts)} found")
 for mod in conflicts[:3]:
     print(f"  {mod}")
 
-lz.enable_auto_symbol_resolution()
+lz.symbol.config.auto_resolution = True
 print(
-    f"auto_symbol_resolution enabled: {lz.get_symbol_resolution_config()['auto_symbol']}"
+    f"auto_symbol_resolution enabled: {lz.symbol.config.auto_resolution}"
 )
 
-lz.disable_auto_symbol_resolution()
+lz.symbol.config.auto_resolution = False
 print(
-    f"auto_symbol_resolution disabled: {not lz.get_symbol_resolution_config()['auto_symbol']}"
+    f"auto_symbol_resolution disabled: {not lz.symbol.config.auto_resolution}"
 )
 
-ctx = lz.get_loaded_modules_context()
+ctx = get_loaded_modules_context()
 print(f"loaded_modules_context: {len(ctx)} modules")
 
 
@@ -473,13 +501,13 @@ print(f"loaded_modules_context: {len(ctx)} modules")
 # =============================================================================
 section("15. INCREMENTAL INDEX")
 
-lz.enable_incremental_index()
+lz.background.enable(True)
 print(f"incremental_index enabled")
 
-lz.build_symbol_index_incremental()
+lz.symbol.index.incremental()
 print(f"incremental build done")
 
-inc_config = lz.get_incremental_config()
+inc_config = get_incremental_config()
 print(f"incremental_config: {inc_config}")
 
 
@@ -488,21 +516,21 @@ print(f"incremental_config: {inc_config}")
 # =============================================================================
 section("16. AUTO INSTALL")
 
-print(f"auto_install enabled: {lz.is_auto_install_enabled()}")
+print(f"auto_install enabled: {lz.install.enabled}")
 
-lz.enable_auto_install(interactive=False)
+lz.install.enable(interactive=False)
 print(f"auto_install enabled (non-interactive)")
 
-ac = lz.get_auto_install_config()
+ac = lz.install.auto
 print(f"auto_install_config: {ac}")
 
-lz.set_pip_index("https://pypi.org/simple/")
+set_pip_index("https://pypi.org/simple/")
 print(f"pip_index set")
 
-lz.set_pip_extra_args(["--no-deps"])
+set_pip_extra_args(["--no-deps"])
 print(f"pip_extra_args set")
 
-lz.disable_auto_install()
+lz.install.disable()
 print(f"auto_install disabled")
 
 
@@ -511,7 +539,7 @@ print(f"auto_install disabled")
 # =============================================================================
 section("17. DEPENDENCY ANALYSIS")
 
-analyzer = lz.DependencyPreAnalyzer()
+analyzer = DependencyPreAnalyzer()
 print(f"DependencyPreAnalyzer created: {analyzer}")
 
 source = """
@@ -520,7 +548,7 @@ import json
 from collections import defaultdict
 import math
 """
-result = lz.analyze_source(source)
+result = lz.analyze.code(source)
 print(f"analyze_source:")
 print(f"  predicted_imports: {result.predicted_imports}")
 print(f"  used_symbols: {result.used_symbols}")
@@ -528,12 +556,12 @@ print(f"  used_symbols: {result.used_symbols}")
 with tempfile.TemporaryDirectory() as tmpdir:
     pyfile = Path(tmpdir) / "test_analysis.py"
     pyfile.write_text(source)
-    result2 = lz.analyze_file(str(pyfile))
+    result2 = lz.analyze.file(str(pyfile))
     print(f"analyze_file: {result2.predicted_imports}")
 
     pyfile2 = Path(tmpdir) / "test_analysis2.py"
     pyfile2.write_text("import re")
-    results3 = lz.analyze_directory(tmpdir, recursive=False)
+    results3 = lz.analyze.dir(tmpdir, recursive=False)
     print(f"analyze_directory: {len(results3)} files analyzed")
 
 
@@ -542,26 +570,26 @@ with tempfile.TemporaryDirectory() as tmpdir:
 # =============================================================================
 section("18. IMPORT PROFILER")
 
-profiler = lz.ImportProfiler()
+profiler = ImportProfiler()
 print(f"ImportProfiler created")
 
-lz.start_profiling()
+lz.profile.start()
 print(f"profiling started")
 
 _ = lz.math.pi
 _ = lz.json.dumps({})
 _ = lz.os.getcwd()
 
-lz.stop_profiling()
+lz.profile.stop()
 print(f"profiling stopped")
 
-report = lz.get_profile_report()
+report = lz.profile.report()
 print(f"profile_report modules: {list(report.modules.keys())}")
 for name, profile in report.modules.items():
     print(f"  {name}: {profile.load_time * 1000:.2f}ms")
 
 # Print formatted
-lz.print_profile_report()
+lz.profile.print_report()
 
 
 # =============================================================================
@@ -569,18 +597,18 @@ lz.print_profile_report()
 # =============================================================================
 section("19. ENVIRONMENT & CONFLICTS")
 
-env = lz.detect_environment()
+env = detect_environment()
 print(f"detect_environment: python={env.python_version}")
 
-lz.show_environment()
+show_environment()
 
-lz.clear_cache()
+lz.cache.clear()
 _ = lz.math.pi
 
-confs = lz.show_conflicts()
+confs = lz.symbol.show_conflicts()
 print(f"show_conflicts done")
 
-summary = lz.get_conflicts_summary()
+summary = lz.symbol.conflict_summary()
 print(f"conflicts_summary: {summary}")
 
 
@@ -589,16 +617,16 @@ print(f"conflicts_summary: {summary}")
 # =============================================================================
 section("20. PREFERENCES")
 
-lz.save_preferences()
+save_preferences()
 print(f"preferences saved")
 
-lz.load_preferences()
+load_preferences()
 print(f"preferences loaded")
 
-lz.apply_preferences()
+apply_preferences()
 print(f"preferences applied")
 
-lz.clear_preferences()
+clear_preferences()
 print(f"preferences cleared")
 
 
@@ -607,7 +635,7 @@ print(f"preferences cleared")
 # =============================================================================
 section("21. DEPENDENCY TREE")
 
-tree = lz.dependency_tree("math", max_depth=2)
+tree = lz.analyze.dep_tree("math", max_depth=2)
 print(f"dependency_tree('math', max_depth=2):")
 print(
     f"  root: {tree.root_module}, children: {len(tree.tree.children) if tree.tree else 0}"
@@ -626,10 +654,10 @@ if tree.tree:
     print(f"  root children: {len(tree.tree.children)} nodes")
 
 # Data classes
-node = lz.DependencyNode("test_node")
+node = DependencyNode("test_node")
 print(f"DependencyNode('test_node'): {node}")
 
-dt = lz.DependencyTree(root_module="test_node", tree=node)
+dt = DependencyTree(root_module="test_node", tree=node)
 print(f"DependencyTree created: root={dt.root_module}")
 
 
@@ -638,17 +666,17 @@ print(f"DependencyTree created: root={dt.root_module}")
 # =============================================================================
 section("22. BENCHMARK")
 
-result = lz.benchmark(lambda: lz.math.pi, iterations=50, name="lz.math.pi")
+result = benchmark(lambda: lz.math.pi, iterations=50, name="lz.math.pi")
 print(
     f"benchmark 'lz.math.pi': {result.avg_time * 1000:.4f}ms mean, {result.std_dev * 1000:.4f}ms std"
 )
 
-result2 = lz.benchmark_imports(["math", "json", "os"])
+result2 = benchmark_imports(["math", "json", "os"])
 print(f"benchmark_imports: {len(result2.results)} results")
 
-lz.print_benchmark_report(lz.BenchmarkReport(results=[result]))
+print_benchmark_report(BenchmarkReport(results=[result]))
 
-br = lz.BenchmarkResult(
+br = BenchmarkResult(
     name="test",
     iterations=100,
     total_time=0.1,
@@ -659,7 +687,7 @@ br = lz.BenchmarkResult(
 )
 print(f"BenchmarkResult: mean={br.avg_time * 1000:.4f}ms")
 
-brep = lz.BenchmarkReport([br])
+brep = BenchmarkReport([br])
 print(f"BenchmarkReport: {len(brep.results)} results")
 
 
@@ -668,14 +696,14 @@ print(f"BenchmarkReport: {len(brep.results)} results")
 # =============================================================================
 section("23. INTROSPECTION")
 
-symbols = lz.list_module_symbols("math")
+symbols = list_module_symbols("math")
 print(f"list_module_symbols('math'): {len(symbols)} symbols")
 print(f"  sample: {symbols[:5]}")
 
-info = lz.get_module_info("math")
+info = get_module_info("math")
 print(f"get_module_info('math'): is_package={info['is_package']}, path={info['path']}")
 
-found = lz.search_in_module("math", "pi")
+found = search_in_module("math", "pi")
 print(f"search_in_module('math', 'pi'): {found}")
 
 
@@ -684,18 +712,18 @@ print(f"search_in_module('math', 'pi'): {found}")
 # =============================================================================
 section("24. WHICH FUNCTION")
 
-loc = lz.which("sqrt")
+loc = lz.symbol.which("sqrt")
 print(f"which('sqrt'): {loc}")
 
-loc2 = lz.which("cos")
+loc2 = lz.symbol.which("cos")
 print(f"which('cos'): {loc2}")
 
 # which with module hint
-loc3 = lz.which("sin", module_hint="math")
+loc3 = lz.symbol.which("sin", module_hint="math")
 print(f"which('sin', module_hint='math'): {loc3}")
 
 # which_all
-locs = lz.which_all("sin")
+locs = lz.symbol.which_all("sin")
 print(f"which_all('sin'): {len(locs)} results")
 for loc in locs[:3]:
     print(f"  {loc}")
@@ -706,22 +734,22 @@ for loc in locs[:3]:
 # =============================================================================
 section("25. HELP & EASTER EGG")
 
-help_text = lz.help()
+help_text = lzhelp()
 print(f"help() returned {len(help_text)} chars")
 
-help_alias = lz.help("alias")
+help_alias = lzhelp("alias")
 print(f"help('alias') returned {len(help_alias)} chars")
 
-help_cache = lz.help("cache")
+help_cache = lzhelp("cache")
 print(f"help('cache') returned {len(help_cache)} chars")
 
-egg = lz.easter_egg()
+egg = easter_egg()
 print(f"easter_egg: {egg}")
 
-egg2 = lz.easter_egg("author")
+egg2 = easter_egg("author")
 print(f"easter_egg('author'): {egg2}")
 
-egg3 = lz.easter_egg("unknown")
+egg3 = easter_egg("unknown")
 print(f"easter_egg('unknown'): {egg3}")
 
 
@@ -730,10 +758,10 @@ print(f"easter_egg('unknown'): {egg3}")
 # =============================================================================
 section("26. CONFIG PATHS")
 
-paths = lz.get_config_paths()
+paths = get_config_paths()
 print(f"config_paths: {paths}")
 
-dirs = lz.get_config_dirs()
+dirs = get_config_dirs()
 print(f"config_dirs: {dirs}")
 
 
@@ -742,7 +770,7 @@ print(f"config_dirs: {dirs}")
 # =============================================================================
 section("27. IMPORT STATISTICS DATA CLASSES")
 
-stats_obj = lz.get_import_stats()
+stats_obj = lz.config.import_stats
 imports_count = stats_obj["total_imports"]
 print(f"Total imports recorded: {imports_count}")
 
@@ -750,7 +778,7 @@ _ = lz.math.pi
 _ = lz.math.sqrt(4)
 _ = lz.json.dumps({})
 
-stats_after = lz.get_import_stats()
+stats_after = lz.config.import_stats
 print(
     f"After 3 more: total={stats_after['total_imports']}, module_times={stats_after['module_times']}"
 )
@@ -761,22 +789,22 @@ print(
 # =============================================================================
 section("28. BACKGROUND INDEX BUILD")
 
-lz.start_background_index_build()
-print(f"background index building: {lz.is_index_building()}")
+lz.background.start()
+print(f"background index building: {lz.background.is_building}")
 
 # Wait briefly
 import time
 
 time.sleep(0.5)
 
-lz.set_background_timeout(30)
-print(f"background_timeout set: {lz.get_background_timeout()}")
+lz.background.timeout = 30
+print(f"background_timeout set: {lz.background.timeout}")
 
-lz.wait_for_index(timeout=5)
+lz.background.wait(timeout=5)
 print(f"wait_for_index completed")
 
 # Preheat config
-ph = lz.get_preheat_config()
+ph = lz.background.preheat
 print(f"preheat_config: {ph}")
 
 
@@ -785,13 +813,13 @@ print(f"preheat_config: {ph}")
 # =============================================================================
 section("29. RC CONFIG")
 
-rc_info = lz.get_rc_info()
+rc_info = lz.rc.info()
 print(f"rc_info: {list(rc_info.keys())}")
 
-rc_val = lz.get_rc_value("default_search_mode")
+rc_val = lz.rc.get("default_search_mode")
 print(f"get_rc_value('default_search_mode'): {rc_val}")
 
-rc2 = lz.reload_rc_config()
+rc2 = lz.rc.reload()
 print(f"reload_rc_config done")
 
 
@@ -800,9 +828,9 @@ print(f"reload_rc_config done")
 # =============================================================================
 section("30. MODULE RELOAD")
 
-lz.clear_cache()
+lz.cache.clear()
 _ = lz.math.pi
-ok = lz.reload_module("math")
+ok = lz.module.reload("math")
 print(f"reload_module('math'): {ok}")
 
 
@@ -811,24 +839,24 @@ print(f"reload_module('math'): {ok}")
 # =============================================================================
 section("31. ALIAS EXPORT & VALIDATION")
 
-lz.register_alias("demo_alias", "os")
+lz.alias.register("demo_alias", "os")
 print(f"registered 'demo_alias' -> 'os'")
 
-exported = lz.export_aliases()
+exported = lz.alias.export()
 print(f"export_aliases returned {len(exported)} chars (JSON)")
 
-exported_cat = lz.export_aliases(include_categories=False)
+exported_cat = lz.alias.export(include_categories=False)
 print(f"export_aliases(include_categories=False) returned {len(exported_cat)} chars")
 
-validation = lz.validate_aliases()
+validation = lz.alias.validate()
 print(f"validate_aliases: {len(validation)} entries")
 for alias, info in list(validation.items())[:3]:
     print(f"  {alias}: {info}")
 
-lz.reload_aliases()
+lz.alias.reload()
 print(f"aliases reloaded")
 
-lz.rebuild_module_cache()
+lz.install.rebuild_cache()
 print(f"module cache rebuilt")
 
 
@@ -837,11 +865,11 @@ print(f"module cache rebuilt")
 # =============================================================================
 section("32. CACHE COMPRESSION")
 
-lz.enable_cache_compression(True)
+lz.cache.config.compression = True
 print(f"cache compression enabled")
 
-cfg = lz.get_cache_config()
-print(f"compression in config: {cfg.get('enable_compression')}")
+cfg = lz.cache.config
+print(f"compression in config: {cfg.compression}")
 
 
 # =============================================================================
@@ -849,10 +877,10 @@ print(f"compression in config: {cfg.get('enable_compression')}")
 # =============================================================================
 section("33. RESET ALL")
 
-lz.clear_cache()
+lz.cache.clear()
 print(f"clear_cache done")
 
-lz.reset_all()
+reset_all()
 print(f"reset_all done (aliases reloaded, caches cleared)")
 
 
@@ -863,7 +891,7 @@ section("34. NEGATIVE CACHE PERFORMANCE")
 
 import time
 
-lz.clear_cache()
+lz.cache.clear()
 t0 = time.perf_counter()
 for _ in range(100):
     try:
@@ -880,14 +908,14 @@ assert t < 2.0, f"Negative cache too slow: {t:.2f}s"
 # =============================================================================
 section("35. POST-CLEAR VERIFICATION")
 
-lz.clear_cache()
+lz.cache.clear()
 assert lz.math.pi > 3.14, "math.pi still works"
 assert lz.os.getcwd() is not None, "os.getcwd still works"
 assert lz.json.dumps({"a": 1}) == '{"a": 1}', "json.dumps still works"
 
-lz.register_alias("test_final", "math")
+lz.alias.register("test_final", "math")
 assert lz.test_final.pi > 3.14, "registered alias still works"
-lz.unregister_alias("test_final")
+lz.alias.unregister("test_final")
 
 print("All systems operational after cache clear!")
 
@@ -897,9 +925,9 @@ print("All systems operational after cache clear!")
 # =============================================================================
 section("SUMMARY")
 
-stats = lz.get_import_stats()
+stats = lz.config.import_stats
 print(f"Total imports: {stats['total_imports']}")
-loaded = lz.list_loaded()
+loaded = lz.module.list_loaded()
 print(f"Modules loaded this session: {len(loaded)}")
 print(f"All tests passed!")
 

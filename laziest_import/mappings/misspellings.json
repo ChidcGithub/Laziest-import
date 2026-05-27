@@ -32,7 +32,8 @@
     "shutl": "shutil",
     "shutiil": "shutil",
     "tempflie": "tempfile",
-    "tempfil": "tempfile"
+    "tempfil": "tempfile",
+    "cpy": "copy"
   },
   
   "numpy": {

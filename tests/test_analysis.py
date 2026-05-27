@@ -14,6 +14,15 @@ import tempfile
 import os
 from pathlib import Path
 
+from laziest_import import lz
+from laziest_import._analysis import detect_environment, show_environment
+from laziest_import._analysis._preferences import (
+    save_preferences,
+    load_preferences,
+    apply_preferences,
+    clear_preferences,
+)
+
 
 class TestDependencyPreAnalyzer:
     """Test dependency pre-analysis functionality."""
@@ -27,32 +36,26 @@ class TestDependencyPreAnalyzer:
 
     def test_analyze_source(self):
         """Test analyzing source code."""
-        import laziest_import as lz
-
         code = '''
 import numpy as np
 import pandas as pd
 from os import path
 '''
-        result = lz.analyze_source(code)
+        result = lz.analyze.code(code)
         assert result is not None
         assert hasattr(result, "predicted_imports")
 
     def test_analyze_source_with_used_symbols(self):
         """Test analyzing source for used symbols."""
-        import laziest_import as lz
-
         code = '''
 np.array([1, 2, 3])
 pd.DataFrame()
 '''
-        result = lz.analyze_source(code)
+        result = lz.analyze.code(code)
         assert hasattr(result, "used_symbols")
 
     def test_analyze_file(self):
         """Test analyzing a file."""
-        import laziest_import as lz
-
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False
         ) as f:
@@ -60,7 +63,7 @@ pd.DataFrame()
             temp_path = f.name
 
         try:
-            result = lz.analyze_file(temp_path)
+            result = lz.analyze.file(temp_path)
             assert result is not None
             assert hasattr(result, "predicted_imports")
         finally:
@@ -68,26 +71,22 @@ pd.DataFrame()
 
     def test_analyze_directory(self):
         """Test analyzing a directory."""
-        import laziest_import as lz
-
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a Python file
             py_file = Path(tmpdir) / "test.py"
             py_file.write_text("import math\n")
 
-            results = lz.analyze_directory(tmpdir, recursive=True)
+            results = lz.analyze.dir(tmpdir, recursive=True)
             assert isinstance(results, list)
             assert len(results) >= 1
 
     def test_analyze_directory_non_recursive(self):
         """Test non-recursive directory analysis."""
-        import laziest_import as lz
-
         with tempfile.TemporaryDirectory() as tmpdir:
             py_file = Path(tmpdir) / "test.py"
             py_file.write_text("import json\n")
 
-            results = lz.analyze_directory(tmpdir, recursive=False)
+            results = lz.analyze.dir(tmpdir, recursive=False)
             assert isinstance(results, list)
 
 
@@ -103,52 +102,44 @@ class TestImportProfiler:
 
     def test_start_profiling(self):
         """Test starting profiler."""
-        import laziest_import as lz
-
-        lz.start_profiling()
-        # Should not raise
+        lz.profile.start()
+        lz.profile.stop()
 
     def test_stop_profiling(self):
         """Test stopping profiler."""
-        import laziest_import as lz
-
-        lz.start_profiling()
-        lz.stop_profiling()
-        # Should not raise
+        lz.profile.start()
+        _ = lz.math.pi
+        lz.profile.stop()
+        report = lz.profile.report()
+        assert hasattr(report, "modules")
 
     def test_get_profile_report(self):
         """Test getting profile report."""
-        import laziest_import as lz
-
-        lz.start_profiling()
+        lz.profile.start()
         _ = lz.math.pi
-        lz.stop_profiling()
+        lz.profile.stop()
 
-        report = lz.get_profile_report()
+        report = lz.profile.report()
         assert report is not None
         assert hasattr(report, "modules")
 
     def test_print_profile_report(self):
         """Test printing profile report."""
-        import laziest_import as lz
-
-        lz.start_profiling()
+        lz.profile.start()
         _ = lz.json.dumps
-        lz.stop_profiling()
+        lz.profile.stop()
 
-        # Should not raise
-        lz.print_profile_report()
+        lz.profile.print_report()
+        # Verifies it doesn't raise
 
     def test_profiler_records_load_time(self):
         """Test that profiler records load times."""
-        import laziest_import as lz
-
-        lz.clear_cache()
-        lz.start_profiling()
+        lz.cache.clear()
+        lz.profile.start()
         _ = lz.os.getcwd
-        lz.stop_profiling()
+        lz.profile.stop()
 
-        report = lz.get_profile_report()
+        report = lz.profile.report()
         # Should have recorded something
         assert hasattr(report, "modules")
 
@@ -158,40 +149,31 @@ class TestEnvironmentDetection:
 
     def test_detect_environment(self):
         """Test detecting environment."""
-        import laziest_import as lz
-
-        env = lz.detect_environment()
+        env = detect_environment()
         assert env is not None
         assert hasattr(env, "python_version")
         assert hasattr(env, "executable")
 
     def test_environment_python_version(self):
         """Test getting Python version from environment."""
-        import laziest_import as lz
-
-        env = lz.detect_environment()
+        env = detect_environment()
         assert env.python_version is not None
 
     def test_environment_executable(self):
         """Test getting Python executable path."""
-        import laziest_import as lz
-
-        env = lz.detect_environment()
+        env = detect_environment()
         assert env.executable is not None
 
     def test_environment_site_packages(self):
         """Test getting site-packages path."""
-        import laziest_import as lz
-
-        env = lz.detect_environment()
+        env = detect_environment()
         assert hasattr(env, "site_packages")
 
     def test_show_environment(self):
         """Test showing environment info."""
-        import laziest_import as lz
-
-        # Should not raise
-        lz.show_environment()
+        show_environment()
+        env = detect_environment()
+        assert env is not None
 
 
 class TestConflictVisualization:
@@ -199,32 +181,24 @@ class TestConflictVisualization:
 
     def test_find_symbol_conflicts(self):
         """Test finding symbol conflicts."""
-        import laziest_import as lz
-
-        conflicts = lz.find_symbol_conflicts()
+        conflicts = lz.symbol.conflicts()
         assert isinstance(conflicts, dict)
 
     def test_show_conflicts(self):
         """Test showing conflicts."""
-        import laziest_import as lz
-
-        # Should not raise
-        lz.show_conflicts()
+        lz.symbol.show_conflicts()
+        # Verifies it doesn't raise
 
     def test_get_conflicts_summary(self):
         """Test getting conflicts summary."""
-        import laziest_import as lz
-
-        summary = lz.get_conflicts_summary()
+        summary = lz.symbol.conflict_summary()
         assert isinstance(summary, dict)
         assert "total_conflicts" in summary
 
     def test_common_symbol_conflicts(self):
         """Test conflicts for common symbols."""
-        import laziest_import as lz
-
         # sqrt exists in both math and numpy (if installed)
-        conflicts = lz.find_symbol_conflicts()
+        conflicts = lz.symbol.conflicts()
         # Just verify it returns a dict
         assert isinstance(conflicts, dict)
 
@@ -234,45 +208,34 @@ class TestPreferencesManagement:
 
     def test_save_preferences(self):
         """Test saving preferences."""
-        import laziest_import as lz
-
-        # Should not raise
-        lz.save_preferences()
+        result = save_preferences()
+        assert result is True or result is False
 
     def test_load_preferences(self):
         """Test loading preferences."""
-        import laziest_import as lz
-
-        prefs = lz.load_preferences()
+        prefs = load_preferences()
         assert isinstance(prefs, dict)
 
     def test_apply_preferences(self):
         """Test applying preferences."""
-        import laziest_import as lz
-
-        prefs = {"symbols": {"test": "test_module"}}
-        try:
-            lz.apply_preferences(prefs)
-        except (TypeError, AttributeError):
-            # May have different signature
-            pass
+        save_preferences()
+        apply_preferences()
+        prefs = load_preferences()
+        assert isinstance(prefs, dict)
 
     def test_clear_preferences(self):
         """Test clearing preferences."""
-        import laziest_import as lz
-
-        lz.clear_preferences()
-        # Should not raise
+        clear_preferences()
+        prefs = load_preferences()
+        assert isinstance(prefs, dict)
 
     def test_set_get_symbol_preference(self):
         """Test setting and getting symbol preference."""
-        import laziest_import as lz
-
-        lz.set_symbol_preference("TestSymbol", "test_module")
-        pref = lz.get_symbol_preference("TestSymbol")
+        lz.symbol.prefer("TestSymbol", "test_module")
+        pref = lz.symbol.preference("TestSymbol")
         assert pref == "test_module"
 
-        lz.clear_symbol_preference("TestSymbol")
+        lz.symbol.clear_preference("TestSymbol")
 
 
 class TestPreAnalysisResult:
@@ -323,9 +286,7 @@ class TestEnvironmentInfo:
 
     def test_environment_info_attrs(self):
         """Test EnvironmentInfo attributes."""
-        import laziest_import as lz
-
-        info = lz.detect_environment()
+        info = detect_environment()
         assert hasattr(info, "python_version")
         assert hasattr(info, "executable")
 
@@ -335,37 +296,29 @@ class TestAnalysisEdgeCases:
 
     def test_analyze_empty_source(self):
         """Test analyzing empty source code."""
-        import laziest_import as lz
-
-        result = lz.analyze_source("")
+        result = lz.analyze.code("")
         assert result is not None
 
     def test_analyze_invalid_syntax(self):
         """Test analyzing invalid syntax."""
-        import laziest_import as lz
-
         # Should handle gracefully
-        result = lz.analyze_source("this is not valid python !!!")
+        result = lz.analyze.code("this is not valid python !!!")
         assert result is not None
 
     def test_analyze_nonexistent_file(self):
         """Test analyzing non-existent file."""
-        import laziest_import as lz
-
         try:
-            result = lz.analyze_file("/nonexistent/path/xyz.py")
+            result = lz.analyze.file("/nonexistent/path/xyz.py")
         except FileNotFoundError:
             pass  # Expected
 
     def test_profile_without_imports(self):
         """Test profiling with no imports."""
-        import laziest_import as lz
-
-        lz.start_profiling()
+        lz.profile.start()
         # Do nothing
-        lz.stop_profiling()
+        lz.profile.stop()
 
-        report = lz.get_profile_report()
+        report = lz.profile.report()
         assert report is not None
 
 

@@ -131,6 +131,18 @@ def invalidate_package_cache(package_name: str) -> bool:
     for symbol in to_remove:
         c._THIRD_PARTY_SYMBOL_CACHE.pop(symbol, None)
 
+    # Also check stdlib cache
+    to_remove = []
+    for symbol, locations in list(c._STDLIB_SYMBOL_CACHE.items()):
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
+        if filtered:
+            c._STDLIB_SYMBOL_CACHE[symbol] = filtered
+        else:
+            to_remove.append(symbol)
+
+    for symbol in to_remove:
+        c._STDLIB_SYMBOL_CACHE.pop(symbol, None)
+
     _save_tracked_packages()
     return True
 

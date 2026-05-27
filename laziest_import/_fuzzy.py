@@ -370,7 +370,7 @@ def _search_module(name: str) -> Optional[str]:
                     candidates.append((7 + context_bonus, distance, mod_name))
 
     if candidates:
-        candidates.sort(key=lambda x: (x[0], x[1]))
+        candidates.sort(key=lambda x: (x[0], x[1], x[2]))
         best = candidates[0]
 
         if _config._DEBUG_MODE:

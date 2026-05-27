@@ -9,41 +9,47 @@ Tests cover:
 
 import pytest
 
+from laziest_import._install import (
+    set_pip_index,
+    set_pip_extra_args,
+    rebuild_module_cache,
+)
+
 
 class TestAutoInstallConfig:
     """Test auto-install configuration."""
 
     def test_get_auto_install_config(self):
         """Test getting auto-install config."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        config = lz.get_auto_install_config()
+        config = lz.install.auto
         assert isinstance(config, dict)
         assert "enabled" in config
 
     def test_auto_install_disabled_by_default(self):
         """Test that auto-install is disabled by default."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert lz.is_auto_install_enabled() is False
+        assert lz.install.enabled is False
 
     def test_enable_auto_install(self):
         """Test enabling auto-install."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_install(interactive=False)
-        assert lz.is_auto_install_enabled() is True
+        lz.install.enable(interactive=False)
+        assert lz.install.enabled is True
 
         # Disable for safety
-        lz.disable_auto_install()
+        lz.install.disable()
 
     def test_disable_auto_install(self):
         """Test disabling auto-install."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_install(interactive=False)
-        lz.disable_auto_install()
-        assert lz.is_auto_install_enabled() is False
+        lz.install.enable(interactive=False)
+        lz.install.disable()
+        assert lz.install.enabled is False
 
 
 class TestPipIndex:
@@ -51,22 +57,21 @@ class TestPipIndex:
 
     def test_set_pip_index(self):
         """Test setting custom pip index."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_pip_index("https://pypi.org/simple")
-        config = lz.get_auto_install_config()
+        set_pip_index("https://pypi.org/simple")
+        config = lz.install.auto
         assert config["index"] == "https://pypi.org/simple"
 
         # Reset
-        lz.set_pip_index(None)
+        set_pip_index(None)
 
     def test_set_pip_index_none(self):
         """Test setting pip index to None."""
-        import laziest_import as lz
+        from laziest_import._config import _AUTO_INSTALL_CONFIG
 
-        lz.set_pip_index(None)
-        config = lz.get_auto_install_config()
-        assert config["index"] is None
+        set_pip_index(None)
+        assert _AUTO_INSTALL_CONFIG["index"] is None
 
 
 class TestPipExtraArgs:
@@ -74,22 +79,22 @@ class TestPipExtraArgs:
 
     def test_set_pip_extra_args(self):
         """Test setting extra pip arguments."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_pip_extra_args(["--no-cache-dir", "--quiet"])
-        config = lz.get_auto_install_config()
+        set_pip_extra_args(["--no-cache-dir", "--quiet"])
+        config = lz.install.auto
         assert "--no-cache-dir" in config["extra_args"]
         assert "--quiet" in config["extra_args"]
 
         # Reset
-        lz.set_pip_extra_args([])
+        set_pip_extra_args([])
 
     def test_set_pip_extra_args_empty(self):
         """Test setting empty extra args."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_pip_extra_args([])
-        config = lz.get_auto_install_config()
+        set_pip_extra_args([])
+        config = lz.install.auto
         assert config["extra_args"] == []
 
 
@@ -98,16 +103,15 @@ class TestPackageInstall:
 
     def test_install_package_function_exists(self):
         """Test that install_package function exists."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        assert callable(lz.install_package)
+        assert callable(lz.install.package)
 
     def test_rebuild_module_cache(self):
         """Test rebuild_module_cache function."""
-        import laziest_import as lz
 
-        # Should not raise
-        lz.rebuild_module_cache()
+        result = rebuild_module_cache()
+        assert result is None or result is True
 
 
 class TestPackageRename:
@@ -135,23 +139,23 @@ class TestAutoInstallSafety:
 
     def test_interactive_mode(self):
         """Test interactive mode setting."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_install(interactive=True)
-        config = lz.get_auto_install_config()
+        lz.install.enable(interactive=True)
+        config = lz.install.auto
         assert config["interactive"] is True
 
-        lz.disable_auto_install()
+        lz.install.disable()
 
     def test_non_interactive_mode(self):
         """Test non-interactive mode."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_install(interactive=False)
-        config = lz.get_auto_install_config()
+        lz.install.enable(interactive=False)
+        config = lz.install.auto
         assert config["interactive"] is False
 
-        lz.disable_auto_install()
+        lz.install.disable()
 
 
 class TestAutoInstallEdgeCases:
@@ -159,21 +163,21 @@ class TestAutoInstallEdgeCases:
 
     def test_enable_multiple_times(self):
         """Test enabling multiple times."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_install(interactive=False)
-        lz.enable_auto_install(interactive=False)
-        assert lz.is_auto_install_enabled() is True
+        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False)
+        assert lz.install.enabled is True
 
-        lz.disable_auto_install()
+        lz.install.disable()
 
     def test_disable_when_already_disabled(self):
         """Test disabling when already disabled."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_auto_install()
-        lz.disable_auto_install()
-        assert lz.is_auto_install_enabled() is False
+        lz.install.disable()
+        lz.install.disable()
+        assert lz.install.enabled is False
 
 
 if __name__ == "__main__":

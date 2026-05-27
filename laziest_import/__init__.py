@@ -10,7 +10,8 @@ Or:
     arr = lz.np.array([1, 2, 3])
 """
 
-from typing import List, Optional, Any, Union
+import time
+from typing import List, Dict, Optional, Any, Union, Set
 
 # Import version
 from ._config import __version__
@@ -39,6 +40,7 @@ from ._config import (
     _DEBUG_MODE,
     _RESERVED_NAMES,
     _NEGATIVE_CACHE,
+    _NEGATIVE_CACHE_TTL,
     _NEGATIVE_CACHE_LOCK,
     get_init_lock,
     is_initializing,
@@ -315,7 +317,7 @@ from ._deprecated import (  # noqa: F401, F403
 # ============== Module-level __getattr__ ==============
 
 
-def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
+def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySymbol, Any]:
     """Module-level attribute access hook for lazy loading."""
     _initializing = is_initializing()
     _initialized = is_initialized()
@@ -337,7 +339,11 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
     if name in _NEGATIVE_CACHE:
-        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+        _ts = _NEGATIVE_CACHE[name]
+        if time.time() - _ts < _NEGATIVE_CACHE_TTL:
+            raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+        with _NEGATIVE_CACHE_LOCK:
+            del _NEGATIVE_CACHE[name]
 
     # 1. Check lazy function registry (symbol, which, help, config, etc.)
     from ._lazy_registry import has as _registry_has, resolve as _registry_resolve
@@ -387,7 +393,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
 
     # Add to negative cache so we don't search again
     with _NEGATIVE_CACHE_LOCK:
-        _NEGATIVE_CACHE.add(name)
+        _NEGATIVE_CACHE[name] = time.time()
 
     # Not found - generate smart suggestion
     msg = f"module '{__name__}' has no attribute '{name}'."
@@ -428,10 +434,51 @@ def __getattr__(name: str) -> Union[LazyModule, LazySymbol, Any]:
 
 # ============== __dir__ for tab completion ==============
 
-# Only names that should appear in __dir__ but NOT in __all__
-_DIR_EXTRAS = [
-    "set_background_timeout",
-    "get_background_timeout",
+# Names available via deprecated import path (still work with FutureWarning)
+_OLD_API_NAMES = [
+    "list_loaded", "list_available", "get_module", "clear_cache",
+    "get_version", "reload_module",
+    "enable_auto_search", "disable_auto_search", "is_auto_search_enabled",
+    "search_module", "search_class",
+    "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
+    "get_import_stats", "reset_import_stats",
+    "enable_symbol_search", "disable_symbol_search", "is_symbol_search_enabled",
+    "search_symbol", "rebuild_symbol_index", "get_symbol_search_config",
+    "get_symbol_cache_info", "clear_symbol_cache",
+    "set_symbol_preference", "get_symbol_preference", "clear_symbol_preference",
+    "list_symbol_conflicts",
+    "set_module_priority", "get_module_priority",
+    "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
+    "get_symbol_resolution_config", "get_loaded_modules_context",
+    "search_with_sharding", "enable_sharding", "disable_sharding",
+    "get_sharding_config", "clear_shard_cache",
+    "build_symbol_index_incremental",
+    "enable_incremental_index", "enable_background_build",
+    "enable_cache_compression", "get_incremental_config", "get_preheat_config",
+    "set_cache_config", "get_cache_config", "get_cache_stats",
+    "reset_cache_stats", "invalidate_package_cache",
+    "enable_file_cache", "disable_file_cache", "is_file_cache_enabled",
+    "clear_file_cache", "get_file_cache_info", "force_save_cache",
+    "set_cache_dir", "get_cache_dir", "reset_cache_dir",
+    "get_package_version", "get_all_package_versions",
+    "get_laziest_import_version", "get_cache_version",
+    "reload_aliases", "export_aliases", "validate_aliases",
+    "install_package", "rebuild_module_cache",
+    "enable_auto_install", "disable_auto_install", "is_auto_install_enabled",
+    "get_auto_install_config", "set_pip_index", "set_pip_extra_args",
+    "import_async", "import_multiple_async",
+    "enable_retry", "disable_retry", "is_retry_enabled",
+    "which", "which_all",
+    "load_rc_config", "get_rc_value", "create_rc_file", "get_rc_info",
+    "reload_rc_config",
+    "list_module_symbols", "get_module_info", "search_in_module",
+    "start_profiling", "stop_profiling", "get_profile_report",
+    "print_profile_report",
+    "analyze_file", "analyze_source", "analyze_directory",
+    "save_preferences", "load_preferences", "apply_preferences",
+    "clear_preferences",
+    "start_background_index_build", "is_index_building", "wait_for_index",
+    "set_background_timeout", "get_background_timeout",
 ]
 
 
@@ -439,7 +486,7 @@ def __dir__() -> List[str]:
     """Return list of public module attributes for tab completion."""
     result = list(_ALIAS_MAP.keys())
     result.extend(_BASE_EXPORTS)
-    result.extend(_DIR_EXTRAS)
+    result.extend(_OLD_API_NAMES)
     return sorted(set(result))
 
 
@@ -487,156 +534,58 @@ _BASE_EXPORTS = [
     "LazySymbol",
     "LazySubmodule",
     "LazyProxy",
+    # Non-deprecated utility functions
     "register_alias",
     "register_aliases",
     "unregister_alias",
-    "list_loaded",
-    "list_available",
-    "get_module",
-    "clear_cache",
-    "reset_all",
-    "get_version",
-    "reload_module",
-    "enable_auto_search",
-    "disable_auto_search",
-    "is_auto_search_enabled",
-    "search_module",
-    "search_class",
-    "rebuild_module_cache",
     "reload_aliases",
-    "reload_mappings",
     "export_aliases",
     "validate_aliases",
     "validate_aliases_importable",
+    "get_alias_category",
     "get_config_paths",
     "get_config_dirs",
-    "enable_debug_mode",
-    "disable_debug_mode",
-    "is_debug_mode",
-    "get_import_stats",
-    "reset_import_stats",
-    "get_init_lock",
-    "is_initializing",
-    "is_initialized",
-    "is_init_failed",
-    "get_init_error",
-    "reset_init_state",
+    "reset_all",
+    "reload_mappings",
+    "help",
+    "easter_egg",
     "add_pre_import_hook",
     "add_post_import_hook",
     "remove_pre_import_hook",
     "remove_post_import_hook",
     "clear_import_hooks",
-    "import_async",
-    "import_multiple_async",
-    "enable_retry",
-    "disable_retry",
-    "is_retry_enabled",
-    "enable_file_cache",
-    "disable_file_cache",
-    "is_file_cache_enabled",
-    "clear_file_cache",
-    "get_file_cache_info",
-    "force_save_cache",
-    "set_cache_dir",
-    "get_cache_dir",
-    "reset_cache_dir",
-    "enable_symbol_search",
-    "disable_symbol_search",
-    "is_symbol_search_enabled",
-    "search_symbol",
-    "rebuild_symbol_index",
-    "get_symbol_search_config",
-    "get_symbol_cache_info",
-    "clear_symbol_cache",
-    "set_symbol_preference",
-    "get_symbol_preference",
-    "clear_symbol_preference",
-    "list_symbol_conflicts",
-    "set_module_priority",
-    "get_module_priority",
-    "enable_auto_symbol_resolution",
-    "disable_auto_symbol_resolution",
-    "get_symbol_resolution_config",
-    "get_loaded_modules_context",
-    "build_symbol_index_incremental",
-    "enable_auto_install",
-    "disable_auto_install",
-    "is_auto_install_enabled",
-    "install_package",
-    "get_auto_install_config",
-    "set_pip_index",
-    "set_pip_extra_args",
-    "set_cache_config",
-    "get_cache_config",
-    "get_cache_stats",
-    "reset_cache_stats",
-    "invalidate_package_cache",
-    "get_cache_version",
-    "get_package_version",
-    "get_all_package_versions",
-    "get_laziest_import_version",
-    "enable_incremental_index",
-    "enable_background_build",
-    "enable_cache_compression",
-    "get_incremental_config",
-    "get_preheat_config",
-    "search_with_sharding",
-    "enable_sharding",
-    "disable_sharding",
-    "get_sharding_config",
-    "clear_shard_cache",
-    "start_background_index_build",
-    "is_index_building",
-    "wait_for_index",
-    "set_background_timeout",
-    "get_background_timeout",
-"which",
-     "which_all",
-     "load_rc_config",
-     "get_rc_value",
-     "create_rc_file",
-     "get_rc_info",
-     "reload_rc_config",
-     "list_module_symbols",
-     "get_module_info",
-     "search_in_module",
-     "easter_egg",
-     "help",
+    "is_initializing",
+    "is_initialized",
+    "is_init_failed",
+    "get_init_error",
+    "get_init_lock",
+    "reset_init_state",
+    "find_symbol_conflicts",
+    "show_conflicts",
+    "get_conflicts_summary",
+    "detect_environment",
+    "show_environment",
     "DependencyPreAnalyzer",
     "ImportProfiler",
     "PreAnalysisResult",
     "ModuleProfile",
     "ProfileReport",
     "EnvironmentInfo",
-    "start_profiling",
-    "stop_profiling",
-    "get_profile_report",
-    "print_profile_report",
-    "show_conflicts",
-    "get_conflicts_summary",
-    "show_environment",
-    "detect_environment",
-    "save_preferences",
-    "load_preferences",
-    "apply_preferences",
-    "clear_preferences",
-    "analyze_file",
-    "analyze_source",
-    "analyze_directory",
-    # Dependency tree
-    "dependency_tree",
-    "print_dependency_tree",
     "DependencyNode",
     "DependencyTree",
-    # Benchmark
+    "dependency_tree",
+    "print_dependency_tree",
+    "BenchmarkResult",
+    "BenchmarkReport",
     "benchmark",
     "benchmark_imports",
     "print_benchmark_report",
-    "BenchmarkResult",
-    "BenchmarkReport",
 ]
 
 __all__ = sorted(_BASE_EXPORTS)
+
+# Keep deprecated functional API in __all__ for backward compat (will remove in v0.2)
+__all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES))
 
 
 # ============== Initialization ==============
@@ -715,7 +664,7 @@ def _do_initialize() -> None:
                 _register_lazy(_fn, "laziest_import._introspect")
 
             _config_module._INITIALIZED = True
-            __all__ = sorted(set(_BASE_EXPORTS) | set(_ALIAS_MAP.keys()))
+            __all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES) | set(_ALIAS_MAP.keys()))
 
         except Exception as e:
             _config_module._INIT_FAILED = True

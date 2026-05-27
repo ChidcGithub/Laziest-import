@@ -285,7 +285,7 @@ def _scan_module_symbols(
 # ── Symbol index building ───────────────────────────────────
 
 def _build_symbol_index(
-    force: bool = False, max_modules: int = 100, timeout: float = 30.0
+    force: bool = False, max_modules: int = 500, timeout: float = 60.0
 ) -> None:
     """Build the symbol index by scanning installed packages."""
     if not _config.is_initialized() and not force:

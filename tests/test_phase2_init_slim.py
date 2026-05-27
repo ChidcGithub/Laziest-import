@@ -168,15 +168,21 @@ class TestHooksModule:
         assert post_count == 0
 
     def test_hooks_accessible_via_module(self):
-        from laziest_import import add_pre_import_hook, add_post_import_hook
-        from laziest_import import remove_pre_import_hook, remove_post_import_hook
-        from laziest_import import clear_import_hooks
+        from laziest_import import lz
 
-        assert callable(add_pre_import_hook)
-        assert callable(add_post_import_hook)
-        assert callable(remove_pre_import_hook)
-        assert callable(remove_post_import_hook)
-        assert callable(clear_import_hooks)
+        assert hasattr(lz.hooks, 'pre')
+        assert hasattr(lz.hooks, 'post')
+        assert callable(lz.hooks.clear)
+
+        def dummy(name: str) -> None:
+            pass
+
+        pre = lz.hooks.pre
+        pre += dummy
+        pre -= dummy
+        post = lz.hooks.post
+        post += dummy
+        post -= dummy
 
 
 class TestAnalysisFunctions:
@@ -195,9 +201,9 @@ class TestAnalysisFunctions:
         assert callable(analyze_directory)
 
     def test_analyze_source_returns_result(self):
-        from laziest_import._analysis import analyze_source
+        from laziest_import import lz
 
-        result = analyze_source("import numpy\nnp.array([1, 2, 3])")
+        result = lz.analyze.code("import numpy\nnp.array([1, 2, 3])")
         assert result is not None
         assert hasattr(result, "file_path")
         assert hasattr(result, "predicted_imports")
@@ -266,14 +272,25 @@ class TestInitGetattr:
 
     def test_negative_cache_works(self):
         import laziest_import
-        from laziest_import._config import _NEGATIVE_CACHE
+        from laziest_import._config import _NEGATIVE_CACHE, _NEGATIVE_CACHE_TTL
 
+        import time
         _NEGATIVE_CACHE.clear()
         try:
             laziest_import.__getattr__("__clearly_nonexistent_xyz__")
         except AttributeError:
             pass
         assert "__clearly_nonexistent_xyz__" in _NEGATIVE_CACHE
+        assert isinstance(_NEGATIVE_CACHE["__clearly_nonexistent_xyz__"], float)
+        # Respects TTL (not expired yet)
+        assert time.time() - _NEGATIVE_CACHE["__clearly_nonexistent_xyz__"] < _NEGATIVE_CACHE_TTL
+        # Still blocks re-access within TTL
+        try:
+            laziest_import.__getattr__("__clearly_nonexistent_xyz__")
+        except AttributeError:
+            pass
+        else:
+            assert False, "Expected AttributeError within TTL"
 
     def test_reserved_names_rejected(self):
         import laziest_import

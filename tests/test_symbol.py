@@ -18,17 +18,17 @@ class TestSymbolSearch:
 
     def test_search_symbol_basic(self):
         """Test basic symbol search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("sqrt", max_results=5)
+        results = lz.symbol.search("sqrt", max_results=5)
         assert isinstance(results, list)
 
     def test_search_symbol_found(self):
         """Test finding a known symbol."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.rebuild_symbol_index()
-        results = lz.search_symbol("sqrt", max_results=10)
+        lz.symbol.index.rebuild()
+        results = lz.symbol.search("sqrt", max_results=10)
         # sqrt should be found in math and/or numpy
         # In some CI environments, math module symbols may not be indexed,
         # so we check if results exist and contain sqrt-related symbols
@@ -37,40 +37,40 @@ class TestSymbolSearch:
             found_sqrt = any("sqrt" in r.symbol_name.lower() for r in results)
             if not found_sqrt:
                 # If no sqrt found, check if symbol cache was built
-                info = lz.get_symbol_cache_info()
+                info = lz.symbol.cache_info()
                 if info["symbol_count"] == 0:
                     pytest.skip("Symbol index empty in CI environment")
             assert found_sqrt or len(results) > 0
 
     def test_search_symbol_not_found(self):
         """Test searching for non-existent symbol."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("nonexistent_symbol_xyz12345")
+        results = lz.symbol.search("nonexistent_symbol_xyz12345")
         assert results == [] or results is None or len(results) == 0
 
     def test_search_symbol_with_type_filter(self):
         """Test symbol search with type filter."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("defaultdict", symbol_type="class", max_results=5)
+        results = lz.symbol.search("defaultdict", symbol_type="class", max_results=5)
         if results:
             for r in results:
                 assert r.symbol_type == "class"
 
     def test_search_symbol_with_max_results(self):
         """Test max_results parameter."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("sqrt", max_results=2)
+        results = lz.symbol.search("sqrt", max_results=2)
         assert len(results) <= 2
 
     def test_search_symbol_case_insensitive(self):
         """Test case-insensitive search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results_lower = lz.search_symbol("sqrt", max_results=5)
-        results_upper = lz.search_symbol("SQRT", max_results=5)
+        results_lower = lz.symbol.search("sqrt", max_results=5)
+        results_upper = lz.symbol.search("SQRT", max_results=5)
         # Both should work (case-insensitive)
         assert isinstance(results_lower, list)
         assert isinstance(results_upper, list)
@@ -81,50 +81,46 @@ class TestSymbolSearchConfig:
 
     def test_enable_symbol_search(self):
         """Test enabling symbol search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_symbol_search()
-        assert lz.is_symbol_search_enabled() is True
+        lz.symbol.config.enable()
+        assert lz.symbol.config.enabled is True
 
     def test_disable_symbol_search(self):
         """Test disabling symbol search."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_symbol_search()
-        assert lz.is_symbol_search_enabled() is False
+        lz.symbol.config.disable()
+        assert lz.symbol.config.enabled is False
 
         # Re-enable
-        lz.enable_symbol_search()
+        lz.symbol.config.enable()
 
     def test_get_symbol_search_config(self):
         """Test getting symbol search config."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        config = lz.get_symbol_search_config()
-        assert isinstance(config, dict)
-        assert "enabled" in config
-        assert "interactive" in config
-        assert "max_results" in config
+        config = lz.symbol.config.snapshot()
+        assert "enabled" in config["search"]
 
     def test_enable_with_params(self):
         """Test enabling with custom parameters."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_symbol_search(
-            interactive=False,
-            exact_params=True,
-            max_results=20,
-            search_depth=3,
-            skip_stdlib=False,
-        )
+        lz.symbol.config.enable()
+        lz.symbol.config.interactive = False
+        lz.symbol.config.exact_params = True
+        lz.symbol.config.max_results = 20
+        lz.symbol.config.search_depth = 3
+        lz.symbol.config.skip_stdlib = False
 
-        config = lz.get_symbol_search_config()
-        assert config["interactive"] is False
-        assert config["exact_params"] is True
-        assert config["max_results"] == 20
+        config = lz.symbol.config.snapshot()
+        assert config["search"]["interactive"] is False
+        assert config["search"]["exact_params"] is True
+        assert config["search"]["max_results"] == 20
 
         # Reset
-        lz.enable_symbol_search()
+        lz.symbol.config.enable()
 
 
 class TestSymbolCache:
@@ -132,29 +128,29 @@ class TestSymbolCache:
 
     def test_get_symbol_cache_info(self):
         """Test getting symbol cache info."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        info = lz.get_symbol_cache_info()
+        info = lz.symbol.cache_info()
         assert isinstance(info, dict)
         assert "built" in info
         assert "symbol_count" in info
 
     def test_clear_symbol_cache(self):
         """Test clearing symbol cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_symbol_cache()
-        info = lz.get_symbol_cache_info()
+        lz.cache.symbols.clear()
+        info = lz.symbol.cache_info()
         assert info["built"] is False
         assert info["symbol_count"] == 0
 
     def test_rebuild_symbol_index(self):
         """Test rebuilding symbol index."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_symbol_cache()
-        lz.rebuild_symbol_index()
-        info = lz.get_symbol_cache_info()
+        lz.cache.symbols.clear()
+        lz.symbol.index.rebuild()
+        info = lz.symbol.cache_info()
         assert info["built"] is True
         assert info["symbol_count"] > 0
 
@@ -164,26 +160,26 @@ class TestSymbolPreference:
 
     def test_set_symbol_preference(self):
         """Test setting symbol preference."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_symbol_preference("TestSymbol", "test_module")
-        pref = lz.get_symbol_preference("TestSymbol")
+        lz.symbol.prefer("TestSymbol", "test_module")
+        pref = lz.symbol.preference("TestSymbol")
         assert pref == "test_module"
 
     def test_get_symbol_preference_default(self):
         """Test getting preference for unknown symbol."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        pref = lz.get_symbol_preference("UnknownSymbolXYZ")
+        pref = lz.symbol.preference("UnknownSymbolXYZ")
         assert pref is None
 
     def test_clear_symbol_preference(self):
         """Test clearing symbol preference."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_symbol_preference("TestSymbolClear", "test_module")
-        lz.clear_symbol_preference("TestSymbolClear")
-        pref = lz.get_symbol_preference("TestSymbolClear")
+        lz.symbol.prefer("TestSymbolClear", "test_module")
+        lz.symbol.clear_preference("TestSymbolClear")
+        pref = lz.symbol.preference("TestSymbolClear")
         assert pref is None
 
 
@@ -192,30 +188,32 @@ class TestSymbolConflicts:
 
     def test_list_symbol_conflicts(self):
         """Test listing symbol conflicts."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        conflicts = lz.list_symbol_conflicts("sqrt")
-        assert isinstance(conflicts, list)
+        from laziest_import._analysis._conflict import SymbolConflict
+        conflicts = lz.symbol.conflicts("sqrt") or []
+        assert isinstance(conflicts, (list, SymbolConflict))
 
     def test_find_symbol_conflicts(self):
         """Test finding all symbol conflicts."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        conflicts = lz.find_symbol_conflicts()
+        conflicts = lz.symbol.conflicts()
         assert isinstance(conflicts, dict)
 
     def test_show_conflicts(self):
         """Test showing conflicts (should not raise)."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        # Should not raise
-        lz.show_conflicts()
+        summary = lz.symbol.conflict_summary()
+        lz.symbol.show_conflicts()
+        assert isinstance(summary, dict)
 
     def test_get_conflicts_summary(self):
         """Test getting conflicts summary."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        summary = lz.get_conflicts_summary()
+        summary = lz.symbol.conflict_summary()
         assert isinstance(summary, dict)
         assert "total_conflicts" in summary
 
@@ -225,30 +223,28 @@ class TestSymbolResolution:
 
     def test_enable_auto_symbol_resolution(self):
         """Test enabling auto symbol resolution."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_auto_symbol_resolution()
-        config = lz.get_symbol_resolution_config()
-        assert config["auto_symbol"] is True
+        lz.symbol.config.auto_resolution = True
+        assert lz.symbol.config.auto_resolution is True
 
     def test_disable_auto_symbol_resolution(self):
         """Test disabling auto symbol resolution."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_auto_symbol_resolution()
-        config = lz.get_symbol_resolution_config()
-        assert config["auto_symbol"] is False
+        lz.symbol.config.auto_resolution = False
+        assert lz.symbol.config.auto_resolution is False
 
         # Re-enable
-        lz.enable_auto_symbol_resolution()
+        lz.symbol.config.auto_resolution = True
 
     def test_get_symbol_resolution_config(self):
         """Test getting symbol resolution config."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        config = lz.get_symbol_resolution_config()
+        config = lz.symbol.config.snapshot()
         assert isinstance(config, dict)
-        assert "auto_symbol" in config
+        assert "auto_symbol" in config["resolution"]
 
 
 class TestModulePriority:
@@ -256,27 +252,28 @@ class TestModulePriority:
 
     def test_set_module_priority(self):
         """Test setting module priority."""
-        import laziest_import as lz
+        from laziest_import._symbol import set_module_priority, get_module_priority
 
-        lz.set_module_priority("test_module", 100)
-        priority = lz.get_module_priority("test_module")
+        set_module_priority("test_module", 100)
+        priority = get_module_priority("test_module")
         assert priority == 100
 
     def test_get_module_priority_default(self):
         """Test getting priority for unknown module."""
-        import laziest_import as lz
+        from laziest_import._symbol import get_module_priority
 
-        priority = lz.get_module_priority("unknown_module_xyz")
+        priority = get_module_priority("unknown_module_xyz")
         assert priority == 50  # Default priority
 
     def test_priority_affects_resolution(self):
         """Test that priority affects symbol resolution."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._symbol import set_module_priority
 
         # Set high priority for math
-        lz.set_module_priority("math", 100)
+        set_module_priority("math", 100)
         # Search for sqrt - should prefer math
-        results = lz.search_symbol("sqrt", max_results=5)
+        results = lz.symbol.search("sqrt", max_results=5)
         # Just verify it works
         assert isinstance(results, list)
 
@@ -286,46 +283,48 @@ class TestSymbolSharding:
 
     def test_get_sharding_config(self):
         """Test getting sharding config."""
-        import laziest_import as lz
+        from laziest_import._symbol import get_sharding_config
 
-        config = lz.get_sharding_config()
+        config = get_sharding_config()
         assert isinstance(config, dict)
         assert "enabled" in config
         assert "shard_threshold" in config
 
     def test_enable_sharding(self):
         """Test enabling sharding."""
-        import laziest_import as lz
+        from laziest_import._symbol import enable_sharding, get_sharding_config
 
-        lz.enable_sharding()
-        config = lz.get_sharding_config()
+        enable_sharding()
+        config = get_sharding_config()
         assert config["enabled"] is True
 
     def test_disable_sharding(self):
         """Test disabling sharding."""
-        import laziest_import as lz
+        from laziest_import._symbol import disable_sharding, get_sharding_config, enable_sharding
 
-        lz.disable_sharding()
-        config = lz.get_sharding_config()
+        disable_sharding()
+        config = get_sharding_config()
         assert config["enabled"] is False
 
         # Re-enable
-        lz.enable_sharding()
+        enable_sharding()
 
     def test_search_with_sharding(self):
         """Test searching with sharding."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._symbol import enable_sharding
 
-        lz.enable_sharding()
-        results = lz.search_with_sharding("sqrt", max_results=5)
+        enable_sharding()
+        results = lz.symbol.sharded("sqrt", max_results=5)
         assert isinstance(results, list)
 
     def test_clear_shard_cache(self):
         """Test clearing shard cache."""
-        import laziest_import as lz
+        from laziest_import._symbol import clear_shard_cache, get_sharding_config
 
-        # Should not raise
-        lz.clear_shard_cache()
+        clear_shard_cache()
+        config = get_sharding_config()
+        assert isinstance(config, dict)
 
 
 class TestSymbolIndexIncremental:
@@ -333,9 +332,9 @@ class TestSymbolIndexIncremental:
 
     def test_build_symbol_index_incremental(self):
         """Test incremental symbol index build."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.build_symbol_index_incremental()
+        result = lz.symbol.index.incremental()
         assert isinstance(result, bool)
 
 
@@ -344,19 +343,20 @@ class TestLoadedModulesContext:
 
     def test_get_loaded_modules_context(self):
         """Test getting loaded modules context."""
-        import laziest_import as lz
+        from laziest_import._symbol import get_loaded_modules_context
 
-        context = lz.get_loaded_modules_context()
+        context = get_loaded_modules_context()
         assert isinstance(context, dict) or isinstance(context, set)
 
     def test_context_after_import(self):
         """Test context after importing modules."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._symbol import get_loaded_modules_context
 
         _ = lz.math.pi
         _ = lz.os.getcwd
 
-        context = lz.get_loaded_modules_context()
+        context = get_loaded_modules_context()
         assert "math" in context or len(context) >= 0
 
 
@@ -365,37 +365,43 @@ class TestSymbolSearchAdvanced:
 
     def test_search_with_signature(self):
         """Test search with signature hint."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("sqrt", signature="(x)", max_results=5)
+        results = lz.symbol.search("sqrt", signature="(x)", max_results=5)
         assert isinstance(results, list)
 
     def test_search_with_exact_params(self):
         """Test search with exact params."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_symbol_search(exact_params=True)
-        results = lz.search_symbol("join", max_results=5)
+        lz.symbol.config.enable()
+        lz.symbol.config.exact_params = True
+        results = lz.symbol.search("join", max_results=5)
         assert isinstance(results, list)
-        lz.enable_symbol_search(exact_params=False)
+        lz.symbol.config.enable()
+        lz.symbol.config.exact_params = False
 
     def test_search_with_search_depth(self):
         """Test search with different depth."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_symbol_search(search_depth=2)
-        results = lz.search_symbol("sqrt", max_results=5)
+        lz.symbol.config.enable()
+        lz.symbol.config.search_depth = 2
+        results = lz.symbol.search("sqrt", max_results=5)
         assert isinstance(results, list)
-        lz.enable_symbol_search(search_depth=1)
+        lz.symbol.config.enable()
+        lz.symbol.config.search_depth = 1
 
     def test_search_skip_stdlib(self):
         """Test search skipping stdlib."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_symbol_search(skip_stdlib=True)
-        results = lz.search_symbol("sqrt", max_results=5)
+        lz.symbol.config.enable()
+        lz.symbol.config.skip_stdlib = True
+        results = lz.symbol.search("sqrt", max_results=5)
         assert isinstance(results, list)
-        lz.enable_symbol_search(skip_stdlib=False)
+        lz.symbol.config.enable()
+        lz.symbol.config.skip_stdlib = False
 
 
 class TestSymbolSearchEdgeCases:
@@ -403,31 +409,31 @@ class TestSymbolSearchEdgeCases:
 
     def test_search_empty_string(self):
         """Test searching with empty string."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("")
+        results = lz.symbol.search("")
         assert results == [] or results is None or isinstance(results, list)
 
     def test_search_very_long_name(self):
         """Test searching with very long name."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         long_name = "a" * 100
-        results = lz.search_symbol(long_name)
+        results = lz.symbol.search(long_name)
         assert results == [] or results is None or isinstance(results, list)
 
     def test_search_unicode_name(self):
         """Test searching with unicode name."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("测试符号")
+        results = lz.symbol.search("测试符号")
         assert results == [] or results is None or isinstance(results, list)
 
     def test_search_special_characters(self):
         """Test searching with special characters."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        results = lz.search_symbol("test-symbol")
+        results = lz.symbol.search("test-symbol")
         assert isinstance(results, list)
 
 

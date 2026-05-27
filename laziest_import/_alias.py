@@ -386,8 +386,8 @@ def _build_known_modules_cache(force: bool = False) -> Set[str]:
         
         # Iterate through all modules in search paths
         for path in sys.path:
-            if not path:
-                path = '.'
+            if not path or path == '.':
+                continue
             if not Path(path).exists():
                 continue
             try:

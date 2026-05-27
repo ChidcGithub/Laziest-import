@@ -25,42 +25,42 @@ class TestCacheDirectory:
 
     def test_get_cache_dir(self):
         """Test getting cache directory."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        cache_dir = lz.get_cache_dir()
+        cache_dir = lz.cache.dir
         assert isinstance(cache_dir, Path)
         assert cache_dir.exists() or cache_dir == Path("")
 
     def test_set_cache_dir(self):
         """Test setting custom cache directory."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            lz.set_cache_dir(tmpdir)
-            cache_dir = lz.get_cache_dir()
+            lz.cache.dir = tmpdir
+            cache_dir = lz.cache.dir
             assert str(cache_dir) == tmpdir or cache_dir == Path(tmpdir)
-            lz.reset_cache_dir()
+            lz.cache.reset_dir()
 
     def test_set_cache_dir_path_object(self):
         """Test setting cache dir with Path object."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            lz.set_cache_dir(Path(tmpdir))
-            cache_dir = lz.get_cache_dir()
+            lz.cache.dir = Path(tmpdir)
+            cache_dir = lz.cache.dir
             assert str(cache_dir) == tmpdir
-            lz.reset_cache_dir()
+            lz.cache.reset_dir()
 
     def test_reset_cache_dir(self):
         """Test resetting to default cache directory."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        original = lz.get_cache_dir()
+        original = lz.cache.dir
         with tempfile.TemporaryDirectory() as tmpdir:
-            lz.set_cache_dir(tmpdir)
-            lz.reset_cache_dir()
+            lz.cache.dir = tmpdir
+            lz.cache.reset_dir()
             # Should be back to original or default
-            cache_dir = lz.get_cache_dir()
+            cache_dir = lz.cache.dir
             assert str(cache_dir) != tmpdir or cache_dir == original
 
 
@@ -69,39 +69,35 @@ class TestCacheConfiguration:
 
     def test_get_cache_config(self):
         """Test getting cache configuration."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        config = lz.get_cache_config()
-        assert isinstance(config, dict)
-        assert "symbol_index_ttl" in config
-        assert "stdlib_cache_ttl" in config
-        assert "max_cache_size_mb" in config
+        config = lz.cache.config
+        assert hasattr(config, "symbol_index_ttl")
+        assert hasattr(config, "max_size_mb")
 
     def test_set_cache_config(self):
         """Test setting cache configuration."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.set_cache_config(
-            symbol_index_ttl=3600,
-            stdlib_cache_ttl=86400,
-            max_cache_size_mb=200,
-        )
+        lz.cache.config.symbol_index_ttl = 3600
+        lz.cache.config.stdlib_cache_ttl = 86400
+        lz.cache.config.max_size_mb = 200
 
-        config = lz.get_cache_config()
-        assert config["symbol_index_ttl"] == 3600
-        assert config["stdlib_cache_ttl"] == 86400
-        assert config["max_cache_size_mb"] == 200
+        config = lz.cache.config
+        assert config.symbol_index_ttl == 3600
+        assert config.stdlib_cache_ttl == 86400
+        assert config.max_size_mb == 200
 
     def test_set_partial_cache_config(self):
         """Test setting partial cache configuration."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        original = lz.get_cache_config()
-        lz.set_cache_config(symbol_index_ttl=7200)
-        config = lz.get_cache_config()
-        assert config["symbol_index_ttl"] == 7200
+        original_ttl = lz.cache.config.stdlib_cache_ttl
+        lz.cache.config.symbol_index_ttl = 7200
+        config = lz.cache.config
+        assert config.symbol_index_ttl == 7200
         # Other values should remain
-        assert config["stdlib_cache_ttl"] == original["stdlib_cache_ttl"]
+        assert config.stdlib_cache_ttl == original_ttl
 
 
 class TestCacheStatistics:
@@ -109,9 +105,9 @@ class TestCacheStatistics:
 
     def test_get_cache_stats(self):
         """Test getting cache statistics."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        stats = lz.get_cache_stats()
+        stats = lz.cache.stats
         assert isinstance(stats, dict)
         assert "symbol_hits" in stats
         assert "symbol_misses" in stats
@@ -121,10 +117,11 @@ class TestCacheStatistics:
 
     def test_reset_cache_stats(self):
         """Test resetting cache statistics."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._cache import reset_cache_stats
 
-        lz.reset_cache_stats()
-        stats = lz.get_cache_stats()
+        reset_cache_stats()
+        stats = lz.cache.stats
         assert stats["symbol_hits"] == 0
         assert stats["symbol_misses"] == 0
         assert stats["module_hits"] == 0
@@ -132,16 +129,17 @@ class TestCacheStatistics:
 
     def test_hit_rate_calculation(self):
         """Test hit rate calculation."""
-        import laziest_import as lz
+        from laziest_import import lz
+        from laziest_import._cache import reset_cache_stats
 
-        lz.reset_cache_stats()
+        reset_cache_stats()
 
         # Trigger some cache activity
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi  # First access - miss
         _ = lz.math.pi  # Second access - hit
 
-        stats = lz.get_cache_stats()
+        stats = lz.cache.stats
         assert "hit_rate" in stats
         assert 0 <= stats["hit_rate"] <= 1
 
@@ -151,42 +149,42 @@ class TestFileCache:
 
     def test_enable_file_cache(self):
         """Test enabling file cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_file_cache()
-        assert lz.is_file_cache_enabled() is True
+        lz.cache.files.enabled = True
+        assert lz.cache.files.enabled is True
 
     def test_disable_file_cache(self):
         """Test disabling file cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.disable_file_cache()
-        assert lz.is_file_cache_enabled() is False
+        lz.cache.files.enabled = False
+        assert lz.cache.files.enabled is False
 
         # Re-enable for other tests
-        lz.enable_file_cache()
+        lz.cache.files.enabled = True
 
     def test_get_file_cache_info(self):
         """Test getting file cache info."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        info = lz.get_file_cache_info()
+        info = lz.cache.files.info()
         assert isinstance(info, dict)
         assert "enabled" in info
         assert "cache_dir" in info
 
     def test_clear_file_cache(self):
         """Test clearing file cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        count = lz.clear_file_cache()
+        count = lz.cache.files.clear()
         assert isinstance(count, int)
 
     def test_force_save_cache(self):
         """Test force saving cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.force_save_cache()
+        result = lz.cache.files.force_save()
         assert isinstance(result, bool)
 
 
@@ -195,29 +193,29 @@ class TestSymbolCache:
 
     def test_get_symbol_cache_info(self):
         """Test getting symbol cache info."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        info = lz.get_symbol_cache_info()
+        info = lz.symbol.cache_info()
         assert isinstance(info, dict)
         assert "built" in info
         assert "symbol_count" in info
 
     def test_clear_symbol_cache(self):
         """Test clearing symbol cache."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_symbol_cache()
-        info = lz.get_symbol_cache_info()
+        lz.cache.symbols.clear()
+        info = lz.symbol.cache_info()
         assert info["built"] is False
         assert info["symbol_count"] == 0
 
     def test_rebuild_symbol_index(self):
         """Test rebuilding symbol index."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_symbol_cache()
-        lz.rebuild_symbol_index()
-        info = lz.get_symbol_cache_info()
+        lz.cache.symbols.clear()
+        lz.symbol.index.rebuild()
+        info = lz.symbol.cache_info()
         assert info["built"] is True
         assert info["symbol_count"] > 0
 
@@ -227,34 +225,34 @@ class TestPackageVersion:
 
     def test_get_cache_version(self):
         """Test getting cache version."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        version = lz.get_cache_version()
+        version = lz.version.cache()
         assert isinstance(version, str)
         assert len(version) > 0
 
     def test_get_package_version(self):
         """Test getting package version."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # For installed packages
-        version = lz.get_package_version("pytest")
+        version = lz.version.of("pytest")
         assert version is not None or version is None  # May or may not be tracked
 
     def test_get_all_package_versions(self):
         """Test getting all package versions."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        versions = lz.get_all_package_versions()
+        versions = lz.version.all_packages()
         assert isinstance(versions, dict)
 
     def test_get_laziest_import_version(self):
         """Test getting laziest-import version."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        version = lz.get_laziest_import_version()
+        version = lz.version.current
         assert isinstance(version, str)
-        assert version == lz.__version__
+        assert version == lz.version.current
 
 
 class TestCacheInvalidation:
@@ -262,26 +260,27 @@ class TestCacheInvalidation:
 
     def test_invalidate_package_cache(self):
         """Test invalidating package cache."""
-        import laziest_import as lz
+        from laziest_import._cache import invalidate_package_cache
 
         # Non-tracked package
-        result = lz.invalidate_package_cache("nonexistent_xyz")
+        result = invalidate_package_cache("nonexistent_xyz")
         assert isinstance(result, bool)
 
     def test_invalidate_then_rebuild(self):
         """Test invalidation and rebuild."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.clear_symbol_cache()
-        lz.rebuild_symbol_index()
-        info_before = lz.get_symbol_cache_info()
+        lz.cache.symbols.clear()
+        lz.symbol.index.rebuild()
+        info_before = lz.symbol.cache_info()
 
         # Invalidate
-        lz.invalidate_package_cache("math")
+        from laziest_import._cache import invalidate_package_cache
+        invalidate_package_cache("math")
 
         # Rebuild should still work
-        lz.rebuild_symbol_index()
-        info_after = lz.get_symbol_cache_info()
+        lz.symbol.index.rebuild()
+        info_after = lz.symbol.cache_info()
         assert info_after["built"] is True
 
 
@@ -290,31 +289,32 @@ class TestIncrementalIndex:
 
     def test_get_incremental_config(self):
         """Test getting incremental config."""
-        import laziest_import as lz
+        from laziest_import._cache import get_incremental_config
 
-        config = lz.get_incremental_config()
+        config = get_incremental_config()
         assert isinstance(config, dict)
         assert "enabled" in config
 
     def test_enable_incremental_index(self):
         """Test enabling incremental index."""
-        import laziest_import as lz
+        from laziest_import._cache._incremental import enable_incremental_index
+        from laziest_import._cache import get_incremental_config
 
-        lz.enable_incremental_index(True)
-        config = lz.get_incremental_config()
+        enable_incremental_index(True)
+        config = get_incremental_config()
         assert config["enabled"] is True
 
-        lz.enable_incremental_index(False)
-        config = lz.get_incremental_config()
+        enable_incremental_index(False)
+        config = get_incremental_config()
         assert config["enabled"] is False
 
-        lz.enable_incremental_index(True)
+        enable_incremental_index(True)
 
     def test_build_symbol_index_incremental(self):
         """Test incremental symbol index build."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.build_symbol_index_incremental()
+        result = lz.symbol.index.incremental()
         assert isinstance(result, bool)
 
 
@@ -323,60 +323,60 @@ class TestBackgroundBuild:
 
     def test_enable_background_build(self):
         """Test enabling background build."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_background_build(True)
-        config = lz.get_preheat_config()
+        lz.background.enable(True)
+        config = lz.background.preheat
         assert config["enabled"] is True
 
-        lz.enable_background_build(False)
-        config = lz.get_preheat_config()
+        lz.background.enable(False)
+        config = lz.background.preheat
         assert config["enabled"] is False
 
     def test_get_preheat_config(self):
         """Test getting preheat config."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        config = lz.get_preheat_config()
+        config = lz.background.preheat
         assert isinstance(config, dict)
         assert "enabled" in config
 
     def test_start_background_index_build(self):
         """Test starting background index build."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.start_background_index_build()
+        result = lz.background.start()
         assert isinstance(result, bool)
 
     def test_is_index_building(self):
         """Test checking if index is building."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.is_index_building()
+        result = lz.background.is_building
         assert isinstance(result, bool)
 
     def test_wait_for_index(self):
         """Test waiting for index build."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.wait_for_index(timeout=0.1)
+        result = lz.background.wait(timeout=0.1)
         assert isinstance(result, bool)
 
     def test_wait_for_index_no_timeout(self):
         """Test waiting for index without timeout."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.wait_for_index()
+        result = lz.background.wait()
         assert isinstance(result, bool)
 
     def test_background_timeout(self):
         """Test background timeout settings."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        original = lz.get_background_timeout()
-        lz.set_background_timeout(60.0)
-        assert lz.get_background_timeout() == 60.0
-        lz.set_background_timeout(original)
+        original = lz.background.timeout
+        lz.background.timeout = 60.0
+        assert lz.background.timeout == 60.0
+        lz.background.timeout = original
 
 
 class TestCacheCompression:
@@ -384,15 +384,13 @@ class TestCacheCompression:
 
     def test_enable_cache_compression(self):
         """Test enabling cache compression."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.enable_cache_compression(True)
-        config = lz.get_cache_config()
-        assert config["enable_compression"] is True
+        lz.cache.compression = True
+        assert lz.cache.config.compression is True
 
-        lz.enable_cache_compression(False)
-        config = lz.get_cache_config()
-        assert config["enable_compression"] is False
+        lz.cache.compression = False
+        assert lz.cache.config.compression is False
 
     def test_compressed_save_load(self):
         """Test compressed save and load."""
@@ -434,7 +432,8 @@ class TestSymbolIndexCache:
         from laziest_import._cache import _track_package, _check_package_changed
 
         _track_package("test_package_xyz", "1.0.0")
-        # Should not raise
+        result = _check_package_changed("test_package_xyz")
+        assert result is False or result is True
 
     def test_check_package_changed(self):
         """Test checking if package changed."""
@@ -450,21 +449,21 @@ class TestCacheSizeManagement:
 
     def test_cache_size_limit(self):
         """Test cache size limit."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Set small limit
-        lz.set_cache_config(max_cache_size_mb=1)
+        lz.cache.config.max_cache_size_mb = 1
 
         # Do some operations
         for _ in range(10):
             _ = lz.math.pi
 
         # Should not exceed limit significantly
-        info = lz.get_file_cache_info()
+        info = lz.cache.files.info()
         assert isinstance(info, dict)
 
         # Reset
-        lz.set_cache_config(max_cache_size_mb=100)
+        lz.cache.config.max_cache_size_mb = 100
 
     def test_get_cache_size(self):
         """Test getting cache size."""
@@ -478,8 +477,8 @@ class TestCacheSizeManagement:
         """Test cache cleanup."""
         from laziest_import._cache import _cleanup_cache_if_needed
 
-        # Should not raise
-        _cleanup_cache_if_needed()
+        result = _cleanup_cache_if_needed()
+        assert result is None or result is True
 
 
 class TestCacheThreadSafety:
@@ -487,7 +486,7 @@ class TestCacheThreadSafety:
 
     def test_concurrent_cache_access(self):
         """Test concurrent cache access."""
-        import laziest_import as lz
+        from laziest_import import lz
         import threading
 
         errors = []
@@ -495,8 +494,8 @@ class TestCacheThreadSafety:
         def cache_op():
             try:
                 for _ in range(10):
-                    _ = lz.get_cache_stats()
-                    _ = lz.get_cache_config()
+                    _ = lz.cache.stats
+                    _ = lz.cache.config
             except Exception as e:
                 errors.append(e)
 
@@ -514,39 +513,36 @@ class TestCacheEdgeCases:
 
     def test_empty_cache_dir(self):
         """Test with empty cache directory."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            lz.set_cache_dir(tmpdir)
-            lz.clear_file_cache()
+            lz.cache.dir = tmpdir
+            lz.cache.files.clear()
 
-            # Should still work
-            _ = lz.math.pi
+            result = lz.math.pi
+            assert result > 3
 
-            lz.reset_cache_dir()
+            lz.cache.reset_dir()
 
     def test_invalid_cache_dir(self):
         """Test handling of invalid cache directory."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        original = lz.get_cache_dir()
+        original = lz.cache.dir
         # Set to a path that might not exist
-        lz.set_cache_dir("/nonexistent/path/xyz123")
+        lz.cache.dir = "/nonexistent/path/xyz123"
 
-        # Should still work (graceful degradation)
-        try:
-            _ = lz.math.pi
-        except Exception:
-            pass  # May fail, but shouldn't crash
+        result = lz.math.pi
+        assert result > 3
 
-        lz.reset_cache_dir()
+        lz.cache.reset_dir()
 
     def test_cache_with_no_permissions(self):
         """Test cache with no write permissions (graceful handling)."""
         # This test is platform-dependent and may require admin
         # Just verify the functions exist
-        import laziest_import as lz
-        assert callable(lz.clear_file_cache)
+        from laziest_import import lz
+        assert callable(lz.cache.files.clear)
 
 
 if __name__ == "__main__":

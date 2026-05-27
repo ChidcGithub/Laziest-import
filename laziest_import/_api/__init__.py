@@ -8,6 +8,7 @@ Usage:
     lz.config.debug = True
 """
 
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from .. import _config as _config_module
@@ -200,6 +201,13 @@ class LazyImport:
         if name.startswith("_") and name != "__version__":
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
+        if name in _config_module._NEGATIVE_CACHE:
+            _ts = _config_module._NEGATIVE_CACHE[name]
+            if time.time() - _ts < _config_module._NEGATIVE_CACHE_TTL:
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+            with _config_module._NEGATIVE_CACHE_LOCK:
+                del _config_module._NEGATIVE_CACHE[name]
+
         if name in _ALIAS_MAP:
             return _get_lazy_module(name)._get_module()
 
@@ -251,6 +259,9 @@ class LazyImport:
             msg += f" Did you mean `{best_match[0]}` (-> {best_match[1]})?"
         else:
             msg += f" Try lz.module.{name} or lz.symbol.search('{name}')"
+
+        with _config_module._NEGATIVE_CACHE_LOCK:
+            _config_module._NEGATIVE_CACHE[name] = time.time()
         raise AttributeError(msg)
 
     def __dir__(self) -> List[str]:

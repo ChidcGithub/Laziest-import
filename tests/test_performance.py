@@ -29,9 +29,9 @@ class TestHighConcurrencyStress:
     
     def test_massive_concurrent_imports(self):
         """Test 1000 concurrent imports from 100 threads"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         errors = []
         success_count = [0]
         lock = threading.Lock()
@@ -83,7 +83,7 @@ class TestHighConcurrencyStress:
     
     def test_concurrent_cache_operations(self):
         """Test concurrent cache operations"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         errors = []
         operations = [0]
@@ -95,15 +95,15 @@ class TestHighConcurrencyStress:
                     # Mix of operations
                     op = i % 5
                     if op == 0:
-                        lz.clear_cache()
+                        lz.cache.clear()
                     elif op == 1:
-                        _ = lz.list_loaded()
+                        _ = lz.module.list_loaded()
                     elif op == 2:
-                        _ = lz.list_available()
+                        _ = lz.module.list_available()
                     elif op == 3:
-                        lz.register_alias(f"test_{thread_id}_{i}", "os")
+                        lz.alias.register(f"test_{thread_id}_{i}", "os")
                     elif op == 4:
-                        lz.unregister_alias(f"test_{thread_id}_{i}")
+                        lz.alias.unregister(f"test_{thread_id}_{i}")
                     
                     with lock:
                         operations[0] += 1
@@ -127,7 +127,7 @@ class TestHighConcurrencyStress:
     
     def test_concurrent_alias_registration(self):
         """Test concurrent alias registration and unregistration"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         errors = []
         
@@ -135,9 +135,9 @@ class TestHighConcurrencyStress:
             try:
                 for i in range(100):
                     alias = f"{prefix}_{i}"
-                    lz.register_alias(alias, "math")
-                    _ = lz.list_available()
-                    lz.unregister_alias(alias)
+                    lz.alias.register(alias, "math")
+                    _ = lz.module.list_available()
+                    lz.alias.unregister(alias)
             except Exception as e:
                 errors.append((prefix, str(e)))
         
@@ -159,9 +159,9 @@ class TestMemoryStress:
     
     def test_massive_module_cache(self):
         """Test handling of massive module cache"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         # Import many stdlib modules
         stdlib_modules = [
@@ -205,34 +205,34 @@ class TestMemoryStress:
     
     def test_memory_leak_prevention(self):
         """Test that module cache doesn't leak memory"""
-        import laziest_import as lz
+        from laziest_import import lz
         import gc
         
-        lz.clear_cache()
+        lz.cache.clear()
         gc.collect()
         
         # Get initial loaded modules
-        initial_count = len(lz.list_loaded())
+        initial_count = len(lz.module.list_loaded())
         
         # Load many modules
         for _ in range(100):
             _ = lz.math.pi
             _ = lz.os.getcwd
-            lz.clear_cache()
+            lz.cache.clear()
         
         gc.collect()
         
-        final_count = len(lz.list_loaded())
+        final_count = len(lz.module.list_loaded())
         
         # Cache should be cleared
         assert final_count <= initial_count + 1
     
     def test_weakref_handling(self):
         """Test that module results work correctly with memory management"""
-        import laziest_import as lz
+        from laziest_import import lz
         import gc
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         # Access a module
         pi_value = lz.math.pi
@@ -241,11 +241,11 @@ class TestMemoryStress:
         assert pi_value > 3.14
         
         # Clear cache
-        lz.clear_cache()
+        lz.cache.clear()
         gc.collect()
         
         # Module should be unloaded
-        loaded = lz.list_loaded()
+        loaded = lz.module.list_loaded()
         assert "math" not in loaded
         
         # But we can still use the value we got earlier
@@ -257,9 +257,9 @@ class TestImportStress:
     
     def test_repeated_imports(self):
         """Test 10000 repeated imports of the same module"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         start_time = time.perf_counter()
         
@@ -276,9 +276,9 @@ class TestImportStress:
     
     def test_import_with_exceptions(self):
         """Test handling of exceptions during import"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         exception_count = 0
         success_count = 0
@@ -305,7 +305,7 @@ class TestImportStress:
     
     def test_deep_submodule_access(self):
         """Test deep submodule access"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         # Access deeply nested submodules
         try:
@@ -323,9 +323,9 @@ class TestSymbolSearchStress:
     
     def test_massive_symbol_search(self):
         """Test 1000 symbol searches"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.rebuild_symbol_index()
+        lz.symbol.index.rebuild()
         
         # Common symbol names
         symbols = ['sqrt', 'sin', 'cos', 'tan', 'log', 'exp', 'abs', 'min', 'max',
@@ -337,7 +337,7 @@ class TestSymbolSearchStress:
         
         for i in range(1000):
             symbol = symbols[i % len(symbols)]
-            results = lz.search_symbol(symbol, max_results=5)
+            results = lz.symbol.search(symbol, max_results=5)
             if results:
                 results_found += 1
         
@@ -349,21 +349,21 @@ class TestSymbolSearchStress:
     
     def test_symbol_search_with_cache(self):
         """Test symbol search caching performance"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_symbol_cache()
-        lz.rebuild_symbol_index()
+        lz.cache.symbols.clear()
+        lz.symbol.index.rebuild()
         
         # First pass - cold cache
         start_time = time.perf_counter()
         for _ in range(100):
-            _ = lz.search_symbol('sqrt', max_results=5)
+            _ = lz.symbol.search('sqrt', max_results=5)
         cold_time = time.perf_counter() - start_time
         
         # Second pass - warm cache
         start_time = time.perf_counter()
         for _ in range(100):
-            _ = lz.search_symbol('sqrt', max_results=5)
+            _ = lz.symbol.search('sqrt', max_results=5)
         warm_time = time.perf_counter() - start_time
         
         print(f"\n[Stress] Symbol search caching: cold={cold_time:.3f}s, warm={warm_time:.3f}s")
@@ -377,9 +377,9 @@ class TestCacheStress:
     
     def test_cache_size_limit(self):
         """Test cache size limits"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.set_cache_config(max_cache_size_mb=1)
+        lz.cache.config.max_cache_size_mb = 1
         
         # Load many modules
         for _ in range(100):
@@ -387,16 +387,15 @@ class TestCacheStress:
             _ = lz.os.getcwd
             _ = lz.json.dumps
         
-        # Cache should handle size limit gracefully
-        info = lz.get_file_cache_info()
-        print(f"\n[Stress] Cache info: {info}")
+        info = lz.cache.files.info()
+        assert isinstance(info, dict)
+        assert "enabled" in info
         
-        # Reset config
-        lz.set_cache_config(max_cache_size_mb=100)
+        lz.cache.config.max_cache_size_mb = 100
     
     def test_cache_persistence(self):
         """Test cache persistence under stress"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         with tempfile.TemporaryDirectory() as tmpdir:
             lz.set_cache_dir(tmpdir)
@@ -406,29 +405,28 @@ class TestCacheStress:
             _ = lz.os.getcwd
             
             # Force save
-            lz.force_save_cache()
+            lz.cache.files.force_save()
             
             # Clear and reload
-            lz.clear_cache()
+            lz.cache.clear()
             
-            # Check cache directory
             cache_files = list(Path(tmpdir).glob("*.json"))
-            print(f"\n[Stress] Cache files created: {len(cache_files)}")
+            assert len(cache_files) > 0
             
             lz.reset_cache_dir()
     
     def test_concurrent_cache_access(self):
         """Test concurrent cache access"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         errors = []
         
         def cache_access(thread_id):
             try:
                 for i in range(50):
-                    _ = lz.get_cache_stats()
-                    _ = lz.get_cache_config()
-                    lz.reset_cache_stats()
+                    _ = lz.cache.stats
+                    _ = lz.cache.config
+                    lz.cache.stats.reset()
             except Exception as e:
                 errors.append((thread_id, str(e)))
         
@@ -450,7 +448,7 @@ class TestAsyncStress:
     @pytest.mark.asyncio
     async def test_massive_async_imports(self):
         """Test 100 async imports"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         # Use unique modules for proper count
         modules = ['math', 'os', 'json', 'sys', 're', 'time', 'random',
@@ -459,7 +457,7 @@ class TestAsyncStress:
                    'hashlib', 'warnings', 'contextlib', 'dataclasses'] * 5
         
         start_time = time.perf_counter()
-        results = await lz.import_multiple_async(modules)
+        results = await lz.async_.fetch(modules)
         elapsed = time.perf_counter() - start_time
         
         print(f"\n[Stress] 100 async imports in {elapsed:.2f}s")
@@ -470,11 +468,11 @@ class TestAsyncStress:
     @pytest.mark.asyncio
     async def test_concurrent_async_operations(self):
         """Test concurrent async operations"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         async def async_import_task(alias):
             try:
-                return await lz.import_async(alias)
+                return await lz.async_.get(alias)
             except Exception:
                 return None
         
@@ -495,9 +493,9 @@ class TestFuzzySearchStress:
     
     def test_fuzzy_search_performance(self):
         """Test fuzzy search performance with many queries"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.enable_auto_search()
+        lz.config.auto_search = True
         
         # Generate variations
         queries = []
@@ -515,7 +513,7 @@ class TestFuzzySearchStress:
         found = 0
         
         for query in queries:
-            result = lz.search_module(query)
+            result = lz.symbol.search(query)
             if result:
                 found += 1
         
@@ -532,7 +530,7 @@ class TestHookStress:
     
     def test_many_hooks(self):
         """Test with many registered hooks"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         called = []
         
@@ -548,7 +546,7 @@ class TestHookStress:
             lz.add_pre_import_hook(hook)
         
         # Import something
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi
         
         # Unregister all hooks
@@ -562,7 +560,7 @@ class TestHookStress:
     
     def test_hook_exceptions(self):
         """Test hooks that raise exceptions"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         call_count = [0]
         
@@ -573,7 +571,7 @@ class TestHookStress:
         lz.add_pre_import_hook(bad_hook)
         
         # Should not crash
-        lz.clear_cache()
+        lz.cache.clear()
         _ = lz.math.pi
         
         lz.remove_pre_import_hook(bad_hook)
@@ -587,23 +585,23 @@ class TestEdgeCaseStress:
     
     def test_empty_and_invalid_inputs(self):
         """Test with empty and invalid inputs"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         errors = 0
         
         for _ in range(100):
             try:
-                _ = lz.search_module("")
+                _ = lz.symbol.search("")
             except Exception:
                 errors += 1
             
             try:
-                _ = lz.search_module(None)
+                _ = lz.symbol.search(None)
             except Exception:
                 errors += 1
             
             try:
-                _ = lz.search_symbol("")
+                _ = lz.symbol.search("")
             except Exception:
                 errors += 1
         
@@ -613,19 +611,19 @@ class TestEdgeCaseStress:
     
     def test_very_long_names(self):
         """Test with very long names"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         errors = 0
         
         for _ in range(50):
             long_name = "a" * 1000
             try:
-                _ = lz.search_module(long_name)
+                _ = lz.symbol.search(long_name)
             except Exception:
                 errors += 1
             
             try:
-                _ = lz.search_symbol(long_name)
+                _ = lz.symbol.search(long_name)
             except Exception:
                 errors += 1
         
@@ -635,14 +633,14 @@ class TestEdgeCaseStress:
     
     def test_unicode_names(self):
         """Test with unicode names"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         unicode_names = ['模块', 'モジュール', '모듈', 'модуль', 'وحدة']
         errors = 0
         
         for name in unicode_names:
             try:
-                _ = lz.search_module(name)
+                _ = lz.symbol.search(name)
             except Exception:
                 errors += 1
         
@@ -656,7 +654,7 @@ class TestRecoveryStress:
     
     def test_recovery_after_errors(self):
         """Test recovery after many errors"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         # Cause many errors
         for _ in range(100):
@@ -669,21 +667,21 @@ class TestRecoveryStress:
         assert lz.math.pi > 3
         
         # Clear and try again
-        lz.clear_cache()
+        lz.cache.clear()
         assert lz.math.pi > 3
     
     def test_recovery_after_clear(self):
         """Test recovery after clear operations"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         for _ in range(50):
             _ = lz.math.pi
-            lz.clear_cache()
-            lz.clear_symbol_cache()
+            lz.cache.clear()
+            lz.cache.symbols.clear()
         
         # Should still work
-        _ = lz.math.pi
-        assert True
+        result = lz.math.pi
+        assert result > 3
 
 
 class TestResourceCleanup:
@@ -691,7 +689,7 @@ class TestResourceCleanup:
     
     def test_file_handle_cleanup(self):
         """Test that file handles are properly closed"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         with tempfile.TemporaryDirectory() as tmpdir:
             lz.set_cache_dir(tmpdir)
@@ -699,17 +697,17 @@ class TestResourceCleanup:
             # Many operations that use file handles
             for _ in range(100):
                 _ = lz.math.pi
-                _ = lz.get_cache_stats()
-                _ = lz.force_save_cache()
+                _ = lz.cache.stats
+                _ = lz.cache.files.force_save()
             
             lz.reset_cache_dir()
         
-        # If we get here without "too many open files" error, we're good
-        assert True
+            info = lz.cache.files.info()
+            assert isinstance(info, dict)
     
     def test_thread_cleanup(self):
         """Test that threads are properly cleaned up"""
-        import laziest_import as lz
+        from laziest_import import lz
         
         initial_threads = threading.active_count()
         
@@ -734,9 +732,9 @@ class TestPerformanceBenchmarks:
     
     def test_import_latency(self):
         """Benchmark import latency"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         # Cold import
         start = time.perf_counter()
@@ -756,13 +754,13 @@ class TestPerformanceBenchmarks:
     
     def test_memory_overhead(self):
         """Benchmark memory overhead"""
-        import laziest_import as lz
+        from laziest_import import lz
         
-        lz.clear_cache()
+        lz.cache.clear()
         
         # Get approximate memory before
         import sys
-        before = sys.getsizeof(lz.list_loaded())
+        before = sys.getsizeof(lz.module.list_loaded())
         
         # Load modules
         for _ in range(100):
@@ -770,7 +768,7 @@ class TestPerformanceBenchmarks:
             _ = lz.os.getcwd
         
         # Get approximate memory after
-        after = sys.getsizeof(lz.list_loaded())
+        after = sys.getsizeof(lz.module.list_loaded())
         
         print(f"\n[Benchmark] Memory: before={before}, after={after}")
         

@@ -191,8 +191,9 @@ _KNOWN_MODULES_CACHE_TIME: float = 0.0
 _KNOWN_MODULES_CACHE_TTL: float = 300.0
 _CLASS_TO_MODULE_CACHE: Dict[str, str] = {}
 
-# Negative cache
-_NEGATIVE_CACHE: Set[str] = set()
+# Negative cache (name → timestamp)
+_NEGATIVE_CACHE: Dict[str, float] = {}
+_NEGATIVE_CACHE_TTL: float = 300.0
 _NEGATIVE_CACHE_LOCK: threading.Lock = threading.Lock()
 
 # Alias & module proxies

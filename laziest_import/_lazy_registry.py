@@ -1,5 +1,5 @@
 import importlib
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
 _LAZY_FUNCTION_REGISTRY: Dict[str, str] = {}
 _RESOLVED: Dict[str, Any] = {}

@@ -16,6 +16,7 @@ import tempfile
 import json
 import os
 from pathlib import Path
+from laziest_import._alias import validate_aliases_importable
 
 
 class TestAliasRegistration:
@@ -23,88 +24,88 @@ class TestAliasRegistration:
 
     def test_register_single_alias(self):
         """Test registering a single alias."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.register_alias("test_single_alias", "os")
-        assert "test_single_alias" in lz.list_available()
+        lz.alias.register("test_single_alias", "os")
+        assert "test_single_alias" in lz.module.list_available()
         assert lz.test_single_alias.getcwd() == os.getcwd()
-        lz.unregister_alias("test_single_alias")
+        lz.alias.unregister("test_single_alias")
 
     def test_register_alias_with_dots(self):
         """Test registering alias for submodule."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.register_alias("test_submod", "os.path")
+        lz.alias.register("test_submod", "os.path")
         assert hasattr(lz.test_submod, "join")
-        lz.unregister_alias("test_submod")
+        lz.alias.unregister("test_submod")
 
     def test_register_multiple_aliases(self):
         """Test registering multiple aliases at once."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         aliases = {
             "test_multi_os": "os",
             "test_multi_json": "json",
             "test_multi_sys": "sys",
         }
-        registered = lz.register_aliases(aliases)
+        registered = lz.alias.register_many(aliases)
         assert len(registered) == 3
         for alias in aliases:
-            assert alias in lz.list_available()
+            assert alias in lz.module.list_available()
         for alias in aliases:
-            lz.unregister_alias(alias)
+            lz.alias.unregister(alias)
 
     def test_register_empty_dict(self):
         """Test registering empty alias dict."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.register_aliases({})
+        result = lz.alias.register_many({})
         assert result == []
 
     def test_register_duplicate_alias_same_module(self):
         """Test registering duplicate alias with same module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.register_alias("test_dup_same", "os")
-        # Should not raise - same module
-        lz.register_alias("test_dup_same", "os")
-        lz.unregister_alias("test_dup_same")
+        lz.alias.register("test_dup_same", "os")
+        lz.alias.register("test_dup_same", "os")
+        assert "test_dup_same" in lz.alias.list()
+        lz.alias.unregister("test_dup_same")
 
     def test_register_invalid_alias_empty_name(self):
         """Test that empty alias name raises error."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(ValueError):
-            lz.register_alias("", "os")
+            lz.alias.register("", "os")
 
     def test_register_invalid_alias_empty_module(self):
         """Test that empty module name raises error."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(ValueError):
-            lz.register_alias("test_invalid", "")
+            lz.alias.register("test_invalid", "")
 
     def test_register_invalid_alias_not_identifier(self):
         """Test that invalid identifier alias raises error."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with pytest.raises(ValueError):
-            lz.register_alias("123invalid", "os")
+            lz.alias.register("123invalid", "os")
 
     def test_unregister_existing_alias(self):
         """Test unregistering an existing alias."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.register_alias("test_unreg", "os")
-        result = lz.unregister_alias("test_unreg")
+        lz.alias.register("test_unreg", "os")
+        result = lz.alias.unregister("test_unreg")
         assert result is True
-        assert "test_unreg" not in lz.list_available()
+        assert "test_unreg" not in lz.module.list_available()
 
     def test_unregister_nonexistent_alias(self):
         """Test unregistering non-existent alias."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.unregister_alias("nonexistent_alias_xyz")
+        result = lz.alias.unregister("nonexistent_alias_xyz")
         assert result is False
 
 
@@ -113,32 +114,32 @@ class TestAliasValidation:
 
     def test_validate_valid_aliases(self):
         """Test validation of valid aliases."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases({"valid_os": "os", "valid_json": "json"})
+        result = lz.alias.validate({"valid_os": "os", "valid_json": "json"})
         assert "valid_os" in result["valid"]
         assert "valid_json" in result["valid"]
         assert len(result["invalid"]) == 0
 
     def test_validate_invalid_identifier(self):
         """Test validation catches invalid identifiers."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases({"123bad": "os"})
+        result = lz.alias.validate({"123bad": "os"})
         assert "123bad" in result["invalid"]
 
     def test_validate_empty_module_name(self):
         """Test validation catches empty module names."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases({"empty_mod": ""})
+        result = lz.alias.validate({"empty_mod": ""})
         assert "empty_mod" in result["invalid"]
 
     def test_validate_current_aliases(self):
         """Test validating all current aliases."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases()
+        result = lz.alias.validate()
         assert isinstance(result, dict)
         assert "valid" in result
         assert "invalid" in result
@@ -146,17 +147,17 @@ class TestAliasValidation:
 
     def test_validate_aliases_importable(self):
         """Test validating importable aliases."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases_importable({"os_test": "os"})
+        result = validate_aliases_importable({"os_test": "os"})
         assert "os_test" in result["importable"]
         assert "not_importable" in result
 
     def test_validate_aliases_not_importable(self):
         """Test validation of non-importable module."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.validate_aliases_importable(
+        result = validate_aliases_importable(
             {"bad": "nonexistent_module_xyz12345"}
         )
         assert "bad" in result["not_importable"]
@@ -167,33 +168,33 @@ class TestAliasExport:
 
     def test_export_returns_json_string(self):
         """Test export returns valid JSON string."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.export_aliases()
+        result = lz.alias.export()
         assert isinstance(result, str)
         data = json.loads(result)
         assert isinstance(data, dict)
 
     def test_export_categorized(self):
         """Test export with categories (by first letter)."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.export_aliases(include_categories=True)
+        result = lz.alias.export(include_categories=True)
         data = json.loads(result)
         # Should have letter categories
         assert isinstance(data, dict)
 
     def test_export_flat(self):
         """Test export without categories."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        result = lz.export_aliases(include_categories=False)
+        result = lz.alias.export(include_categories=False)
         data = json.loads(result)
         assert isinstance(data, dict)
 
     def test_export_to_file(self):
         """Test exporting aliases to file."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", delete=False
@@ -201,7 +202,7 @@ class TestAliasExport:
             temp_path = f.name
 
         try:
-            lz.export_aliases(path=temp_path)
+            lz.alias.export(path=temp_path)
             assert os.path.exists(temp_path)
             with open(temp_path, "r") as f:
                 data = json.load(f)
@@ -215,27 +216,27 @@ class TestConfigPaths:
 
     def test_get_config_paths(self):
         """Test getting configuration file paths."""
-        import laziest_import as lz
+        from laziest_import._alias import get_config_paths
 
-        paths = lz.get_config_paths()
+        paths = get_config_paths()
         assert isinstance(paths, list)
         assert len(paths) > 0
         assert all(isinstance(p, str) for p in paths)
 
     def test_get_config_dirs(self):
         """Test getting configuration directory paths."""
-        import laziest_import as lz
+        from laziest_import._alias import get_config_dirs
 
-        dirs = lz.get_config_dirs()
+        dirs = get_config_dirs()
         assert isinstance(dirs, list)
         assert len(dirs) > 0
         assert all(isinstance(d, str) for d in dirs)
 
     def test_config_paths_contain_home(self):
         """Test that config paths include home directory."""
-        import laziest_import as lz
+        from laziest_import._alias import get_config_paths
 
-        paths = lz.get_config_paths()
+        paths = get_config_paths()
         home = str(Path.home())
         assert any(home in p for p in paths)
 
@@ -245,7 +246,7 @@ class TestAliasLoading:
 
     def test_load_from_letter_file(self):
         """Test loading aliases from letter-based file."""
-        import laziest_import as lz
+        from laziest_import import lz
         from laziest_import._alias import _get_alias_dir
 
         alias_dir = _get_alias_dir()
@@ -257,17 +258,17 @@ class TestAliasLoading:
 
     def test_reload_aliases(self):
         """Test reloading aliases."""
-        import laziest_import as lz
+        from laziest_import import lz
 
-        lz.reload_aliases()
+        lz.alias.reload()
         # Should have common aliases
-        available = lz.list_available()
+        available = lz.module.list_available()
         assert "np" in available
         assert "pd" in available
 
     def test_load_user_config_dir(self):
         """Test loading from user config directory."""
-        import laziest_import as lz
+        from laziest_import import lz
         from laziest_import._alias import _get_config_dirs
 
         dirs = _get_config_dirs()
@@ -364,19 +365,22 @@ class TestAliasRebuild:
     def test_rebuild_global_namespace(self):
         """Test rebuilding global namespace."""
         from laziest_import._alias import _rebuild_global_namespace
+        from laziest_import import lz
 
-        # Should not raise
+        before = len(lz.module.list_available())
         _rebuild_global_namespace()
+        after = len(lz.module.list_available())
+        assert after >= before
 
     def test_rebuild_after_unregister(self):
         """Test rebuild removes unregistered aliases."""
-        import laziest_import as lz
+        from laziest_import import lz
         from laziest_import._alias import _rebuild_global_namespace
 
-        lz.register_alias("test_rebuild", "os")
-        lz.unregister_alias("test_rebuild")
+        lz.alias.register("test_rebuild", "os")
+        lz.alias.unregister("test_rebuild")
         _rebuild_global_namespace()
-        assert "test_rebuild" not in lz.list_available()
+        assert "test_rebuild" not in lz.module.list_available()
 
 
 class TestKnownModulesCache:
@@ -404,10 +408,9 @@ class TestKnownModulesCache:
         from laziest_import._alias import _build_known_modules_cache
         import time
 
-        # First build
-        _build_known_modules_cache(force=True)
-        # Immediate second build should use cache
-        _build_known_modules_cache(force=False)
+        modules1 = _build_known_modules_cache(force=True)
+        modules2 = _build_known_modules_cache(force=False)
+        assert modules1 == modules2
 
 
 class TestAliasEdgeCases:
@@ -415,28 +418,28 @@ class TestAliasEdgeCases:
 
     def test_alias_with_hyphen(self):
         """Test alias containing hyphen (valid for pip names)."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Should work for pip package name mapping
-        result = lz.validate_aliases({"sklearn": "scikit-learn"})
+        result = lz.alias.validate({"sklearn": "scikit-learn"})
         # May or may not be valid depending on validation
         assert isinstance(result, dict)
 
     def test_alias_with_dot(self):
         """Test alias containing dot (valid for submodules)."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Dots in module names are valid
-        lz.register_alias("test_dot_mod", "os.path")
+        lz.alias.register("test_dot_mod", "os.path")
         assert hasattr(lz.test_dot_mod, "join")
-        lz.unregister_alias("test_dot_mod")
+        lz.alias.unregister("test_dot_mod")
 
     def test_unicode_alias(self):
         """Test Unicode alias handling."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         # Unicode aliases may be valid Python identifiers in Python 3
-        result = lz.validate_aliases({"测试": "os"})
+        result = lz.alias.validate({"测试": "os"})
         # Either valid or invalid depending on Python version and implementation
         assert isinstance(result, dict)
         assert "valid" in result
@@ -444,12 +447,12 @@ class TestAliasEdgeCases:
 
     def test_very_long_alias(self):
         """Test very long alias name."""
-        import laziest_import as lz
+        from laziest_import import lz
 
         long_alias = "a" * 100
-        lz.register_alias(long_alias, "os")
-        assert long_alias in lz.list_available()
-        lz.unregister_alias(long_alias)
+        lz.alias.register(long_alias, "os")
+        assert long_alias in lz.module.list_available()
+        lz.alias.unregister(long_alias)
 
 
 if __name__ == "__main__":

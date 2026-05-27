@@ -4,6 +4,7 @@ Performance benchmark module.
 Benchmark import performance and compare with regular imports.
 """
 
+import logging
 from typing import Dict, List, Optional, Any, Callable, Tuple
 from dataclasses import dataclass, field
 import time
@@ -121,8 +122,8 @@ class BenchmarkRunner:
         for _ in range(self.warmup_iterations):
             try:
                 func()
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Benchmark warmup iteration failed: {e}")
         
         # Actual measurements
         for _ in range(iterations):
@@ -132,8 +133,8 @@ class BenchmarkRunner:
             start = time.perf_counter()
             try:
                 func()
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Benchmark measurement iteration failed: {e}")
             elapsed = time.perf_counter() - start
             times.append(elapsed)
         

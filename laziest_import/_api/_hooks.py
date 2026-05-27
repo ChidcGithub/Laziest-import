@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Callable, Iterator, List
 
 from .. import _config
@@ -25,8 +26,8 @@ class HookList:
         for hook in list(self._hooks):
             try:
                 hook(*args, **kwargs)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning(f"Hook '{hook.__name__}' raised: {e}")
 
     def __iadd__(self, callback: Callable) -> "HookList":
         self.add(callback)
