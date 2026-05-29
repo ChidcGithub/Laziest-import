@@ -18,22 +18,37 @@ from laziest_import._cache._api import invalidate_package_cache, reset_cache_sta
 from laziest_import._api._config import reset_import_stats
 from laziest_import._state_setters import reset_all
 from laziest_import._symbol import (
-    enable_sharding, disable_sharding, get_sharding_config, clear_shard_cache,
-    set_module_priority, get_module_priority, get_loaded_modules_context,
+    enable_sharding,
+    disable_sharding,
+    get_sharding_config,
+    clear_shard_cache,
+    set_module_priority,
+    get_module_priority,
+    get_loaded_modules_context,
 )
 from laziest_import._cache._incremental import get_incremental_config
 from laziest_import._install import set_pip_index, set_pip_extra_args
 from laziest_import._analysis import detect_environment
 from laziest_import._analysis._environment import show_environment
-from laziest_import._analysis._preferences import save_preferences, load_preferences, apply_preferences, clear_preferences
-from laziest_import._analysis._benchmark import benchmark, benchmark_imports, print_benchmark_report, BenchmarkResult, BenchmarkReport
+from laziest_import._analysis._preferences import (
+    save_preferences,
+    load_preferences,
+    apply_preferences,
+    clear_preferences,
+)
+from laziest_import._analysis._benchmark import (
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
+    BenchmarkResult,
+    BenchmarkReport,
+)
 from laziest_import._alias import get_config_paths, get_config_dirs, validate_aliases_importable
 from laziest_import._analysis._preanalyze import DependencyPreAnalyzer
 from laziest_import._analysis._profiler import ImportProfiler
 from laziest_import._analysis._dependency import DependencyNode, DependencyTree
 from laziest_import._introspect import list_module_symbols, get_module_info, search_in_module
 from laziest_import import easter_egg
-
 
 
 def section(title):
@@ -197,9 +212,7 @@ mod = lz.module.get("math")
 print(f"get_module('math'): {mod}, pi = {mod.pi}")
 
 # validate_aliases_importable
-result = validate_aliases_importable(
-    {"numpy": "numpy", "os": "os", "fake_mod_xyz": "fake_mod_xyz"}
-)
+result = validate_aliases_importable({"numpy": "numpy", "os": "os", "fake_mod_xyz": "fake_mod_xyz"})
 print(
     f"validate_aliases_importable: {list(result['importable'].keys())} importable, {list(result['not_importable'].keys())} not"
 )
@@ -484,14 +497,10 @@ for mod in conflicts[:3]:
     print(f"  {mod}")
 
 lz.symbol.config.auto_resolution = True
-print(
-    f"auto_symbol_resolution enabled: {lz.symbol.config.auto_resolution}"
-)
+print(f"auto_symbol_resolution enabled: {lz.symbol.config.auto_resolution}")
 
 lz.symbol.config.auto_resolution = False
-print(
-    f"auto_symbol_resolution disabled: {not lz.symbol.config.auto_resolution}"
-)
+print(f"auto_symbol_resolution disabled: {not lz.symbol.config.auto_resolution}")
 
 ctx = get_loaded_modules_context()
 print(f"loaded_modules_context: {len(ctx)} modules")
@@ -638,9 +647,7 @@ section("21. DEPENDENCY TREE")
 
 tree = lz.analyze.dep_tree("math", max_depth=2)
 print(f"dependency_tree('math', max_depth=2):")
-print(
-    f"  root: {tree.root_module}, children: {len(tree.tree.children) if tree.tree else 0}"
-)
+print(f"  root: {tree.root_module}, children: {len(tree.tree.children) if tree.tree else 0}")
 print(f"  total_nodes: {tree.total_modules}")
 
 # Print tree manually (avoid unicode encoding issues on some platforms)

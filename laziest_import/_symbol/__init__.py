@@ -27,23 +27,24 @@ Internal exports (backward compatibility):
     - _config._SYMBOL_CACHE, _config._STDLIB_SYMBOL_CACHE, _config._THIRD_PARTY_SYMBOL_CACHE
 """
 
-from typing import Dict, List, Optional, Set, Any, Tuple
-import sys
-import time
-import logging
-import threading
-import json
-import warnings
 import importlib
-import inspect
-import pkgutil
 import importlib.util
-from dataclasses import dataclass, asdict
+import inspect
+import json
+import logging
+import pkgutil
+import sys
+import threading
+import time
+import warnings
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class AmbiguousSymbolError(ImportError):
     """Raised when a symbol is found in multiple modules and strict mode is enabled."""
+
     def __init__(self, symbol: str, candidates: List["SymbolMatch"]):
         self.symbol = symbol
         self.candidates = candidates
@@ -56,29 +57,29 @@ class AmbiguousSymbolError(ImportError):
             f"or disable strict mode via lz.symbol.config.strict = False."
         )
 
+
 from .. import _config
-from .._config import SearchResult, SymbolMatch
-from .._fuzzy import (
-    _levenshtein_distance,
-    _get_common_symbol_misspellings,
-)
+from .._alias import _build_known_modules_cache
 from .._cache import (
-    _load_symbol_index,
-    _save_symbol_index,
-    _load_tracked_packages,
-    _save_tracked_packages,
-    _track_package,
+    _check_cache_size_before_save,
+    _cleanup_cache_if_needed,
     _get_cache_dir,
     _get_cache_size,
-    _cleanup_cache_if_needed,
-    _check_cache_size_before_save,
-    _should_use_compression,
     _get_compressed_path,
-    _save_compressed_json,
     _load_compressed_json,
+    _load_symbol_index,
+    _load_tracked_packages,
+    _save_compressed_json,
+    _save_symbol_index,
+    _save_tracked_packages,
+    _should_use_compression,
+    _track_package,
 )
-from .._alias import _build_known_modules_cache
-
+from .._config import SearchResult, SymbolMatch
+from .._fuzzy import (
+    _get_common_symbol_misspellings,
+    _levenshtein_distance,
+)
 
 # ── Symbol index lock ──────────────────────────────────────
 _SYMBOL_INDEX_LOCK = threading.Lock()
@@ -91,38 +92,150 @@ _THIRD_PARTY_SYMBOL_CACHE = _config._THIRD_PARTY_SYMBOL_CACHE
 
 # ── Standard library detection ─────────────────────────────
 
+
 def _is_stdlib_module(module_name: str) -> bool:
     """Check if a module is part of the standard library."""
     if hasattr(sys, "stdlib_module_names"):
-        return module_name.split(".")[0] in sys.stdlib_module_names
+        return module_name.split(".", maxsplit=1)[0] in sys.stdlib_module_names
 
     stdlib_prefixes = {
-        "abc", "argparse", "array", "ast", "asyncio", "atexit", "base64",
-        "bisect", "builtins", "bz2", "calendar", "cgi", "cmath", "cmd",
-        "code", "codecs", "collections", "configparser", "contextlib",
-        "copy", "csv", "ctypes", "dataclasses", "datetime", "dbm", "decimal",
-        "difflib", "dis", "email", "enum", "errno", "fcntl", "filecmp",
-        "fileinput", "fnmatch", "fractions", "ftplib", "functools", "gc",
-        "getopt", "getpass", "gettext", "glob", "gzip", "hashlib", "heapq",
-        "hmac", "html", "http", "imaplib", "importlib", "inspect", "io",
-        "itertools", "json", "keyword", "linecache", "locale", "logging",
-        "lzma", "mailbox", "marshal", "math", "mimetypes", "mmap",
-        "multiprocessing", "netrc", "numbers", "operator", "optparse", "os",
-        "pathlib", "pickle", "platform", "plistlib", "poplib", "pprint",
-        "profile", "queue", "random", "re", "reprlib", "sched", "secrets",
-        "select", "shelve", "shlex", "shutil", "signal", "site", "smtplib",
-        "socket", "socketserver", "sqlite3", "ssl", "stat", "statistics",
-        "string", "struct", "subprocess", "sys", "sysconfig", "tarfile",
-        "tempfile", "termios", "textwrap", "threading", "time", "timeit",
-        "tkinter", "token", "tokenize", "trace", "traceback", "types",
-        "typing", "unicodedata", "unittest", "urllib", "uuid", "warnings",
-        "wave", "weakref", "webbrowser", "wsgiref", "xml", "xmlrpc",
-        "zipfile", "zipimport", "zlib", "zoneinfo",
+        "abc",
+        "argparse",
+        "array",
+        "ast",
+        "asyncio",
+        "atexit",
+        "base64",
+        "bisect",
+        "builtins",
+        "bz2",
+        "calendar",
+        "cgi",
+        "cmath",
+        "cmd",
+        "code",
+        "codecs",
+        "collections",
+        "configparser",
+        "contextlib",
+        "copy",
+        "csv",
+        "ctypes",
+        "dataclasses",
+        "datetime",
+        "dbm",
+        "decimal",
+        "difflib",
+        "dis",
+        "email",
+        "enum",
+        "errno",
+        "fcntl",
+        "filecmp",
+        "fileinput",
+        "fnmatch",
+        "fractions",
+        "ftplib",
+        "functools",
+        "gc",
+        "getopt",
+        "getpass",
+        "gettext",
+        "glob",
+        "gzip",
+        "hashlib",
+        "heapq",
+        "hmac",
+        "html",
+        "http",
+        "imaplib",
+        "importlib",
+        "inspect",
+        "io",
+        "itertools",
+        "json",
+        "keyword",
+        "linecache",
+        "locale",
+        "logging",
+        "lzma",
+        "mailbox",
+        "marshal",
+        "math",
+        "mimetypes",
+        "mmap",
+        "multiprocessing",
+        "netrc",
+        "numbers",
+        "operator",
+        "optparse",
+        "os",
+        "pathlib",
+        "pickle",
+        "platform",
+        "plistlib",
+        "poplib",
+        "pprint",
+        "profile",
+        "queue",
+        "random",
+        "re",
+        "reprlib",
+        "sched",
+        "secrets",
+        "select",
+        "shelve",
+        "shlex",
+        "shutil",
+        "signal",
+        "site",
+        "smtplib",
+        "socket",
+        "socketserver",
+        "sqlite3",
+        "ssl",
+        "stat",
+        "statistics",
+        "string",
+        "struct",
+        "subprocess",
+        "sys",
+        "sysconfig",
+        "tarfile",
+        "tempfile",
+        "termios",
+        "textwrap",
+        "threading",
+        "time",
+        "timeit",
+        "tkinter",
+        "token",
+        "tokenize",
+        "trace",
+        "traceback",
+        "types",
+        "typing",
+        "unicodedata",
+        "unittest",
+        "urllib",
+        "uuid",
+        "warnings",
+        "wave",
+        "weakref",
+        "webbrowser",
+        "wsgiref",
+        "xml",
+        "xmlrpc",
+        "zipfile",
+        "zipimport",
+        "zlib",
+        "zoneinfo",
     }
-    return module_name.split(".")[0] in stdlib_prefixes
+    return module_name.split(".", maxsplit=1)[0] in stdlib_prefixes
 
 
 # ── Signature helper ───────────────────────────────────────
+
 
 def _get_signature_hint(obj: Any) -> Optional[str]:
     """Get a signature hint string for a callable object."""
@@ -136,6 +249,7 @@ def _get_signature_hint(obj: Any) -> Optional[str]:
 
 
 # ── Symbol scanning ─────────────────────────────────────────
+
 
 def _scan_module_symbols(
     module_name: str,
@@ -161,11 +275,28 @@ def _scan_module_symbols(
         return symbols
 
     skip_modules = {
-        "test", "tests", "testing", "conftest", "setup",
-        "examples", "docs", "doc", "scripts", "tools",
-        "vendor", "vendored", "__pycache__", ".git", ".hg",
-        ".svn", "pytest", "py.test", "sphinx", "mkdocs",
-        "laziest_import", "laziest-import",
+        "test",
+        "tests",
+        "testing",
+        "conftest",
+        "setup",
+        "examples",
+        "docs",
+        "doc",
+        "scripts",
+        "tools",
+        "vendor",
+        "vendored",
+        "__pycache__",
+        ".git",
+        ".hg",
+        ".svn",
+        "pytest",
+        "py.test",
+        "sphinx",
+        "mkdocs",
+        "laziest_import",
+        "laziest-import",
     }
 
     if _config._MODULE_SKIP_CONFIG.get("skip_test_modules", True):
@@ -189,9 +320,15 @@ def _scan_module_symbols(
         try:
             module = importlib.import_module(module_name)
         except (
-            ImportError, ModuleNotFoundError, SyntaxError,
-            AttributeError, TypeError, ValueError,
-            OSError, RecursionError, SystemExit,
+            ImportError,
+            ModuleNotFoundError,
+            SyntaxError,
+            AttributeError,
+            TypeError,
+            ValueError,
+            OSError,
+            RecursionError,
+            SystemExit,
         ):
             return symbols
 
@@ -200,9 +337,7 @@ def _scan_module_symbols(
         try:
             public_names = getattr(module, "__all__", None)
             if public_names is None:
-                public_names = [
-                    name for name in dir(module) if not name.startswith("_")
-                ]
+                public_names = [name for name in dir(module) if not name.startswith("_")]
             else:
                 public_names = [n for n in public_names if isinstance(n, str)]
         except Exception:
@@ -214,9 +349,7 @@ def _scan_module_symbols(
             and len(public_names) > large_threshold
         ):
             if not hasattr(module, "__all__"):
-                public_names = [n for n in public_names if not n.startswith("_")][
-                    :large_threshold
-                ]
+                public_names = [n for n in public_names if not n.startswith("_")][:large_threshold]
 
         MAX_SYMBOLS_PER_MODULE = 100
         if len(public_names) > MAX_SYMBOLS_PER_MODULE:
@@ -284,14 +417,14 @@ def _scan_module_symbols(
 
 # ── Symbol index building ───────────────────────────────────
 
-def _build_symbol_index(
-    force: bool = False, max_modules: int = 500, timeout: float = 60.0
-) -> None:
+
+def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: float = 60.0) -> None:
     """Build the symbol index by scanning installed packages."""
     if not _config.is_initialized() and not force:
         return
 
     import laziest_import._config as config
+
     if config._SYMBOL_INDEX_BUILT and not force:
         return
 
@@ -314,10 +447,9 @@ def _build_symbol_index(
 
             if stdlib_cache:
                 _config._STDLIB_SYMBOL_CACHE.clear()
-                _config._STDLIB_SYMBOL_CACHE.update({
-                    k: [tuple(loc) for loc in v]
-                    for k, v in stdlib_cache.symbols.items()
-                })
+                _config._STDLIB_SYMBOL_CACHE.update(
+                    {k: [tuple(loc) for loc in v] for k, v in stdlib_cache.symbols.items()}  # type: ignore[misc]
+                )
                 _config._set_stdlib_cache_built(True)
                 if _config._DEBUG_MODE:
                     logging.info(
@@ -327,10 +459,9 @@ def _build_symbol_index(
 
             if third_party_cache:
                 _config._THIRD_PARTY_SYMBOL_CACHE.clear()
-                _config._THIRD_PARTY_SYMBOL_CACHE.update({
-                    k: [tuple(loc) for loc in v]
-                    for k, v in third_party_cache.symbols.items()
-                })
+                _config._THIRD_PARTY_SYMBOL_CACHE.update(
+                    {k: [tuple(loc) for loc in v] for k, v in third_party_cache.symbols.items()}  # type: ignore[misc]
+                )
                 _config._set_third_party_cache_built(True)
                 if _config._DEBUG_MODE:
                     logging.info(
@@ -365,13 +496,43 @@ def _build_symbol_index(
             )
 
         priority_packages = {
-            "pandas", "numpy", "matplotlib", "seaborn", "scipy", "sklearn",
-            "torch", "tensorflow", "keras", "xgboost", "lightgbm",
-            "requests", "flask", "django", "fastapi", "PIL", "cv2",
-            "plotly", "bokeh", "json", "os", "sys", "re", "datetime",
-            "collections", "itertools", "pathlib", "typing", "functools",
-            "contextlib", "dataclasses", "math", "cmath", "statistics",
-            "random", "decimal", "fractions",
+            "pandas",
+            "numpy",
+            "matplotlib",
+            "seaborn",
+            "scipy",
+            "sklearn",
+            "torch",
+            "tensorflow",
+            "keras",
+            "xgboost",
+            "lightgbm",
+            "requests",
+            "flask",
+            "django",
+            "fastapi",
+            "PIL",
+            "cv2",
+            "plotly",
+            "bokeh",
+            "json",
+            "os",
+            "sys",
+            "re",
+            "datetime",
+            "collections",
+            "itertools",
+            "pathlib",
+            "typing",
+            "functools",
+            "contextlib",
+            "dataclasses",
+            "math",
+            "cmath",
+            "statistics",
+            "random",
+            "decimal",
+            "fractions",
         }
 
         scanned_stdlib = 0
@@ -407,7 +568,9 @@ def _build_symbol_index(
                     symbols = _scan_module_symbols(module_name, depth)
                     is_stdlib = _is_stdlib_module(module_name)
                     target_cache = (
-                        _config._STDLIB_SYMBOL_CACHE if is_stdlib else _config._THIRD_PARTY_SYMBOL_CACHE
+                        _config._STDLIB_SYMBOL_CACHE
+                        if is_stdlib
+                        else _config._THIRD_PARTY_SYMBOL_CACHE
                     )
 
                     for sym_name, locations in symbols.items():
@@ -445,7 +608,9 @@ def _build_symbol_index(
                 _config._set_third_party_cache_built(True)
 
             _save_symbol_index(_config._STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
-            _save_symbol_index(_config._THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party)
+            _save_symbol_index(
+                _config._THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party
+            )
             _save_tracked_packages()
 
             elapsed = time.perf_counter() - start_time
@@ -460,12 +625,11 @@ def _build_symbol_index(
                     f"in {elapsed:.2f}s{timeout_msg}"
                 )
         elif timed_out and _config._DEBUG_MODE:
-            logging.info(
-                f"[laziest-import] Symbol index build timed out with no data collected"
-            )
+            logging.info("[laziest-import] Symbol index build timed out with no data collected")
 
 
 # ── Signature comparison ────────────────────────────────────
+
 
 def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
     """Compare two signature strings and return a similarity score."""
@@ -501,6 +665,7 @@ def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
 
 # ── Symbol search ───────────────────────────────────────────
 
+
 def search_symbol(
     name: str,
     symbol_type: Optional[str] = None,
@@ -512,6 +677,7 @@ def search_symbol(
         return []
 
     import laziest_import._config as config
+
     if not config._SYMBOL_INDEX_BUILT:
         _build_symbol_index()
 
@@ -519,11 +685,11 @@ def search_symbol(
         name_lower = name.lower()
         matches = []
         for cached_name in _config._SYMBOL_CACHE.keys():
-            if cached_name.lower() == name_lower:
-                matches.append(cached_name)
-            elif name_lower in cached_name.lower():
-                matches.append(cached_name)
-            elif _levenshtein_distance(name_lower, cached_name.lower()) <= 2:
+            if (
+                cached_name.lower() == name_lower
+                or name_lower in cached_name.lower()
+                or _levenshtein_distance(name_lower, cached_name.lower()) <= 2
+            ):
                 matches.append(cached_name)
 
         if not matches:
@@ -531,9 +697,7 @@ def search_symbol(
 
         all_results = []
         for match_name in matches[:3]:
-            all_results.extend(
-                _search_symbol_direct(match_name, symbol_type, signature)
-            )
+            all_results.extend(_search_symbol_direct(match_name, symbol_type, signature))
 
         seen = set()
         results = []
@@ -556,7 +720,7 @@ def _search_symbol_direct(
     max_results: Optional[int] = None,
 ) -> List[SearchResult]:
     """Direct search for an exact symbol name in cache."""
-    results = []
+    results: list[SearchResult] = []
 
     if name not in _config._SYMBOL_CACHE:
         return results
@@ -591,9 +755,7 @@ def _search_symbol_direct(
     return results[:max_res]
 
 
-def _score_symbol_match(
-    result: SearchResult, context: Set[str], original_name: str
-) -> SymbolMatch:
+def _score_symbol_match(result: SearchResult, context: Set[str], original_name: str) -> SymbolMatch:
     """Score a symbol search result with context awareness and priority."""
     confidence = result.score
     module = result.module_name.split(".")[0]
@@ -624,17 +786,13 @@ def _score_symbol_match(
     confidence *= priority / 100
 
     if result.symbol_name != original_name:
-        distance = _levenshtein_distance(
-            original_name.lower(), result.symbol_name.lower()
-        )
+        distance = _levenshtein_distance(original_name.lower(), result.symbol_name.lower())
         max_dist = max(len(original_name), len(result.symbol_name)) // 3
         fuzzy_penalty = distance / max(max_dist, 1)
         confidence *= 1 - fuzzy_penalty * 0.3
         source = "fuzzy"
 
-    if _config._SYMBOL_SEARCH_CONFIG.get("skip_stdlib") and _is_stdlib_module(
-        result.module_name
-    ):
+    if _config._SYMBOL_SEARCH_CONFIG.get("skip_stdlib") and _is_stdlib_module(result.module_name):
         confidence *= 0.5
 
     confidence = min(confidence, 1.0)
@@ -658,6 +816,7 @@ def _search_symbol_enhanced(
         return None
 
     import laziest_import._config as config
+
     if not config._SYMBOL_INDEX_BUILT:
         _build_symbol_index()
 
@@ -761,6 +920,7 @@ def _warn_symbol_conflict(name: str, matches: List[SymbolMatch]) -> None:
 
 # ── Interactive confirm ─────────────────────────────────────
 
+
 def _is_interactive_terminal() -> bool:
     """Check if we're running in an interactive terminal."""
     if not sys.stdin.isatty():
@@ -769,6 +929,7 @@ def _is_interactive_terminal() -> bool:
         return False
     try:
         from IPython import get_ipython
+
         if get_ipython() is not None:
             return sys.stdin.isatty()
     except ImportError:
@@ -776,9 +937,7 @@ def _is_interactive_terminal() -> bool:
     return True
 
 
-def _interactive_confirm(
-    results: List[SearchResult], symbol_name: str
-) -> Optional[str]:
+def _interactive_confirm(results: List[SearchResult], symbol_name: str) -> Optional[str]:
     """Interactively ask user to confirm which module to use."""
     if not results:
         return None
@@ -802,7 +961,7 @@ def _interactive_confirm(
         type_str = f"[{r.symbol_type}]"
         print(f"  {i}. {r.module_name}.{r.symbol_name} {type_str}{sig_str}")
 
-    print(f"  0. Skip (do not register)")
+    print("  0. Skip (do not register)")
     print("-" * 60)
 
     try:
@@ -854,6 +1013,7 @@ def _handle_symbol_not_found(name: str) -> Optional[str]:
 
 # ── Infer context ───────────────────────────────────────────
 
+
 def _infer_context() -> Set[str]:
     """Infer the current context by examining loaded modules."""
     loaded = set()
@@ -871,7 +1031,10 @@ def _infer_context() -> Set[str]:
     for mod_name in sys.modules.keys():
         if mod_name and not mod_name.startswith("_"):
             base_module = mod_name.split(".")[0]
-            if base_module in _config._MODULE_PRIORITY or base_module in _config._ALIAS_MAP.values():
+            if (
+                base_module in _config._MODULE_PRIORITY
+                or base_module in _config._ALIAS_MAP.values()
+            ):
                 loaded.add(base_module)
 
     return loaded
@@ -879,7 +1042,7 @@ def _infer_context() -> Set[str]:
 
 # ── Sharding ────────────────────────────────────────────────
 
-_SHARD_CONFIG = {
+_SHARD_CONFIG: Dict[str, Any] = {
     "enabled": True,
     "shard_threshold": 100,
     "loaded_shards": {},
@@ -897,9 +1060,7 @@ def _get_module_shard_name(module_name: str, prefix: str) -> str:
     return f"{module_name}.{prefix}.json"
 
 
-def _load_shard(
-    module_name: str, prefix: str
-) -> Dict[str, List[Tuple[str, str, Optional[str]]]]:
+def _load_shard(module_name: str, prefix: str) -> Dict[str, List[Tuple[str, str, Optional[str]]]]:
     if module_name in _SHARD_CONFIG["loaded_shards"]:
         return _SHARD_CONFIG["loaded_shards"][module_name].get(prefix, {})
 
@@ -908,7 +1069,7 @@ def _load_shard(
         shard_file = cache_dir / "shards" / _get_module_shard_name(module_name, prefix)
 
         if shard_file.exists():
-            with open(shard_file, "r", encoding="utf-8") as f:
+            with open(shard_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             if module_name not in _SHARD_CONFIG["loaded_shards"]:
@@ -1016,6 +1177,7 @@ def clear_shard_cache() -> None:
 
 # ── Incremental build ───────────────────────────────────────
 
+
 def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
     """Build symbol index incrementally, only scanning changed packages."""
     if not _config._INCREMENTAL_INDEX_CONFIG.get("enabled", True):
@@ -1037,9 +1199,7 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
 
     if not new_packages and not updated_packages and not removed_packages:
         if _config._DEBUG_MODE:
-            logging.info(
-                "[laziest-import] No package changes detected, skip incremental build"
-            )
+            logging.info("[laziest-import] No package changes detected, skip incremental build")
         return True
 
     if _config._DEBUG_MODE:
@@ -1068,9 +1228,7 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
     for module_name in known_modules:
         if time.perf_counter() - start_time > timeout:
             if _config._DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Incremental build timed out after {timeout}s"
-                )
+                logging.info(f"[laziest-import] Incremental build timed out after {timeout}s")
             break
 
         top_level = module_name.split(".")[0]
@@ -1120,11 +1278,16 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
 
 def _remove_package_symbols(package_name: str) -> None:
     """Remove all symbols from a specific package from the cache."""
-    for cache in (_config._SYMBOL_CACHE, _config._STDLIB_SYMBOL_CACHE, _config._THIRD_PARTY_SYMBOL_CACHE):
+    for cache in (
+        _config._SYMBOL_CACHE,
+        _config._STDLIB_SYMBOL_CACHE,
+        _config._THIRD_PARTY_SYMBOL_CACHE,
+    ):
         to_remove = []
         for symbol, locations in cache.items():
             filtered = [
-                loc for loc in locations
+                loc
+                for loc in locations
                 if not loc[0].startswith(package_name + ".") and loc[0] != package_name
             ]
             if filtered:
@@ -1141,6 +1304,7 @@ def build_symbol_index_incremental() -> bool:
 
 
 # ── Public API ──────────────────────────────────────────────
+
 
 def enable_symbol_search(
     interactive: bool = True,
@@ -1215,6 +1379,7 @@ def set_symbol_preference(symbol: str, module: str) -> None:
     _config._SYMBOL_PREFERENCES[symbol] = module
     if _config._DEBUG_MODE:
         import logging
+
         logging.debug(f"[laziest-import] Set symbol preference: {symbol} -> {module}")
 
 
@@ -1313,6 +1478,7 @@ def set_module_skip_config(
 
 # ── Cache path helpers (localized from _cache subpackage) ────
 
+
 def _get_symbol_index_path(cache_type: str = "all") -> Path:
     """Get symbol index cache file path."""
     cache_dir = _get_cache_dir()
@@ -1326,9 +1492,11 @@ def _get_symbol_index_path(cache_type: str = "all") -> Path:
 
 # ── Dataclass re-exports ────────────────────────────────────
 
+
 @dataclass
 class SymbolIndexCache:
     """Symbol index cache with metadata."""
+
     version: str
     cache_type: str
     timestamp: float
@@ -1351,4 +1519,3 @@ class SymbolIndexCache:
             symbols=data.get("symbols", {}),
             python_version=data.get("python_version", ""),
         )
-

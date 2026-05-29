@@ -2,8 +2,7 @@
 Jupyter/IPython magic commands for laziest-import.
 """
 
-from typing import Optional, List, Any
-import sys
+from typing import Any, List, Optional
 
 _IPYTHON_AVAILABLE = False
 
@@ -11,13 +10,13 @@ _IPYTHON_AVAILABLE = False
 def _create_lazy_magics():
     """Create LazyMagics class if IPython is available."""
     try:
-        from IPython.core.magic import magics_class, cell_magic, line_magic, Magics
+        from IPython import get_ipython
+        from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
         from IPython.core.magic_arguments import (
             argument,
             magic_arguments,
             parse_argstring,
         )
-        from IPython import get_ipython
 
         global _IPYTHON_AVAILABLE
         _IPYTHON_AVAILABLE = True
@@ -147,8 +146,7 @@ def _create_lazy_magics():
                 stdlib = [
                     m
                     for m in available
-                    if m in dir(__builtins__)
-                    or m in ["os", "sys", "math", "json", "re"]
+                    if m in dir(__builtins__) or m in ["os", "sys", "math", "json", "re"]
                 ]
                 common = ["np", "pd", "plt", "tf", "torch"]
                 other = [m for m in available if m not in stdlib and m not in common]

@@ -2,13 +2,12 @@
 Background index building for lazy symbol indexing.
 """
 
+import logging
 import threading
 import time
-import logging
-from typing import Optional, Callable
+from typing import Callable, Optional
 
-from ._config import _DEBUG_MODE, _SYMBOL_INDEX_BUILT, _INCREMENTAL_INDEX_CONFIG
-
+from ._config import _DEBUG_MODE, _SYMBOL_INDEX_BUILT
 
 _BACKGROUND_TIMEOUT: float = 60.0
 
@@ -24,11 +23,11 @@ class BackgroundIndexBuilder:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
+                    cls._instance._initialized = False  # type: ignore[has-type]
         return cls._instance
 
     def __init__(self) -> None:
-        if self._initialized:
+        if self._initialized:  # type: ignore[has-type]
             return
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
@@ -80,9 +79,7 @@ class BackgroundIndexBuilder:
                     self._progress_callback("started", 0.0)
                 except Exception as e:
                     if _DEBUG_MODE:
-                        logging.warning(
-                            f"[laziest-import] Progress callback error: {e}"
-                        )
+                        logging.warning(f"[laziest-import] Progress callback error: {e}")
 
             success = build_func()
 
@@ -99,13 +96,11 @@ class BackgroundIndexBuilder:
                         self._progress_callback("completed", elapsed)
                     except Exception as e:
                         if _DEBUG_MODE:
-                            logging.warning(
-                                f"[laziest-import] Progress callback error: {e}"
-                            )
+                            logging.warning(f"[laziest-import] Progress callback error: {e}")
             else:
                 if _DEBUG_MODE:
                     logging.info(
-                        f"[laziest-import] Background index build failed, will retry on demand"
+                        "[laziest-import] Background index build failed, will retry on demand"
                     )
                 # Call progress callback on failure
                 if self._progress_callback:
@@ -113,9 +108,7 @@ class BackgroundIndexBuilder:
                         self._progress_callback("failed", elapsed)
                     except Exception as e:
                         if _DEBUG_MODE:
-                            logging.warning(
-                                f"[laziest-import] Progress callback error: {e}"
-                            )
+                            logging.warning(f"[laziest-import] Progress callback error: {e}")
 
         except Exception as e:
             error_msg = str(e)
@@ -127,9 +120,7 @@ class BackgroundIndexBuilder:
                     self._progress_callback("error", time.perf_counter() - start_time)
                 except Exception as cb_e:
                     if _DEBUG_MODE:
-                        logging.warning(
-                            f"[laziest-import] Progress callback error: {cb_e}"
-                        )
+                        logging.warning(f"[laziest-import] Progress callback error: {cb_e}")
         finally:
             self._is_building = False
             self._stop_event.set()

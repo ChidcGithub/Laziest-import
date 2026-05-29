@@ -36,6 +36,7 @@ from laziest_import._alias import (
 from laziest_import._install import set_pip_index, set_pip_extra_args
 from laziest_import._cache._incremental import get_incremental_config
 
+
 class TestBasicImport:
     """Test basic import functionality"""
 
@@ -84,6 +85,7 @@ class TestBasicImport:
         pi2 = lz.math.pi
         assert pi1 == pi2
 
+
 class TestAliasMapping:
     """Test alias mapping functionality"""
 
@@ -125,6 +127,7 @@ class TestAliasMapping:
         assert "plt" in available
         assert "os" in available
 
+
 class TestErrorHandling:
     """Test error handling"""
 
@@ -147,6 +150,7 @@ class TestErrorHandling:
         # Clear cache
         lz.cache.clear()
         assert "math" not in lz.module.list_loaded()
+
 
 class TestFromImport:
     """Test from ... import * syntax"""
@@ -176,6 +180,7 @@ class TestFromImport:
         # Use os module
         os_mod = namespace["os"]
         assert callable(os_mod.getcwd)
+
 
 class TestFunctions:
     """Test utility functions"""
@@ -217,6 +222,7 @@ class TestFunctions:
         _ = lm.pi
         repr_str = repr(lm)
         assert "loaded" in repr_str
+
 
 class TestAutoSearch:
     """Test auto-search functionality"""
@@ -283,6 +289,7 @@ class TestAutoSearch:
 
         result = lz.install.rebuild_cache()
         assert result is None or result is True
+
 
 class TestSymbolSearch:
     """Test symbol search functionality"""
@@ -374,6 +381,7 @@ class TestSymbolSearch:
         results = lz.symbol.search("this_symbol_definitely_does_not_exist_xyz123")
         assert results == []
 
+
 class TestAsyncImport:
     """Test async import functionality"""
 
@@ -400,6 +408,7 @@ class TestAsyncImport:
         assert modules["math"].pi > 3.14
         assert callable(modules["os"].getcwd)
         assert callable(modules["json"].dumps)
+
 
 class TestRetryMechanism:
     """Test retry mechanism for imports"""
@@ -432,6 +441,7 @@ class TestRetryMechanism:
 
         # Reset to default
         lz.config.retry.enabled = True
+
 
 class TestFileCache:
     """Test file-level caching functionality"""
@@ -473,6 +483,7 @@ class TestFileCache:
 
             # Reset to default
             lz.cache.reset_dir()
+
 
 class TestImportHooks:
     """Test import hooks functionality"""
@@ -530,6 +541,7 @@ class TestImportHooks:
         assert len(lz.hooks.pre) == 0
         assert len(lz.hooks.post) == 0
 
+
 class TestLazyModuleCall:
     """Test LazyModule __call__ behavior"""
 
@@ -542,6 +554,7 @@ class TestLazyModuleCall:
 
         # Check error message
         assert "'module' object is not callable" in str(excinfo.value)
+
 
 class TestValidateAliases:
     """Test alias validation functionality"""
@@ -595,6 +608,7 @@ class TestValidateAliases:
         assert "not_importable" in result
         assert "bad" in result["not_importable"]
 
+
 class TestVersionAndReload:
     """Test version and reload functionality"""
 
@@ -640,6 +654,7 @@ class TestVersionAndReload:
         # Clean up
         lz.alias.unregister("temp_reload_test")
 
+
 class TestDebugMode:
     """Test debug mode functionality"""
 
@@ -660,6 +675,7 @@ class TestDebugMode:
         # Make sure it's off
         lz.config.debug = False
         assert lz.config.debug is False
+
 
 class TestImportStats:
     """Test import statistics functionality"""
@@ -696,6 +712,7 @@ class TestImportStats:
         stats = lz.config.import_stats
         assert stats["total_imports"] == 0
 
+
 class TestLazySubmodule:
     """Test lazy submodule access"""
 
@@ -727,6 +744,7 @@ class TestLazySubmodule:
         repr_str = repr(lz.os.path)
         assert "LazySubmodule" in repr_str or "path" in repr_str
 
+
 class TestSearchClass:
     """Test search_class functionality"""
 
@@ -734,7 +752,7 @@ class TestSearchClass:
         """Test searching for class in stdlib"""
 
         # Search for defaultdict in collections
-        result = lz.symbol.search("defaultdict", symbol_type='class')
+        result = lz.symbol.search("defaultdict", symbol_type="class")
         if result:
             for r in result:
                 assert r.symbol_type == "class"
@@ -742,8 +760,9 @@ class TestSearchClass:
     def test_search_class_not_found(self):
         """Test searching for nonexistent class"""
 
-        result = lz.symbol.search("ThisClassDefinitelyDoesNotExist12345", symbol_type='class')
+        result = lz.symbol.search("ThisClassDefinitelyDoesNotExist12345", symbol_type="class")
         assert result == []
+
 
 class TestAliasExport:
     """Test alias export functionality"""
@@ -779,6 +798,7 @@ class TestAliasExport:
         data = json.loads(result)
         assert isinstance(data, dict)
 
+
 class TestConfigPaths:
     """Test configuration paths functionality"""
 
@@ -789,6 +809,7 @@ class TestConfigPaths:
         assert isinstance(paths, list)
         # All paths should be strings
         assert all(isinstance(p, str) for p in paths)
+
 
 class TestRegisterAliases:
     """Test batch alias registration"""
@@ -818,6 +839,7 @@ class TestRegisterAliases:
         registered = lz.alias.register_many({})
         assert registered == []
 
+
 class TestForceSaveCache:
     """Test force save cache functionality"""
 
@@ -830,6 +852,7 @@ class TestForceSaveCache:
         # Force save
         result = lz.cache.files.force_save()
         assert isinstance(result, bool)
+
 
 class TestSymbolSearchAdvanced:
     """Advanced symbol search tests"""
@@ -859,6 +882,7 @@ class TestSymbolSearchAdvanced:
 
         # Reset to default
         lz.symbol.config.enable()
+
 
 class TestImportHooksAdvanced:
     """Advanced import hooks tests"""
@@ -897,6 +921,7 @@ class TestImportHooksAdvanced:
 
         lz.hooks.pre.remove(hook1)
         lz.hooks.pre.remove(hook2)
+
 
 class TestEdgeCases:
     """Test edge cases and error handling"""
@@ -949,6 +974,7 @@ class TestEdgeCases:
         repr_after = repr(lm)
         assert "loaded" in repr_after
 
+
 class TestAsyncImportAdvanced:
     """Advanced async import tests"""
 
@@ -966,6 +992,7 @@ class TestAsyncImportAdvanced:
 
         result = await import_multiple_async([])
         assert result == {}
+
 
 class TestEnhancedCache:
     """Test enhanced cache functionality"""
@@ -1060,6 +1087,7 @@ class TestEnhancedCache:
         info = lz.symbol.cache_info()
         assert info["built"] is True
 
+
 class TestMappingsFromFiles:
     """Test loading mappings from configuration files"""
 
@@ -1113,6 +1141,7 @@ class TestMappingsFromFiles:
         assert priority is not None
         assert priority > 0
 
+
 class TestConfigFlexibility:
     """Test configuration flexibility features"""
 
@@ -1121,6 +1150,7 @@ class TestConfigFlexibility:
 
         # Set a custom priority
         from laziest_import._symbol import set_module_priority
+
         set_module_priority("test_module_xyz", 42)
 
         priority = get_module_priority("test_module_xyz")
@@ -1146,6 +1176,7 @@ class TestConfigFlexibility:
         lz.symbol.clear_preference("TestClass")
         pref = lz.symbol.preference("TestClass")
         assert pref is None
+
 
 class TestAdvancedFuzzyMatching:
     """Test advanced fuzzy matching scenarios"""
@@ -1184,6 +1215,7 @@ class TestAdvancedFuzzyMatching:
         assert isinstance(result, list)
         assert len(result) > 0
 
+
 class TestConfigurationPaths:
     """Test configuration path handling"""
 
@@ -1201,6 +1233,7 @@ class TestConfigurationPaths:
         assert isinstance(dirs, list)
         assert len(dirs) > 0
 
+
 class TestModuleReprAndStr:
     """Test module representation methods"""
 
@@ -1217,6 +1250,7 @@ class TestModuleReprAndStr:
         dir_result = dir(lz.os)
         assert isinstance(dir_result, list)
         assert "getcwd" in dir_result
+
 
 class TestErrorRecovery:
     """Test error recovery scenarios"""
@@ -1240,15 +1274,19 @@ class TestErrorRecovery:
 
         # Multiple reloads should not cause issues
         from laziest_import import reload_mappings
+
         reload_mappings()
         from laziest_import import reload_mappings
+
         reload_mappings()
         from laziest_import import reload_mappings
+
         reload_mappings()
 
         # Should still work
         available = lz.module.list_available()
         assert "np" in available
+
 
 class TestLazySymbolAdvanced:
     """Advanced LazySymbol tests"""
@@ -1276,6 +1314,7 @@ class TestLazySymbolAdvanced:
         # Test indexing on module result
         result = lz.json.dumps([1, 2, 3])
         assert lz.json.loads(result)[0] == 1
+
 
 class TestModuleAttributeAccess:
     """Test various module attribute access patterns"""
@@ -1305,6 +1344,7 @@ class TestModuleAttributeAccess:
         result = lz.os.path.basename("/path/to/file.txt")
         assert "file.txt" in result
 
+
 class TestMultipleModuleAccess:
     """Test accessing multiple modules"""
 
@@ -1331,6 +1371,7 @@ class TestMultipleModuleAccess:
 
         assert math_pi > 3
         assert "key" in json_str
+
 
 class TestAliasRegistration:
     """Test alias registration edge cases"""
@@ -1370,6 +1411,7 @@ class TestAliasRegistration:
         with pytest.raises((ValueError, TypeError)):
             lz.alias.register("test_none", None)
 
+
 class TestCachePersistence:
     """Test cache persistence functionality"""
 
@@ -1395,6 +1437,7 @@ class TestCachePersistence:
         info = lz.symbol.cache_info()
         assert info["built"] is True
         assert info["symbol_count"] > 0
+
 
 class TestSearchSymbolAdvanced:
     """Advanced symbol search tests"""
@@ -1430,6 +1473,7 @@ class TestSearchSymbolAdvanced:
         # At least one should return results for common symbols
         assert len(results_lower) > 0 or len(results_upper) >= 0
 
+
 class TestAutoSearchEdgeCases:
     """Test auto-search edge cases"""
 
@@ -1458,6 +1502,7 @@ class TestAutoSearchEdgeCases:
         result = lz.symbol.search("módulo")
         assert isinstance(result, list)
 
+
 class TestSubmoduleEdgeCases:
     """Test submodule handling edge cases"""
 
@@ -1484,6 +1529,7 @@ class TestSubmoduleEdgeCases:
         os_path_dir = dir(lz.os.path)
         assert "join" in os_path_dir
         assert "basename" in os_path_dir
+
 
 class TestImportHooksEdgeCases:
     """Test import hooks edge cases"""
@@ -1526,6 +1572,7 @@ class TestImportHooksEdgeCases:
         # Hook shouldn't be called for failed imports
         # (or should handle gracefully)
 
+
 class TestCacheStatistics:
     """Test cache statistics functionality"""
 
@@ -1554,6 +1601,7 @@ class TestCacheStatistics:
         # Hit rate should be a number between 0 and 100
         assert 0 <= stats["hit_rate"] <= 100
 
+
 class TestSymbolResolutionConfig:
     """Test symbol resolution configuration"""
 
@@ -1579,6 +1627,7 @@ class TestSymbolResolutionConfig:
         lz.symbol.config.auto_resolution = True
         lz.symbol.config.auto_resolution = True
 
+
 class TestModulePriority:
     """Test module priority functionality"""
 
@@ -1595,6 +1644,7 @@ class TestModulePriority:
 
         original = get_module_priority("pandas")
         from laziest_import._symbol import set_module_priority
+
         set_module_priority("pandas", 200)
 
         new_priority = get_module_priority("pandas")
@@ -1604,6 +1654,7 @@ class TestModulePriority:
         if original is not None:
             from laziest_import._symbol import set_module_priority
         set_module_priority("pandas", original)
+
 
 class TestAutoInstallConfig:
     """Test auto-install configuration"""
@@ -1637,6 +1688,7 @@ class TestAutoInstallConfig:
 
         set_pip_index("https://pypi.org/simple")
         from laziest_import._config import _AUTO_INSTALL_CONFIG
+
         assert _AUTO_INSTALL_CONFIG["index"] == "https://pypi.org/simple"
 
     def test_set_pip_extra_args(self):
@@ -1644,7 +1696,9 @@ class TestAutoInstallConfig:
 
         set_pip_extra_args(["--no-cache-dir"])
         from laziest_import._config import _AUTO_INSTALL_CONFIG
+
         assert "--no-cache-dir" in _AUTO_INSTALL_CONFIG["extra_args"]
+
 
 class TestLoadedModulesContext:
     """Test loaded modules context functionality"""
@@ -1658,6 +1712,7 @@ class TestLoadedModulesContext:
 
         context = get_loaded_modules_context()
         assert isinstance(context, (set, list, dict))
+
 
 class TestListSymbolConflicts:
     """Test symbol conflict listing"""
@@ -1673,10 +1728,9 @@ class TestListSymbolConflicts:
         """Test listing conflicts for unique symbol"""
 
         # A unique symbol should have no conflicts
-        conflicts = lz.symbol.conflicts(
-            "this_symbol_definitely_does_not_exist_xyz"
-        ) or []
+        conflicts = lz.symbol.conflicts("this_symbol_definitely_does_not_exist_xyz") or []
         assert isinstance(conflicts, list)
+
 
 class TestCacheVersion:
     """Test cache version functionality"""
@@ -1694,6 +1748,7 @@ class TestCacheVersion:
         v1 = lz.version.cache()
         v2 = lz.version.cache()
         assert v1 == v2
+
 
 class TestModuleCachingBehavior:
     """Test module caching behavior in detail"""
@@ -1724,6 +1779,7 @@ class TestModuleCachingBehavior:
         # All should be unloaded
         loaded = lz.module.list_loaded()
         assert len(loaded) == 0
+
 
 class TestThreadSafety:
     """Test thread safety of lazy loading"""
@@ -1760,6 +1816,7 @@ class TestThreadSafety:
 
         assert len(errors) == 0
 
+
 class TestPackageRenameMapping:
     """Test package rename mapping functionality"""
 
@@ -1773,6 +1830,7 @@ class TestPackageRenameMapping:
 
         # Check that we have some common aliases
         assert len(available) > 0
+
 
 class TestExportAliasesFormat:
     """Test alias export format"""
@@ -1796,6 +1854,7 @@ class TestExportAliasesFormat:
         # Should include some common aliases
         assert len(data) > 0
 
+
 class TestValidateAliasesEdgeCases:
     """Test validate aliases edge cases"""
 
@@ -1812,6 +1871,7 @@ class TestValidateAliasesEdgeCases:
         result = validate_aliases_importable(None)
         assert "importable" in result
         assert "not_importable" in result
+
 
 class TestRetryMechanismAdvanced:
     """Test retry mechanism advanced scenarios"""
@@ -1835,6 +1895,7 @@ class TestRetryMechanismAdvanced:
 
         # Just check the function exists
         assert lz.config.retry.enabled is not None
+
 
 class TestLazyProxyAdvanced:
     """Test LazyProxy advanced functionality"""
@@ -1860,6 +1921,7 @@ class TestLazyProxyAdvanced:
         # Access through lazy proxy
         math = LazyProxy().math
         assert math is not None
+
 
 class TestMemoryEfficiency:
     """Test memory efficiency of lazy loading"""
@@ -1889,12 +1951,14 @@ class TestMemoryEfficiency:
         # Should be the same cached object
         assert mod1_id == mod2_id
 
+
 class TestMisspelledModuleImport:
     """Test importing modules with misspelled names - auto-correction functionality"""
 
     def _search_module_fuzzy(self, name):
         """Helper: search module name via fuzzy matching."""
         from laziest_import._fuzzy import _search_module
+
         lz.config.auto_search = True
         return _search_module(name)
 
@@ -2295,7 +2359,9 @@ class TestMisspelledModuleImport:
         if result1 is not None and result2 is not None:
             assert result1 == result2
 
+
 # ============== New Performance Feature Tests ==============
+
 
 class TestIncrementalIndex:
     """Test incremental index update functionality"""
@@ -2334,6 +2400,7 @@ class TestIncrementalIndex:
         result = build_symbol_index_incremental()
         assert isinstance(result, bool)
 
+
 class TestBackgroundIndexBuild:
     """Test background index build functionality"""
 
@@ -2370,6 +2437,7 @@ class TestBackgroundIndexBuild:
         assert isinstance(config, dict)
         assert "enabled" in config
         assert "async_index_build" in config
+
 
 class TestModuleSkipConfig:
     """Test module skip configuration"""
@@ -2409,6 +2477,7 @@ class TestModuleSkipConfig:
             skip_large_modules=True,
             large_module_threshold=100,
         )
+
 
 class TestCacheCompression:
     """Test cache compression functionality"""
@@ -2469,6 +2538,7 @@ class TestCacheCompression:
             if test_file.exists():
                 test_file.unlink()
 
+
 class TestPackageDetection:
     """Test package detection for incremental updates"""
 
@@ -2498,6 +2568,7 @@ class TestPackageDetection:
         assert isinstance(modules, set)
         assert isinstance(needs_full, bool)
 
+
 class TestRemovePackageSymbols:
     """Test removing package symbols from cache"""
 
@@ -2525,6 +2596,7 @@ class TestRemovePackageSymbols:
         assert "test_symbol_2" in _SYMBOL_CACHE
         assert len(_SYMBOL_CACHE["test_symbol_2"]) == 1
         assert _SYMBOL_CACHE["test_symbol_2"][0][0] == "other_package.module"
+
 
 class TestIntegrationNewFeatures:
     """Integration tests for new features"""
@@ -2563,6 +2635,7 @@ class TestIntegrationNewFeatures:
         # Restore defaults
         enable_cache_compression(False)
         set_module_skip_config(large_module_threshold=100)
+
 
 class TestPackageVersion:
     """Test package version functionality"""
@@ -2624,8 +2697,10 @@ class TestPackageVersion:
         assert hasattr(lz, "__version__")
         assert lz.__version__ is not None
 
+
 # ============== Bug Fix Verification Tests ==============
 # These tests specifically verify the bugs that were fixed
+
 
 class TestInitStateVariableCopyFix:
     """Test P0 fix: Variable copy issue when importing state variables.
@@ -2639,24 +2714,28 @@ class TestInitStateVariableCopyFix:
         """Test that is_initialized helper function exists."""
 
         from laziest_import import is_initialized
+
         assert callable(is_initialized)
 
     def test_is_initializing_helper_function_exists(self):
         """Test that is_initializing helper function exists."""
 
         from laziest_import import is_initializing
+
         assert callable(is_initializing)
 
     def test_is_init_failed_helper_function_exists(self):
         """Test that is_init_failed helper function exists."""
 
         from laziest_import import is_init_failed
+
         assert callable(is_init_failed)
 
     def test_get_init_error_helper_function_exists(self):
         """Test that get_init_error helper function exists."""
 
         from laziest_import import get_init_error
+
         assert callable(get_init_error)
 
     def test_helper_functions_return_correct_state(self):
@@ -2690,6 +2769,7 @@ class TestInitStateVariableCopyFix:
         # The helper function should reflect the actual state
         assert is_initialized() is True
 
+
 class TestInitFailureStateTracking:
     """Test P1 fix: Initialization failure state not tracked.
 
@@ -2710,6 +2790,7 @@ class TestInitFailureStateTracking:
         # Should not be failed in normal conditions
         assert is_init_failed() is False
         assert get_init_error() is None
+
 
 class TestNonInteractiveEnvironmentDetection:
     """Test P1 fix: Interactive confirmation blocking in non-interactive environments.
@@ -2738,6 +2819,7 @@ class TestNonInteractiveEnvironmentDetection:
         assert callable(_is_interactive_terminal)
         result = _is_interactive_terminal()
         assert isinstance(result, bool)
+
 
 class TestLazySymbolGetUnderlyingClass:
     """Test P2 fix: Type checking methods on LazySymbol.
@@ -2791,6 +2873,7 @@ class TestLazySymbolGetUnderlyingClass:
 
         assert sqrt_type is type(math.sqrt)
 
+
 class TestAsyncContextNoBlocking:
     """Test P2 fix: time.sleep() blocking in async context.
 
@@ -2826,6 +2909,7 @@ class TestAsyncContextNoBlocking:
         math_mod = await import_async("math")
         assert math_mod is not None
         assert math_mod.pi > 3
+
 
 class TestSubmoduleCacheKeyConflict:
     """Test P3 fix: Submodule cache key conflicts.
@@ -2870,6 +2954,7 @@ class TestSubmoduleCacheKeyConflict:
         abc = lz.collections.abc
         assert abc is not None
 
+
 class TestEdgeCasesFixedBugs:
     """Additional edge case tests for fixed bugs."""
 
@@ -2907,6 +2992,7 @@ class TestEdgeCasesFixedBugs:
         assert lazy_pi > 3
         assert lazy_pi < 4
         assert lazy_pi != 3
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

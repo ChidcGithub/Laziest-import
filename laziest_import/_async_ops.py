@@ -2,14 +2,14 @@
 Async operations for laziest-import.
 """
 
-from typing import Any, Dict, List, Optional, Set
 import asyncio
 import importlib
 import logging
+from typing import Any, Dict, List, Optional, Set
 
 from ._config import (
-    _DEBUG_MODE,
     _ALIAS_MAP,
+    _DEBUG_MODE,
     _LAZY_MODULES,
     _RETRY_CONFIG,
 )

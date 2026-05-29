@@ -1,15 +1,15 @@
-from typing import Any, Dict, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from .._rcconfig import (
-    load_rc_config,
-    get_rc_value,
+    _LAZIESTRC_PATHS,
     create_rc_file,
+    find_rc_file,
     get_rc_info,
+    get_rc_value,
+    load_rc_config,
     reload_rc_config,
     save_rc_config,
-    find_rc_file,
-    _LAZIESTRC_PATHS,
 )
 
 
@@ -24,7 +24,7 @@ class RCConfigNamespace:
         return create_rc_file(path, template)
 
     def save(self, config: Dict[str, Any], path: Optional[str] = None) -> Path:
-        return save_rc_config(config, path)
+        return save_rc_config(config, Path(path) if path else None)
 
     def paths(self) -> List[str]:
         return [str(p) for p in _LAZIESTRC_PATHS]

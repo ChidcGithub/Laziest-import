@@ -13,7 +13,15 @@ Tests cover:
 import pytest
 import json
 from pathlib import Path
-from laziest_import import is_initialized, is_initializing, is_init_failed, get_init_error, get_init_lock, __version__, reset_init_state
+from laziest_import import (
+    is_initialized,
+    is_initializing,
+    is_init_failed,
+    get_init_error,
+    get_init_lock,
+    __version__,
+    reset_init_state,
+)
 
 
 class TestModuleVersion:
@@ -248,7 +256,7 @@ class TestConfigDataClasses:
             symbol_name="test_sym",
             symbol_type="function",
             signature=None,
-            score=0.9
+            score=0.9,
         )
         assert result.module_name == "test"
         assert result.score == 0.9
@@ -263,7 +271,7 @@ class TestConfigDataClasses:
             symbol_type="function",
             signature=None,
             confidence=0.9,
-            source="exact"
+            source="exact",
         )
         assert match.module_name == "math"
         assert match.symbol_name == "sqrt"
@@ -328,6 +336,7 @@ class TestConfigEdgeCases:
         assert is_initialized() is False
         if was_initialized:
             from laziest_import import _do_initialize
+
             _do_initialize()
 
     def test_repeated_enable_disable(self):

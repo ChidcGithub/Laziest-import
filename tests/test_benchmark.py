@@ -29,7 +29,7 @@ class TestBenchmarkResult:
             avg_time=0.01,
             min_time=0.008,
             max_time=0.015,
-            std_dev=0.002
+            std_dev=0.002,
         )
         assert result.name == "test"
         assert result.iterations == 10
@@ -51,8 +51,13 @@ class TestBenchmarkReport:
         from laziest_import._analysis._benchmark import BenchmarkReport, BenchmarkResult
 
         result = BenchmarkResult(
-            name="test", iterations=10, total_time=0.1,
-            avg_time=0.01, min_time=0.008, max_time=0.015, std_dev=0.002
+            name="test",
+            iterations=10,
+            total_time=0.1,
+            avg_time=0.01,
+            min_time=0.008,
+            max_time=0.015,
+            std_dev=0.002,
         )
         report = BenchmarkReport(results=[result])
         assert len(report.results) == 1
@@ -62,8 +67,13 @@ class TestBenchmarkReport:
         from laziest_import._analysis._benchmark import BenchmarkReport, BenchmarkResult
 
         result = BenchmarkResult(
-            name="test", iterations=10, total_time=0.1,
-            avg_time=0.01, min_time=0.008, max_time=0.015, std_dev=0.002
+            name="test",
+            iterations=10,
+            total_time=0.1,
+            avg_time=0.01,
+            min_time=0.008,
+            max_time=0.015,
+            std_dev=0.002,
         )
         report = BenchmarkReport(results=[result])
         d = report.to_dict()
@@ -76,6 +86,7 @@ class TestBenchmarkFunction:
 
     def test_basic_benchmark(self):
         """Test basic function benchmarking."""
+
         def simple_func():
             return sum(range(100))
 
@@ -87,6 +98,7 @@ class TestBenchmarkFunction:
 
     def test_benchmark_with_name(self):
         """Test benchmarking with custom name."""
+
         def test_func():
             return 42
 
@@ -95,6 +107,7 @@ class TestBenchmarkFunction:
 
     def test_benchmark_iterations(self):
         """Test different iteration counts."""
+
         def func():
             return 1
 
@@ -106,6 +119,7 @@ class TestBenchmarkFunction:
 
     def test_benchmark_warmup(self):
         """Test benchmark with warmup."""
+
         def func():
             return sum(range(1000))
 
@@ -135,11 +149,7 @@ class TestBenchmarkImports:
 
     def test_benchmark_imports_with_options(self):
         """Test benchmark_imports with options."""
-        report = benchmark_imports(
-            ["json"],
-            iterations=3,
-            compare_lazy=True
-        )
+        report = benchmark_imports(["json"], iterations=3, compare_lazy=True)
         assert report is not None
 
     def test_benchmark_imports_empty_list(self):
@@ -153,11 +163,13 @@ class TestPrintBenchmarkReport:
 
     def test_print_basic_report(self, capsys):
         """Test printing basic report."""
+
         def func():
             return sum(range(100))
 
         result = benchmark(func, iterations=5)
         from laziest_import._analysis._benchmark import BenchmarkReport
+
         report = BenchmarkReport(results=[result])
         print_benchmark_report(report)
         captured = capsys.readouterr()
@@ -179,11 +191,7 @@ class TestBenchmarkRunner:
         from laziest_import._analysis._benchmark import BenchmarkRunner
 
         runner = BenchmarkRunner()
-        result = runner.benchmark_function(
-            "test",
-            lambda: sum(range(100)),
-            5
-        )
+        result = runner.benchmark_function("test", lambda: sum(range(100)), 5)
         assert result.name == "test"
         assert result.avg_time > 0
 
@@ -191,11 +199,7 @@ class TestBenchmarkRunner:
         """Test runner with options."""
         from laziest_import._analysis._benchmark import BenchmarkRunner
 
-        runner = BenchmarkRunner(
-            warmup_iterations=2,
-            default_iterations=5,
-            use_gc=False
-        )
+        runner = BenchmarkRunner(warmup_iterations=2, default_iterations=5, use_gc=False)
         result = runner.benchmark_function("test", lambda: 1, 3)
         assert result is not None
 
@@ -205,6 +209,7 @@ class TestBenchmarkEdgeCases:
 
     def test_benchmark_fast_function(self):
         """Test benchmarking very fast function."""
+
         def instant():
             return 1
 
@@ -213,6 +218,7 @@ class TestBenchmarkEdgeCases:
 
     def test_benchmark_slow_function(self):
         """Test benchmarking slow function."""
+
         def slow():
             time.sleep(0.01)
             return True
@@ -222,6 +228,7 @@ class TestBenchmarkEdgeCases:
 
     def test_benchmark_function_with_args(self):
         """Test function with arguments."""
+
         def add(a, b):
             return a + b
 
@@ -231,6 +238,7 @@ class TestBenchmarkEdgeCases:
 
     def test_benchmark_single_iteration(self):
         """Test with single iteration."""
+
         def func():
             return 42
 
@@ -243,6 +251,7 @@ class TestBenchmarkStatistics:
 
     def test_result_statistics(self):
         """Test that result has all statistics."""
+
         def func():
             return sum(range(1000))
 
@@ -255,6 +264,7 @@ class TestBenchmarkStatistics:
 
     def test_min_less_than_max(self):
         """Test min_time <= avg_time <= max_time."""
+
         def func():
             return sum(range(100))
 
@@ -263,6 +273,7 @@ class TestBenchmarkStatistics:
 
     def test_std_dev_non_negative(self):
         """Test std_dev is non-negative."""
+
         def func():
             return sum(range(100))
 

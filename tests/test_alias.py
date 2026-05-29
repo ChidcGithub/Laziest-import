@@ -157,9 +157,7 @@ class TestAliasValidation:
         """Test validation of non-importable module."""
         from laziest_import import lz
 
-        result = validate_aliases_importable(
-            {"bad": "nonexistent_module_xyz12345"}
-        )
+        result = validate_aliases_importable({"bad": "nonexistent_module_xyz12345"})
         assert "bad" in result["not_importable"]
 
 
@@ -196,9 +194,7 @@ class TestAliasExport:
         """Test exporting aliases to file."""
         from laziest_import import lz
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = f.name
 
         try:
@@ -304,10 +300,12 @@ class TestAliasDuplicates:
         from laziest_import._alias import _check_duplicates
 
         # Same alias with different modules
-        duplicates = _check_duplicates({
-            "dup": "os",
-            "dup": "sys"  # This will overwrite in dict
-        })
+        duplicates = _check_duplicates(
+            {
+                "dup": "os",
+                "dup": "sys",  # This will overwrite in dict
+            }
+        )
         # Dict only keeps last value, so no duplicate
         assert len(duplicates) == 0
 

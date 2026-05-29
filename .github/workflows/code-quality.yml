@@ -1,0 +1,80 @@
+name: Code Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install tools
+        run: pip install ruff mypy
+
+      - name: Lint
+        run: ruff check --output-format github
+
+      - name: Format check
+        run: ruff format --diff --check
+
+      - name: Type check
+        run: mypy laziest_import
+
+  health:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -e .[dev]
+          pip install radon coverage
+
+      - name: Test with coverage
+        run: |
+          python -m pytest tests/ \
+            --cov=laziest_import \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term
+
+      - name: Complexity report
+        run: |
+          {
+            echo "## Code Health Report"
+            echo ""
+            echo "### Coverage"
+            python -c "import xml.etree.ElementTree as ET; import sys; t=ET.parse('coverage.xml'); r=t.getroot(); pct=r.get('line-rate'); print(f'Line coverage: {float(pct)*100:.1f}%')"
+            echo ""
+            echo "### Cyclomatic Complexity (top 20)"
+            echo '```'
+            radon cc laziest_import -s --total-average | head -40
+            echo '```'
+            echo ""
+            echo "### Maintainability Index"
+            echo '```'
+            radon mi laziest_import -s
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false

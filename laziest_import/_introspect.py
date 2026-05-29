@@ -3,12 +3,10 @@ Module introspection utilities.
 Provides ways to explore module contents without fully importing them.
 """
 
-from typing import List, Dict, Set, Optional, Any
-import importlib
+import importlib.util
 import inspect
-import sys
 import pkgutil
-import os
+from typing import Any, Dict, List, Optional, Set
 
 
 def list_module_symbols(

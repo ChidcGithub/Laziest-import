@@ -2,11 +2,11 @@
 Package installation functionality for laziest-import.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
-import sys
 import logging
-import subprocess
 import shutil
+import subprocess
+import sys
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import _config
 from ._fuzzy import _get_package_rename_map
@@ -19,7 +19,7 @@ def _get_pip_package_name(module_name: str) -> str:
     if module_name in rename_map:
         return rename_map[module_name]
 
-    base_module = module_name.split(".")[0]
+    base_module = module_name.split(".", maxsplit=1)[0]
     if base_module in rename_map:
         return rename_map[base_module]
 
@@ -114,8 +114,7 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
         # OSError can occur in some non-interactive environments
         if _config._DEBUG_MODE:
             logging.debug(
-                f"[laziest-import] OSError during install confirm, "
-                f"auto-declining installation"
+                "[laziest-import] OSError during install confirm, auto-declining installation"
             )
         return False
 
@@ -178,10 +177,10 @@ def enable_auto_install(
     silent: bool = False,
 ) -> None:
     """
-    Enable automatic installation of missing packages.
+        Enable automatic installation of missing packages.
 
-WARNING: This feature installs packages automatically. Use with caution
-    in production environments.
+    WARNING: This feature installs packages automatically. Use with caution
+        in production environments.
     """
     _config._AUTO_INSTALL_CONFIG["enabled"] = True
     _config._AUTO_INSTALL_CONFIG["interactive"] = interactive

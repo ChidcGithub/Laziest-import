@@ -2,13 +2,11 @@
 Symbol location finder (like Unix `which` command).
 """
 
-from typing import Optional, List, Dict, Any, Tuple
 import importlib
 import inspect
-import sys
+from typing import Any, Dict, List, Optional, Tuple
 
-from ._config import _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT, _DEBUG_MODE
-from ._symbol import _is_stdlib_module
+from ._config import _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT
 
 
 class SymbolLocation:
@@ -102,9 +100,7 @@ def _parse_dotted_symbol(
     return (symbol_name, None)
 
 
-def which(
-    symbol_name: str, module_hint: Optional[str] = None
-) -> Optional[SymbolLocation]:
+def which(symbol_name: str, module_hint: Optional[str] = None) -> Optional[SymbolLocation]:
     """
     Find where a symbol is defined, similar to Unix `which` command.
 
@@ -227,9 +223,7 @@ def _create_location_from_tuple(
         return SymbolLocation(module_name, symbol_name, sym_type)
 
 
-def _find_symbol_live(
-    symbol_name: str, module_hint: Optional[str]
-) -> Optional[SymbolLocation]:
+def _find_symbol_live(symbol_name: str, module_hint: Optional[str]) -> Optional[SymbolLocation]:
     """Find symbol by trying to import modules live."""
     # Use shared dotted path parser
     actual_symbol, actual_module_hint = _parse_dotted_symbol(symbol_name, module_hint)
@@ -259,8 +253,13 @@ def _find_symbol_live(
     )
 
     # Remove duplicates while preserving order
-    seen = set()
-    priority_modules = [x for x in priority_modules if not (x in seen or seen.add(x))]
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for x in priority_modules:
+        if x not in seen:
+            seen.add(x)
+            deduped.append(x)
+    priority_modules = deduped
 
     for mod_name in priority_modules:
         try:
@@ -292,9 +291,7 @@ def _find_symbol_live(
     return None
 
 
-def _get_location_from_object(
-    module_name: str, symbol_name: str, obj: Any
-) -> SymbolLocation:
+def _get_location_from_object(module_name: str, symbol_name: str, obj: Any) -> SymbolLocation:
     """Get detailed location info from an object."""
     sym_type = _get_symbol_type(obj)
 

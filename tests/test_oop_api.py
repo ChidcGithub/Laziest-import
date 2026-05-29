@@ -78,9 +78,22 @@ class TestLazyImport:
     def test_dir_contains_namespaces(self):
         lz = LazyImport()
         attrs = dir(lz)
-        for ns in ("module", "alias", "symbol", "cache", "config",
-                   "analyze", "profile", "hooks", "async_", "install",
-                   "export", "background", "version", "rc"):
+        for ns in (
+            "module",
+            "alias",
+            "symbol",
+            "cache",
+            "config",
+            "analyze",
+            "profile",
+            "hooks",
+            "async_",
+            "install",
+            "export",
+            "background",
+            "version",
+            "rc",
+        ):
             assert ns in attrs
 
     def test_dir_contains_aliases(self):
@@ -254,6 +267,7 @@ class TestSymbolNamespace:
 
     def test_enable_disable_search(self):
         from laziest_import._config import _SYMBOL_SEARCH_CONFIG
+
         ns = SymbolNamespace()
         cfg = ns.config
         previous = _SYMBOL_SEARCH_CONFIG.get("enabled", True)

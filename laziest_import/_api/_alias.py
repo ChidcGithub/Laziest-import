@@ -2,23 +2,19 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from .._alias import (
     _ALIAS_MAP,
-    _ALIAS_META,
-    register_alias,
-    unregister_alias,
-    reload_aliases,
-    export_aliases,
-    validate_aliases,
-    get_alias_category,
-    get_alias_meta,
     _build_known_modules_cache,
+    export_aliases,
+    get_alias_category,
+    register_alias,
+    reload_aliases,
+    unregister_alias,
+    validate_aliases,
 )
 from .._proxy import _get_lazy_module
 
 
 class AliasNamespace:
-    def register(
-        self, alias: str, module_name: str, category: Optional[str] = None
-    ) -> None:
+    def register(self, alias: str, module_name: str, category: Optional[str] = None) -> None:
         register_alias(alias, module_name, category=category)
 
     def register_many(self, aliases: Dict[str, str]) -> List[str]:
@@ -45,9 +41,7 @@ class AliasNamespace:
     ) -> str:
         return export_aliases(path, include_categories, with_meta)
 
-    def validate(
-        self, aliases: Optional[Dict[str, str]] = None
-    ) -> Dict[str, List[str]]:
+    def validate(self, aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
         return validate_aliases(aliases)
 
     def import_file(self, path: str) -> int:
@@ -58,12 +52,12 @@ class AliasNamespace:
         if not p.exists():
             raise FileNotFoundError(f"Alias file not found: {path}")
 
-        with open(p, "r", encoding="utf-8") as f:
+        with open(p, encoding="utf-8") as f:
             data = json.load(f)
 
         flattened: Dict[str, str] = {}
         for k, v in data.items():
-            if k == '_meta':
+            if k == "_meta":
                 continue
             if isinstance(v, dict):
                 flattened.update(v)
@@ -73,23 +67,17 @@ class AliasNamespace:
         registered = self.register_many(flattened)
         return len(registered)
 
-    def search(
-        self, pattern: str, by_module: bool = False
-    ) -> List[str]:
+    def search(self, pattern: str, by_module: bool = False) -> List[str]:
         if not pattern:
             return []
         pattern_lower = pattern.lower()
         results: List[str] = []
         for alias, module in _ALIAS_MAP.items():
-            if pattern_lower in alias.lower():
-                results.append(alias)
-            elif by_module and pattern_lower in module.lower():
+            if pattern_lower in alias.lower() or (by_module and pattern_lower in module.lower()):
                 results.append(alias)
         return results
 
-    def list(
-        self, category: Optional[str] = None
-    ) -> List[str]:
+    def list(self, category: Optional[str] = None) -> List[str]:
         if category is None:
             return sorted(_ALIAS_MAP.keys())
 
@@ -219,9 +207,7 @@ class AliasNamespace:
     def items(self) -> List[Tuple[str, str]]:
         return list(_ALIAS_MAP.items())
 
-    def get(
-        self, alias: str, default: Optional[str] = None
-    ) -> Optional[str]:
+    def get(self, alias: str, default: Optional[str] = None) -> Optional[str]:
         return _ALIAS_MAP.get(alias, default)
 
     def __repr__(self) -> str:

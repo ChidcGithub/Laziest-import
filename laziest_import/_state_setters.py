@@ -5,9 +5,9 @@ These functions MUST be accessed through laziest_import._config
 (not imported directly), because they operate on _config module globals.
 """
 
+import json
 import sys
 from pathlib import Path
-import json
 from typing import Dict, Set
 
 
@@ -17,19 +17,23 @@ def _config():
 
 
 def _set_symbol_index_built(value: bool) -> None:
-    c = _config(); c._SYMBOL_INDEX_BUILT = value
+    c = _config()
+    c._SYMBOL_INDEX_BUILT = value
 
 
 def _set_stdlib_cache_built(value: bool) -> None:
-    c = _config(); c._STDLIB_CACHE_BUILT = value
+    c = _config()
+    c._STDLIB_CACHE_BUILT = value
 
 
 def _set_third_party_cache_built(value: bool) -> None:
-    c = _config(); c._THIRD_PARTY_CACHE_BUILT = value
+    c = _config()
+    c._THIRD_PARTY_CACHE_BUILT = value
 
 
 def _set_background_index_building(value: bool) -> None:
-    c = _config(); c._BACKGROUND_INDEX_BUILDING = value
+    c = _config()
+    c._BACKGROUND_INDEX_BUILDING = value
 
 
 def reset_all() -> None:
@@ -70,6 +74,7 @@ def reset_all() -> None:
     # Rebuild symbol index after clearing cache
     try:
         from laziest_import._symbol import rebuild_symbol_index
+
         rebuild_symbol_index()
     except ImportError:
         pass
@@ -77,14 +82,18 @@ def reset_all() -> None:
     # Reload built-in aliases and update __all__
     try:
         from laziest_import._alias import _load_all_aliases
+
         c._ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
     except ImportError:
         pass
     try:
         import laziest_import as _lz_mod
-        from laziest_import._config import _BASE_EXPORTS, _OLD_API_NAMES
+
+        _base_exports: set = getattr(c, "_BASE_EXPORTS", set())
+        _old_api_names: set = getattr(c, "_OLD_API_NAMES", set())
+
         _lz_mod.__all__ = sorted(
-            set(_BASE_EXPORTS) | set(_OLD_API_NAMES) | set(c._ALIAS_MAP.keys())
+            set(_base_exports) | set(_old_api_names) | set(c._ALIAS_MAP.keys())
         )
     except ImportError:
         pass

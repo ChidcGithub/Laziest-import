@@ -16,6 +16,7 @@ class TestJupyterMagics:
         """Test that LazyMagics can be imported."""
         try:
             from laziest_import._jupyter import LazyMagics
+
             # LazyMagics may be None if IPython not available
             assert LazyMagics is None or LazyMagics is not None
         except ImportError:

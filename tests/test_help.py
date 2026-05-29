@@ -137,7 +137,11 @@ class TestHelpUnknownTopic:
         import laziest_import as lz
 
         result = lz.help("nonexistent_topic_xyz123")
-        assert "unknown topic" in result.lower() or "not found" in result.lower() or "did you mean" in result.lower()
+        assert (
+            "unknown topic" in result.lower()
+            or "not found" in result.lower()
+            or "did you mean" in result.lower()
+        )
 
     def test_help_gibberish(self):
         """Test help() with gibberish input."""

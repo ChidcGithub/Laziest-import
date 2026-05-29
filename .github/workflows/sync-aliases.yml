@@ -1,0 +1,58 @@
+name: Sync Aliases from PyPI
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Number of top PyPI packages to scan
+        default: '300'
+        required: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run sync script
+        id: sync
+        continue-on-error: true
+        env:
+          LIMIT: ${{ github.event.inputs.limit || '300' }}
+        run: |
+          python scripts/sync_aliases.py --limit "$LIMIT"
+          if [ "$(git status --porcelain | wc -l)" -gt 0 ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.sync.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'chore: sync aliases from PyPI top packages'
+          title: 'chore: auto-sync aliases from PyPI'
+          body: |
+            Automated weekly sync of aliases from top PyPI packages.
+
+            **Changes:**
+            - New alias entries for popular packages not yet covered
+            - Updated `package_rename.json` with new import↔pip name mappings
+
+            Review and merge if appropriate.
+          branch: auto/sync-aliases
+          base: main
+          labels: aliases,automated
+          delete-branch: true

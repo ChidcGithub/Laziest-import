@@ -191,6 +191,7 @@ class TestSymbolConflicts:
         from laziest_import import lz
 
         from laziest_import._analysis._conflict import SymbolConflict
+
         conflicts = lz.symbol.conflicts("sqrt") or []
         assert isinstance(conflicts, (list, SymbolConflict))
 

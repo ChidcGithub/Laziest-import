@@ -11,308 +11,305 @@ Or:
 """
 
 import time
-from typing import List, Dict, Optional, Any, Union, Set, Tuple
-
-# Import version
-from ._config import __version__
-
-# Import data classes
-from ._config import ImportStats, SearchResult, SymbolMatch
-
-# Import proxy classes
-from ._proxy import (
-    LazyModule,
-    LazySymbol,
-    LazySubmodule,
-    LazyProxy,
-    lazy,
-    _get_lazy_module,
-)
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Import config module for state access
 from . import _config as _config_module
-from ._config import (
-    _AUTO_SEARCH_ENABLED,
-    _ALIAS_MAP,
-    _SYMBOL_RESOLUTION_CONFIG,
-    _SYMBOL_SEARCH_CONFIG,
-    _SYMBOL_PREFERENCES,
-    _DEBUG_MODE,
-    _RESERVED_NAMES,
-    _NEGATIVE_CACHE,
-    _NEGATIVE_CACHE_TTL,
-    _NEGATIVE_CACHE_LOCK,
-    get_init_lock,
-    is_initializing,
-    is_initialized,
-    is_init_failed,
-    get_init_error,
-    reset_init_state,
-)
-
-# Import cache functionality
-from ._cache import (
-    set_cache_dir,
-    get_cache_dir,
-    reset_cache_dir,
-    set_cache_config,
-    get_cache_config,
-    get_cache_stats,
-    reset_cache_stats,
-    invalidate_package_cache,
-    get_cache_version,
-    clear_symbol_cache,
-    enable_file_cache,
-    disable_file_cache,
-    is_file_cache_enabled,
-    clear_file_cache,
-    get_file_cache_info,
-    force_save_cache,
-    get_package_version,
-    get_all_package_versions,
-    get_laziest_import_version,
-    enable_incremental_index,
-    enable_background_build,
-    enable_cache_compression,
-    get_incremental_config,
-    get_preheat_config,
-)
 
 # Import alias functionality
 from ._alias import (
-    get_config_paths,
-    get_config_dirs,
-    reload_aliases,
     export_aliases,
-    validate_aliases,
+    get_alias_category,
+    get_config_dirs,
+    get_config_paths,
     register_alias,
     register_aliases,
+    reload_aliases,
     unregister_alias,
-    get_alias_category,
-)
-
-# Import fuzzy matching
-from ._fuzzy import (
-    _search_module,
-    _search_class_in_modules,
-    reload_mappings,
-    _levenshtein_distance,
-)
-
-# Import install functionality
-from ._install import (
-    install_package,
-    enable_auto_install,
-    disable_auto_install,
-    is_auto_install_enabled,
-    get_auto_install_config,
-    set_pip_index,
-    set_pip_extra_args,
-    rebuild_module_cache,
-)
-
-# Import async operations
-from ._async_ops import (
-    import_async,
-    import_multiple_async,
-    enable_retry,
-    disable_retry,
-    is_retry_enabled,
+    validate_aliases,
 )
 
 # Import analysis and profiling tools
 from ._analysis import (
-    DependencyPreAnalyzer,
-    ImportProfiler,
-    PreAnalysisResult,
-    ModuleProfile,
-    ProfileReport,
-    EnvironmentInfo,
-    start_profiling,
-    stop_profiling,
-    get_profile_report,
-    print_profile_report,
-    find_symbol_conflicts,
-    show_conflicts,
-    get_conflicts_summary,
-    detect_environment,
-    show_environment,
-    save_preferences,
-    load_preferences,
-    apply_preferences,
-    clear_preferences,
-    # Dependency tree
-    DependencyNode,
-    DependencyTree,
-    dependency_tree,
-    print_dependency_tree,
+    BenchmarkReport,
     # Benchmark
     BenchmarkResult,
-    BenchmarkReport,
+    # Dependency tree
+    DependencyNode,
+    DependencyPreAnalyzer,
+    DependencyTree,
+    EnvironmentInfo,
+    ImportProfiler,
+    ModuleProfile,
+    PreAnalysisResult,
+    ProfileReport,
+    apply_preferences,
     benchmark,
     benchmark_imports,
+    clear_preferences,
+    dependency_tree,
+    detect_environment,
+    find_symbol_conflicts,
+    get_conflicts_summary,
+    get_profile_report,
+    load_preferences,
     print_benchmark_report,
-)
-
-# ═══════════════════════════════════════════════════════════════
-#  Import hooks module (module-level convenience API)
-# ═══════════════════════════════════════════════════════════════
-
-from ._hooks import (
-    add_pre_import_hook,
-    add_post_import_hook,
-    remove_pre_import_hook,
-    remove_post_import_hook,
-    clear_import_hooks,
+    print_dependency_tree,
+    print_profile_report,
+    save_preferences,
+    show_conflicts,
+    show_environment,
+    start_profiling,
+    stop_profiling,
 )
 
 # ═══════════════════════════════════════════════════════════════
 #  New object-oriented API (recommended)
 # ═══════════════════════════════════════════════════════════════
-
 from ._api import (
-    # Main class
-    LazyImport,
-    lz,
-    # Namespace classes (for advanced users to inherit/compose)
-    ModuleNamespace,
     AliasNamespace,
-    SymbolNamespace,
-    CacheNamespace,
-    ConfigNamespace,
     AnalyzeNamespace,
-    ProfileNamespace,
-    HookNamespace,
-    HookList,
     AsyncNamespace,
-    InstallNamespace,
-    ExportNamespace,
-    BackgroundNamespace,
-    VersionNamespace,
-    RCConfigNamespace,
-    SymbolIndexNamespace,
-    SymbolConfigNamespace,
-    CacheConfigNamespace,
-    CacheSymbolsNamespace,
-    CacheFilesNamespace,
-    CacheStatsNamespace,
-    ConfigContext,
     # Data classes
     AutoInstallConfig,
-    RetryConfig,
-    SymbolSearchConfig,
-    SymbolResolutionConfig,
+    BackgroundNamespace,
     CacheConfig,
+    CacheConfigNamespace,
+    CacheFilesNamespace,
+    CacheNamespace,
+    CacheStatsNamespace,
+    CacheSymbolsNamespace,
+    ConfigContext,
+    ConfigNamespace,
+    ExportNamespace,
+    HookList,
+    HookNamespace,
+    InstallNamespace,
+    # Main class
+    LazyImport,
+    # Namespace classes (for advanced users to inherit/compose)
+    ModuleNamespace,
     ModuleSkipConfig,
+    ProfileNamespace,
+    RCConfigNamespace,
+    RetryConfig,
+    SymbolConfigNamespace,
+    SymbolIndexNamespace,
+    SymbolNamespace,
+    SymbolResolutionConfig,
+    SymbolSearchConfig,
+    VersionNamespace,
+    lz,
+)
+
+# Import async operations
+from ._async_ops import (
+    disable_retry,
+    enable_retry,
+    import_async,
+    import_multiple_async,
+    is_retry_enabled,
+)
+
+# Import cache functionality
+from ._cache import (
+    clear_file_cache,
+    clear_symbol_cache,
+    disable_file_cache,
+    enable_background_build,
+    enable_cache_compression,
+    enable_file_cache,
+    enable_incremental_index,
+    force_save_cache,
+    get_all_package_versions,
+    get_cache_config,
+    get_cache_dir,
+    get_cache_stats,
+    get_cache_version,
+    get_file_cache_info,
+    get_incremental_config,
+    get_laziest_import_version,
+    get_package_version,
+    get_preheat_config,
+    invalidate_package_cache,
+    is_file_cache_enabled,
+    reset_cache_dir,
+    reset_cache_stats,
+    set_cache_config,
+    set_cache_dir,
+)
+
+# Import version
+# Import data classes
+from ._config import (
+    _ALIAS_MAP,
+    _AUTO_SEARCH_ENABLED,
+    _DEBUG_MODE,
+    _NEGATIVE_CACHE,
+    _NEGATIVE_CACHE_LOCK,
+    _NEGATIVE_CACHE_TTL,
+    _RESERVED_NAMES,
+    _SYMBOL_PREFERENCES,
+    _SYMBOL_RESOLUTION_CONFIG,
+    _SYMBOL_SEARCH_CONFIG,
+    ImportStats,
+    SearchResult,
+    SymbolMatch,
+    __version__,
+    get_init_error,
+    get_init_lock,
+    is_init_failed,
+    is_initialized,
+    is_initializing,
+    reset_init_state,
 )
 
 # ═══════════════════════════════════════════════════════════════
 #  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
-
-from ._deprecated import (  # noqa: F401, F403
-    list_loaded,
-    list_available,
-    get_module,
-    clear_cache,
-    reset_all,
-    get_version,
-    reload_module,
-    enable_auto_search,
-    disable_auto_search,
-    is_auto_search_enabled,
-    search_module,
-    search_class,
-    enable_debug_mode,
-    disable_debug_mode,
-    is_debug_mode,
-    get_import_stats,
-    reset_import_stats,
-    search_symbol,
-    enable_symbol_search,
-    disable_symbol_search,
-    is_symbol_search_enabled,
-    rebuild_symbol_index,
-    get_symbol_search_config,
-    get_symbol_cache_info,
-    set_symbol_preference,
-    get_symbol_preference,
-    clear_symbol_preference,
-    list_symbol_conflicts,
-    set_module_priority,
-    get_module_priority,
-    enable_auto_symbol_resolution,
-    disable_auto_symbol_resolution,
-    get_symbol_resolution_config,
-    get_loaded_modules_context,
-    get_module_skip_config,
-    set_module_skip_config,
-    search_with_sharding,
-    enable_sharding,
-    disable_sharding,
-    get_sharding_config,
-    clear_shard_cache,
-    build_symbol_index_incremental,
-    set_cache_config,
-    get_cache_config,
-    get_cache_stats,
-    reset_cache_stats,
-    invalidate_package_cache,
-    clear_symbol_cache,
-    enable_cache_compression,
-    enable_file_cache,
-    disable_file_cache,
-    is_file_cache_enabled,
-    clear_file_cache,
-    get_file_cache_info,
-    force_save_cache,
-    enable_background_build,
-    get_preheat_config,
-    enable_incremental_index,
-    get_incremental_config,
-    get_package_version,
-    get_all_package_versions,
-    get_laziest_import_version,
-    get_cache_version,
-    get_config_paths,
-    get_config_dirs,
-    reload_aliases,
-    export_aliases,
-    validate_aliases,
-    register_alias,
-    register_aliases,
-    unregister_alias,
-    install_package,
-    enable_auto_install,
-    disable_auto_install,
-    is_auto_install_enabled,
-    get_auto_install_config,
-    set_pip_index,
-    set_pip_extra_args,
-    rebuild_module_cache,
-    import_async,
-    import_multiple_async,
-    enable_retry,
-    disable_retry,
-    is_retry_enabled,
-    which,
-    which_all,
-    validate_aliases_importable,
+from ._deprecated import (  # noqa: F401
+    analyze_directory,
     analyze_file,
     analyze_source,
-    analyze_directory,
-    dependency_tree,
-    print_dependency_tree,
-    start_profiling,
-    stop_profiling,
-    get_profile_report,
-    print_profile_report,
     benchmark,
     benchmark_imports,
-    print_benchmark_report,
+    build_symbol_index_incremental,
+    clear_cache,
+    clear_file_cache,
+    clear_shard_cache,
+    clear_symbol_cache,
+    clear_symbol_preference,
+    dependency_tree,
+    disable_auto_install,
+    disable_auto_search,
+    disable_auto_symbol_resolution,
+    disable_debug_mode,
+    disable_file_cache,
+    disable_retry,
+    disable_sharding,
+    disable_symbol_search,
+    enable_auto_install,
+    enable_auto_search,
+    enable_auto_symbol_resolution,
+    enable_background_build,
+    enable_cache_compression,
+    enable_debug_mode,
+    enable_file_cache,
+    enable_incremental_index,
+    enable_retry,
+    enable_sharding,
+    enable_symbol_search,
+    export_aliases,
+    force_save_cache,
+    get_all_package_versions,
+    get_auto_install_config,
+    get_cache_config,
+    get_cache_stats,
+    get_cache_version,
+    get_config_dirs,
+    get_config_paths,
+    get_file_cache_info,
+    get_import_stats,
+    get_incremental_config,
+    get_laziest_import_version,
+    get_loaded_modules_context,
+    get_module,
+    get_module_priority,
+    get_module_skip_config,
+    get_package_version,
+    get_preheat_config,
+    get_profile_report,
+    get_sharding_config,
+    get_symbol_cache_info,
+    get_symbol_preference,
+    get_symbol_resolution_config,
+    get_symbol_search_config,
+    get_version,
     help,
+    import_async,
+    import_multiple_async,
+    install_package,
+    invalidate_package_cache,
+    is_auto_install_enabled,
+    is_auto_search_enabled,
+    is_debug_mode,
+    is_file_cache_enabled,
+    is_retry_enabled,
+    is_symbol_search_enabled,
+    list_available,
+    list_loaded,
+    list_symbol_conflicts,
+    print_benchmark_report,
+    print_dependency_tree,
+    print_profile_report,
+    rebuild_module_cache,
+    rebuild_symbol_index,
+    register_alias,
+    register_aliases,
+    reload_aliases,
+    reload_module,
+    reset_all,
+    reset_cache_stats,
+    reset_import_stats,
+    search_class,
+    search_module,
+    search_symbol,
+    search_with_sharding,
+    set_cache_config,
+    set_module_priority,
+    set_module_skip_config,
+    set_pip_extra_args,
+    set_pip_index,
+    set_symbol_preference,
+    start_profiling,
+    stop_profiling,
+    unregister_alias,
+    validate_aliases,
+    validate_aliases_importable,
+    which,
+    which_all,
 )
 
+# Import fuzzy matching
+from ._fuzzy import (
+    _levenshtein_distance,
+    _search_class_in_modules,
+    _search_module,
+    reload_mappings,
+)
+
+# ═══════════════════════════════════════════════════════════════
+#  Import hooks module (module-level convenience API)
+# ═══════════════════════════════════════════════════════════════
+from ._hooks import (
+    add_post_import_hook,
+    add_pre_import_hook,
+    clear_import_hooks,
+    remove_post_import_hook,
+    remove_pre_import_hook,
+)
+
+# Import install functionality
+from ._install import (
+    disable_auto_install,
+    enable_auto_install,
+    get_auto_install_config,
+    install_package,
+    is_auto_install_enabled,
+    rebuild_module_cache,
+    set_pip_extra_args,
+    set_pip_index,
+)
+
+# Import proxy classes
+from ._proxy import (
+    LazyModule,
+    LazyProxy,
+    LazySubmodule,
+    LazySymbol,
+    _get_lazy_module,
+    lazy,
+)
 
 # ============== Module-level __getattr__ ==============
 
@@ -331,8 +328,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
 
     if _failed:
         raise AttributeError(
-            f"module '{__name__}' failed to initialize: {_error}. "
-            f"Cannot access '{name}'."
+            f"module '{__name__}' failed to initialize: {_error}. Cannot access '{name}'."
         )
 
     if name in _RESERVED_NAMES:
@@ -346,7 +342,8 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
             del _NEGATIVE_CACHE[name]
 
     # 1. Check lazy function registry (symbol, which, help, config, etc.)
-    from ._lazy_registry import has as _registry_has, resolve as _registry_resolve
+    from ._lazy_registry import has as _registry_has
+    from ._lazy_registry import resolve as _registry_resolve
 
     if _registry_has(name):
         return _registry_resolve(name)
@@ -372,6 +369,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
 
             if _DEBUG_MODE:
                 import logging
+
                 logging.info(
                     f"[laziest-import] Auto-resolved symbol '{name}' -> "
                     f"{symbol_match.module_name}.{symbol_match.symbol_name}"
@@ -436,49 +434,111 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
 
 # Names available via deprecated import path (still work with FutureWarning)
 _OLD_API_NAMES = [
-    "list_loaded", "list_available", "get_module", "clear_cache",
-    "get_version", "reload_module",
-    "enable_auto_search", "disable_auto_search", "is_auto_search_enabled",
-    "search_module", "search_class",
-    "enable_debug_mode", "disable_debug_mode", "is_debug_mode",
-    "get_import_stats", "reset_import_stats",
-    "enable_symbol_search", "disable_symbol_search", "is_symbol_search_enabled",
-    "search_symbol", "rebuild_symbol_index", "get_symbol_search_config",
-    "get_symbol_cache_info", "clear_symbol_cache",
-    "set_symbol_preference", "get_symbol_preference", "clear_symbol_preference",
+    "list_loaded",
+    "list_available",
+    "get_module",
+    "clear_cache",
+    "get_version",
+    "reload_module",
+    "enable_auto_search",
+    "disable_auto_search",
+    "is_auto_search_enabled",
+    "search_module",
+    "search_class",
+    "enable_debug_mode",
+    "disable_debug_mode",
+    "is_debug_mode",
+    "get_import_stats",
+    "reset_import_stats",
+    "enable_symbol_search",
+    "disable_symbol_search",
+    "is_symbol_search_enabled",
+    "search_symbol",
+    "rebuild_symbol_index",
+    "get_symbol_search_config",
+    "get_symbol_cache_info",
+    "clear_symbol_cache",
+    "set_symbol_preference",
+    "get_symbol_preference",
+    "clear_symbol_preference",
     "list_symbol_conflicts",
-    "set_module_priority", "get_module_priority",
-    "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
-    "get_symbol_resolution_config", "get_loaded_modules_context",
-    "search_with_sharding", "enable_sharding", "disable_sharding",
-    "get_sharding_config", "clear_shard_cache",
+    "set_module_priority",
+    "get_module_priority",
+    "enable_auto_symbol_resolution",
+    "disable_auto_symbol_resolution",
+    "get_symbol_resolution_config",
+    "get_loaded_modules_context",
+    "search_with_sharding",
+    "enable_sharding",
+    "disable_sharding",
+    "get_sharding_config",
+    "clear_shard_cache",
     "build_symbol_index_incremental",
-    "enable_incremental_index", "enable_background_build",
-    "enable_cache_compression", "get_incremental_config", "get_preheat_config",
-    "set_cache_config", "get_cache_config", "get_cache_stats",
-    "reset_cache_stats", "invalidate_package_cache",
-    "enable_file_cache", "disable_file_cache", "is_file_cache_enabled",
-    "clear_file_cache", "get_file_cache_info", "force_save_cache",
-    "set_cache_dir", "get_cache_dir", "reset_cache_dir",
-    "get_package_version", "get_all_package_versions",
-    "get_laziest_import_version", "get_cache_version",
-    "reload_aliases", "export_aliases", "validate_aliases",
-    "install_package", "rebuild_module_cache",
-    "enable_auto_install", "disable_auto_install", "is_auto_install_enabled",
-    "get_auto_install_config", "set_pip_index", "set_pip_extra_args",
-    "import_async", "import_multiple_async",
-    "enable_retry", "disable_retry", "is_retry_enabled",
-    "which", "which_all",
-    "load_rc_config", "get_rc_value", "create_rc_file", "get_rc_info",
+    "enable_incremental_index",
+    "enable_background_build",
+    "enable_cache_compression",
+    "get_incremental_config",
+    "get_preheat_config",
+    "set_cache_config",
+    "get_cache_config",
+    "get_cache_stats",
+    "reset_cache_stats",
+    "invalidate_package_cache",
+    "enable_file_cache",
+    "disable_file_cache",
+    "is_file_cache_enabled",
+    "clear_file_cache",
+    "get_file_cache_info",
+    "force_save_cache",
+    "set_cache_dir",
+    "get_cache_dir",
+    "reset_cache_dir",
+    "get_package_version",
+    "get_all_package_versions",
+    "get_laziest_import_version",
+    "get_cache_version",
+    "reload_aliases",
+    "export_aliases",
+    "validate_aliases",
+    "install_package",
+    "rebuild_module_cache",
+    "enable_auto_install",
+    "disable_auto_install",
+    "is_auto_install_enabled",
+    "get_auto_install_config",
+    "set_pip_index",
+    "set_pip_extra_args",
+    "import_async",
+    "import_multiple_async",
+    "enable_retry",
+    "disable_retry",
+    "is_retry_enabled",
+    "which",
+    "which_all",
+    "load_rc_config",
+    "get_rc_value",
+    "create_rc_file",
+    "get_rc_info",
     "reload_rc_config",
-    "list_module_symbols", "get_module_info", "search_in_module",
-    "start_profiling", "stop_profiling", "get_profile_report",
+    "list_module_symbols",
+    "get_module_info",
+    "search_in_module",
+    "start_profiling",
+    "stop_profiling",
+    "get_profile_report",
     "print_profile_report",
-    "analyze_file", "analyze_source", "analyze_directory",
-    "save_preferences", "load_preferences", "apply_preferences",
+    "analyze_file",
+    "analyze_source",
+    "analyze_directory",
+    "save_preferences",
+    "load_preferences",
+    "apply_preferences",
     "clear_preferences",
-    "start_background_index_build", "is_index_building", "wait_for_index",
-    "set_background_timeout", "get_background_timeout",
+    "start_background_index_build",
+    "is_index_building",
+    "wait_for_index",
+    "set_background_timeout",
+    "get_background_timeout",
 ]
 
 
@@ -603,8 +663,7 @@ def _do_initialize() -> None:
 
         if _config_module._INIT_FAILED:
             raise RuntimeError(
-                f"laziest-import initialization previously failed: "
-                f"{_config_module._INIT_ERROR}"
+                f"laziest-import initialization previously failed: {_config_module._INIT_ERROR}"
             )
 
         _config_module._INITIALIZING = True
@@ -624,16 +683,28 @@ def _do_initialize() -> None:
             from ._lazy_registry import register as _register_lazy
 
             _symbol_funcs = [
-                "search_symbol", "enable_symbol_search", "disable_symbol_search",
-                "is_symbol_search_enabled", "rebuild_symbol_index",
-                "get_symbol_search_config", "get_symbol_cache_info",
-                "set_symbol_preference", "get_symbol_preference",
-                "clear_symbol_preference", "list_symbol_conflicts",
-                "set_module_priority", "get_module_priority",
-                "enable_auto_symbol_resolution", "disable_auto_symbol_resolution",
-                "get_symbol_resolution_config", "get_loaded_modules_context",
-                "build_symbol_index_incremental", "search_with_sharding",
-                "enable_sharding", "disable_sharding", "get_sharding_config",
+                "search_symbol",
+                "enable_symbol_search",
+                "disable_symbol_search",
+                "is_symbol_search_enabled",
+                "rebuild_symbol_index",
+                "get_symbol_search_config",
+                "get_symbol_cache_info",
+                "set_symbol_preference",
+                "get_symbol_preference",
+                "clear_symbol_preference",
+                "list_symbol_conflicts",
+                "set_module_priority",
+                "get_module_priority",
+                "enable_auto_symbol_resolution",
+                "disable_auto_symbol_resolution",
+                "get_symbol_resolution_config",
+                "get_loaded_modules_context",
+                "build_symbol_index_incremental",
+                "search_with_sharding",
+                "enable_sharding",
+                "disable_sharding",
+                "get_sharding_config",
                 "clear_shard_cache",
             ]
             for _fn in _symbol_funcs:
@@ -644,21 +715,29 @@ def _do_initialize() -> None:
             _register_lazy("help", "laziest_import._help")
 
             _bg_funcs = [
-                "start_background_index_build", "is_index_building",
-                "wait_for_index", "set_background_timeout", "get_background_timeout",
+                "start_background_index_build",
+                "is_index_building",
+                "wait_for_index",
+                "set_background_timeout",
+                "get_background_timeout",
             ]
             for _fn in _bg_funcs:
                 _register_lazy(_fn, "laziest_import._lazy_index")
 
             _rc_funcs = [
-                "load_rc_config", "get_rc_value", "create_rc_file",
-                "get_rc_info", "reload_rc_config",
+                "load_rc_config",
+                "get_rc_value",
+                "create_rc_file",
+                "get_rc_info",
+                "reload_rc_config",
             ]
             for _fn in _rc_funcs:
                 _register_lazy(_fn, "laziest_import._rcconfig")
 
             _intro_funcs = [
-                "list_module_symbols", "get_module_info", "search_in_module",
+                "list_module_symbols",
+                "get_module_info",
+                "search_in_module",
             ]
             for _fn in _intro_funcs:
                 _register_lazy(_fn, "laziest_import._introspect")
@@ -706,7 +785,7 @@ def easter_egg(name: str = "default") -> str:
         messages = eggs[name]
         return random.choice(messages) if len(messages) > 1 else messages[0]
     else:
-        available = ", ".join(f'"{k}"' for k in eggs.keys())
+        available = ", ".join(f'"{k}"' for k in eggs)
         return f"[?] Unknown easter egg '{name}'. Try one of: {available}"
 
 

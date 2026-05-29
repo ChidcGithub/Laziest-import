@@ -35,12 +35,20 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # Direct imports for functions not exposed via OOP API
-from laziest_import._cache import invalidate_package_cache, get_incremental_config, reset_cache_stats
+from laziest_import._cache import (
+    invalidate_package_cache,
+    get_incremental_config,
+    reset_cache_stats,
+)
 from laziest_import._config import reset_all
 from laziest_import._api._config import reset_import_stats
 from laziest_import._symbol import (
-    get_sharding_config, enable_sharding, disable_sharding,
-    clear_shard_cache, set_module_priority, get_module_priority,
+    get_sharding_config,
+    enable_sharding,
+    disable_sharding,
+    clear_shard_cache,
+    set_module_priority,
+    get_module_priority,
 )
 from laziest_import._introspect import get_module_info
 from laziest_import._install import set_pip_index, set_pip_extra_args
@@ -201,7 +209,9 @@ class TestRealWorldScenario_AliasManagement:
         result = validate_aliases_importable({"stdlib_os": "os"})
         assert "stdlib_os" in result["importable"]
 
-        result = validate_aliases_importable({"nonexistent": "this_module_definitely_does_not_exist_xyz123"})
+        result = validate_aliases_importable(
+            {"nonexistent": "this_module_definitely_does_not_exist_xyz123"}
+        )
         assert "nonexistent" in result["not_importable"]
 
     def test_export_aliases(self):
@@ -588,7 +598,7 @@ class TestRealWorldScenario_DebugAndStats:
 
         # Reset stats first
         reset_import_stats()
-        
+
         # Clear cache to ensure fresh import
         lz.cache.clear()
 
@@ -693,7 +703,17 @@ class TestRealWorldScenario_HelpSystem:
         """Test help() with specific topics."""
         from laziest_import import help
 
-        topics = ["quickstart", "lazy", "alias", "symbol", "cache", "config", "async", "hooks", "api"]
+        topics = [
+            "quickstart",
+            "lazy",
+            "alias",
+            "symbol",
+            "cache",
+            "config",
+            "async",
+            "hooks",
+            "api",
+        ]
 
         for topic in topics:
             result = help(topic)
@@ -740,7 +760,7 @@ class TestRealWorldScenario_BackgroundIndex:
         from laziest_import import lz
 
         original = lz.background.timeout
-        
+
         lz.background.timeout = 120.0
         assert lz.background.timeout == 120.0
 
@@ -1147,7 +1167,7 @@ class TestRealWorldScenario_ComprehensiveWorkflow:
         # Reset state for clean test
         lz.cache.clear()
         reset_import_stats()
-        
+
         # Setup: Enable features
         lz.config.debug = True
         lz.config.auto_search = True
@@ -1176,6 +1196,7 @@ class TestRealWorldScenario_ComprehensiveWorkflow:
 
         # Help: Get help
         from laziest_import import help
+
         help_text = help("quickstart")
         assert len(help_text) > 0
 

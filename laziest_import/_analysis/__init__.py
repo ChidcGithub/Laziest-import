@@ -15,11 +15,10 @@ from typing import List, Optional
 
 # Pre-analysis
 from ._preanalyze import (
-    PreAnalysisResult,
     DependencyPreAnalyzer,
+    PreAnalysisResult,
     _NameVisitor,
 )
-
 
 _analyzer_instance: Optional[DependencyPreAnalyzer] = None
 
@@ -44,23 +43,34 @@ def analyze_directory(
 ) -> List[PreAnalysisResult]:
     return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
 
+
 # Profiler
-from ._profiler import (
-    ModuleProfile,
-    ProfileReport,
-    ImportProfiler,
-    start_profiling,
-    stop_profiling,
-    get_profile_report,
-    print_profile_report,
+# Benchmark
+from ._benchmark import (
+    BenchmarkReport,
+    BenchmarkResult,
+    BenchmarkRunner,
+    ImportComparison,
+    benchmark,
+    benchmark_imports,
+    print_benchmark_report,
 )
 
 # Conflict visualization
 from ._conflict import (
     SymbolConflict,
     find_symbol_conflicts,
-    show_conflicts,
     get_conflicts_summary,
+    show_conflicts,
+)
+
+# Dependency tree analysis
+from ._dependency import (
+    DependencyAnalyzer,
+    DependencyNode,
+    DependencyTree,
+    dependency_tree,
+    print_dependency_tree,
 )
 
 # Environment detection
@@ -72,35 +82,24 @@ from ._environment import (
 
 # Preferences persistence
 from ._preferences import (
-    save_preferences,
-    load_preferences,
     apply_preferences,
     clear_preferences,
     get_preferences_path,
-)
-
-# Dependency tree analysis
-from ._dependency import (
-    DependencyNode,
-    DependencyTree,
-    DependencyAnalyzer,
-    dependency_tree,
-    print_dependency_tree,
-)
-
-# Benchmark
-from ._benchmark import (
-    BenchmarkResult,
-    BenchmarkReport,
-    ImportComparison,
-    BenchmarkRunner,
-    benchmark,
-    benchmark_imports,
-    print_benchmark_report,
+    load_preferences,
+    save_preferences,
 )
 
 # Internal profiler instance (for internal use)
-from ._profiler import _profiler
+from ._profiler import (
+    ImportProfiler,
+    ModuleProfile,
+    ProfileReport,
+    _profiler,
+    get_profile_report,
+    print_profile_report,
+    start_profiling,
+    stop_profiling,
+)
 
 __all__ = [
     # Pre-analysis

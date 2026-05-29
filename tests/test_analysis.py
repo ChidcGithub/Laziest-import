@@ -36,29 +36,27 @@ class TestDependencyPreAnalyzer:
 
     def test_analyze_source(self):
         """Test analyzing source code."""
-        code = '''
+        code = """
 import numpy as np
 import pandas as pd
 from os import path
-'''
+"""
         result = lz.analyze.code(code)
         assert result is not None
         assert hasattr(result, "predicted_imports")
 
     def test_analyze_source_with_used_symbols(self):
         """Test analyzing source for used symbols."""
-        code = '''
+        code = """
 np.array([1, 2, 3])
 pd.DataFrame()
-'''
+"""
         result = lz.analyze.code(code)
         assert hasattr(result, "used_symbols")
 
     def test_analyze_file(self):
         """Test analyzing a file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("import math\nimport os\n")
             temp_path = f.name
 
@@ -249,7 +247,7 @@ class TestPreAnalysisResult:
             file_path="test.py",
             predicted_imports={"numpy", "pandas"},
             used_symbols={"np", "pd"},
-            confidence={"numpy": 0.9}
+            confidence={"numpy": 0.9},
         )
         assert result.file_path == "test.py"
         assert hasattr(result, "predicted_imports")

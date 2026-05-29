@@ -6,9 +6,11 @@ _LAZY_FUNCTION_REGISTRY: Dict[str, str] = {}
 _RESOLVED: Dict[str, Any] = {}
 _RESOLVED_LOCK = threading.Lock()
 
+
 def register(name: str, module_path: str) -> None:
     if name not in _LAZY_FUNCTION_REGISTRY:
         _LAZY_FUNCTION_REGISTRY[name] = module_path
+
 
 def resolve(name: str) -> Any:
     with _RESOLVED_LOCK:
@@ -23,8 +25,10 @@ def resolve(name: str) -> Any:
         _RESOLVED[name] = fn
     return fn
 
+
 def has(name: str) -> bool:
     return name in _LAZY_FUNCTION_REGISTRY
+
 
 def clear_resolved() -> None:
     with _RESOLVED_LOCK:

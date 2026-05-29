@@ -10,9 +10,20 @@ Tests cover:
 
 import pytest
 import asyncio
-from laziest_import._async_ops import import_async, import_multiple_async, enable_retry, disable_retry, is_retry_enabled
+from laziest_import._async_ops import (
+    import_async,
+    import_multiple_async,
+    enable_retry,
+    disable_retry,
+    is_retry_enabled,
+)
 from laziest_import._api._cache import clear_cache
-from laziest_import._hooks import add_pre_import_hook, add_post_import_hook, remove_pre_import_hook, remove_post_import_hook
+from laziest_import._hooks import (
+    add_pre_import_hook,
+    add_post_import_hook,
+    remove_pre_import_hook,
+    remove_post_import_hook,
+)
 
 
 class TestAsyncImport:
@@ -73,11 +84,7 @@ class TestMultipleAsyncImport:
     @pytest.mark.asyncio
     async def test_import_multiple_async_partial_failure(self):
         """Test async import with some failures."""
-        modules = await import_multiple_async([
-            "math",
-            "nonexistent_xyz123",
-            "json"
-        ])
+        modules = await import_multiple_async(["math", "nonexistent_xyz123", "json"])
 
         # Should have successful imports
         assert "math" in modules
@@ -100,7 +107,7 @@ class TestMultipleAsyncImport:
         import time
 
         modules = ["math", "json", "os", "sys", "re"]
-        
+
         start = time.perf_counter()
         result = await import_multiple_async(modules)
         elapsed = time.perf_counter() - start
@@ -164,6 +171,7 @@ class TestAsyncImportConcurrency:
     @pytest.mark.asyncio
     async def test_concurrent_async_imports(self):
         """Test multiple concurrent async imports."""
+
         async def import_task(name):
             return await import_async(name)
 
@@ -213,11 +221,7 @@ class TestAsyncImportErrorHandling:
     async def test_import_multiple_async_error_handling(self):
         """Test error handling in multiple async imports."""
         # Mix of valid and invalid
-        modules = await import_multiple_async([
-            "math",
-            "invalid_module_xyz",
-            "json"
-        ])
+        modules = await import_multiple_async(["math", "invalid_module_xyz", "json"])
 
         # Should still have valid modules
         assert "math" in modules
@@ -227,10 +231,7 @@ class TestAsyncImportErrorHandling:
     async def test_import_async_timeout(self):
         """Test async import with timeout."""
         try:
-            result = await asyncio.wait_for(
-                import_async("math"),
-                timeout=5.0
-            )
+            result = await asyncio.wait_for(import_async("math"), timeout=5.0)
             assert result is not None
         except asyncio.TimeoutError:
             pytest.fail("Import timed out unexpectedly")
@@ -260,6 +261,7 @@ class TestAsyncImportCaching:
         from laziest_import import lz
 
         from laziest_import._api._config import reset_import_stats
+
         reset_import_stats()
 
         await import_async("os")

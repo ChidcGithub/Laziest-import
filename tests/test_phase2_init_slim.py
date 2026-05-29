@@ -9,6 +9,7 @@ class TestLazyRegistry:
 
     def setup_method(self) -> None:
         import laziest_import._lazy_registry as reg
+
         reg.clear_resolved()
 
     def test_register_and_resolve(self):
@@ -19,6 +20,7 @@ class TestLazyRegistry:
 
         result = resolve("__version__")
         from laziest_import._config import __version__
+
         assert result == __version__
 
     def test_resolve_caches(self):
@@ -42,12 +44,14 @@ class TestLazyRegistry:
 
     def test_has_returns_false_for_unregistered(self):
         from laziest_import._lazy_registry import has, clear_resolved
+
         clear_resolved()
         assert not has("__nonexistent_function_xyz__")
 
     def test_resolve_unregistered_raises(self):
         from laziest_import._lazy_registry import resolve
         from laziest_import._lazy_registry import clear_resolved
+
         clear_resolved()
         try:
             resolve("__nonexistent_function_xyz__")
@@ -62,6 +66,7 @@ class TestLazyRegistry:
         register("__version__", "laziest_import._hooks")
         result = resolve("__version__")
         from laziest_import._config import __version__
+
         assert result == __version__
 
     def test_clear_resolved(self):
@@ -79,6 +84,7 @@ class TestHooksModule:
 
     def _count_hooks(self) -> int:
         from laziest_import._config import _PRE_IMPORT_HOOKS, _POST_IMPORT_HOOKS
+
         return len(_PRE_IMPORT_HOOKS), len(_POST_IMPORT_HOOKS)
 
     def test_module_level_add_pre_hook(self):
@@ -114,7 +120,11 @@ class TestHooksModule:
         clear_import_hooks()
 
     def test_remove_pre_hook(self):
-        from laziest_import._hooks import add_pre_import_hook, remove_pre_import_hook, clear_import_hooks
+        from laziest_import._hooks import (
+            add_pre_import_hook,
+            remove_pre_import_hook,
+            clear_import_hooks,
+        )
 
         clear_import_hooks()
 
@@ -127,7 +137,11 @@ class TestHooksModule:
         assert pre_after == 0
 
     def test_remove_post_hook(self):
-        from laziest_import._hooks import add_post_import_hook, remove_post_import_hook, clear_import_hooks
+        from laziest_import._hooks import (
+            add_post_import_hook,
+            remove_post_import_hook,
+            clear_import_hooks,
+        )
 
         clear_import_hooks()
 
@@ -149,7 +163,11 @@ class TestHooksModule:
         assert remove_post_import_hook(my_hook) is False
 
     def test_clear_import_hooks(self):
-        from laziest_import._hooks import add_pre_import_hook, add_post_import_hook, clear_import_hooks
+        from laziest_import._hooks import (
+            add_pre_import_hook,
+            add_post_import_hook,
+            clear_import_hooks,
+        )
 
         clear_import_hooks()
 
@@ -170,8 +188,8 @@ class TestHooksModule:
     def test_hooks_accessible_via_module(self):
         from laziest_import import lz
 
-        assert hasattr(lz.hooks, 'pre')
-        assert hasattr(lz.hooks, 'post')
+        assert hasattr(lz.hooks, "pre")
+        assert hasattr(lz.hooks, "post")
         assert callable(lz.hooks.clear)
 
         def dummy(name: str) -> None:
@@ -190,14 +208,17 @@ class TestAnalysisFunctions:
 
     def test_analyze_file_importable(self):
         from laziest_import._analysis import analyze_file
+
         assert callable(analyze_file)
 
     def test_analyze_source_importable(self):
         from laziest_import._analysis import analyze_source
+
         assert callable(analyze_source)
 
     def test_analyze_directory_importable(self):
         from laziest_import._analysis import analyze_directory
+
         assert callable(analyze_directory)
 
     def test_analyze_source_returns_result(self):
@@ -257,16 +278,19 @@ class TestInitGetattr:
 
     def test_lazy_function_via_getattr(self):
         import laziest_import
+
         fn = laziest_import.__getattr__("search_symbol")
         assert callable(fn)
 
     def test_alias_via_getattr(self):
         import laziest_import
+
         mod = laziest_import.__getattr__("numpy")
         assert mod is not None
 
     def test_help_via_getattr(self):
         import laziest_import
+
         fn = laziest_import.__getattr__("help")
         assert callable(fn)
 
@@ -275,6 +299,7 @@ class TestInitGetattr:
         from laziest_import._config import _NEGATIVE_CACHE, _NEGATIVE_CACHE_TTL
 
         import time
+
         _NEGATIVE_CACHE.clear()
         try:
             laziest_import.__getattr__("__clearly_nonexistent_xyz__")

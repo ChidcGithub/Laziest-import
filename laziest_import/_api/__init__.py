@@ -13,59 +13,58 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .. import _config as _config_module
 from .._alias import _ALIAS_MAP
-from .._proxy import _get_lazy_module
-from .._fuzzy import _search_module, _levenshtein_distance
-from .._symbol import _search_symbol_enhanced, _handle_symbol_not_found
 from .._cache import get_package_version
-
-# ─── Import namespace classes from sub-modules ───────────────
-
-from ._module import (
-    ModuleNamespace,
-    list_loaded,
-    list_available,
-    get_module,
-    reload_module,
-)
+from .._fuzzy import _levenshtein_distance, _search_module
+from .._proxy import _get_lazy_module
+from .._symbol import _handle_symbol_not_found, _search_symbol_enhanced
 from ._alias import AliasNamespace
-from ._symbol import (
-    SymbolNamespace,
-    SymbolIndexNamespace,
-    SymbolConfigNamespace,
-)
+from ._analyze import AnalyzeNamespace, ProfileNamespace
+from ._async import AsyncNamespace
+from ._background import BackgroundNamespace
 from ._cache import (
-    CacheNamespace,
-    CacheSymbolsNamespace,
-    CacheFilesNamespace,
-    CacheStatsNamespace,
     CacheConfigNamespace,
+    CacheFilesNamespace,
+    CacheNamespace,
+    CacheStatsNamespace,
+    CacheSymbolsNamespace,
     clear_cache,
 )
 from ._config import (
-    ConfigNamespace,
-    ConfigContext,
     AutoInstallConfig,
-    RetryConfig,
-    SymbolSearchConfig,
-    SymbolResolutionConfig,
     CacheConfig,
+    ConfigContext,
+    ConfigNamespace,
     ModuleSkipConfig,
-    enable_debug_mode,
-    disable_debug_mode,
-    is_debug_mode,
-    enable_auto_search,
+    RetryConfig,
+    SymbolResolutionConfig,
+    SymbolSearchConfig,
     disable_auto_search,
-    is_auto_search_enabled,
+    disable_debug_mode,
+    enable_auto_search,
+    enable_debug_mode,
     get_import_stats,
+    is_auto_search_enabled,
+    is_debug_mode,
     reset_import_stats,
 )
 from ._hooks import HookList, HookNamespace
-from ._analyze import AnalyzeNamespace, ProfileNamespace
-from ._async import AsyncNamespace
-from ._install import InstallNamespace, ExportNamespace
-from ._background import BackgroundNamespace
-from ._version import VersionNamespace, get_version
+from ._install import ExportNamespace, InstallNamespace
+
+# ─── Import namespace classes from sub-modules ───────────────
+from ._module import (
+    ModuleNamespace,
+    get_module,
+    list_available,
+    list_loaded,
+    reload_module,
+)
 from ._rcconfig import RCConfigNamespace
+from ._symbol import (
+    SymbolConfigNamespace,
+    SymbolIndexNamespace,
+    SymbolNamespace,
+)
+from ._version import VersionNamespace, get_version
 
 # ─── Global config instance placeholder ──────────────────────
 
@@ -75,6 +74,7 @@ _global_config: Optional["ConfigNamespace"] = None
 # ═══════════════════════════════════════════════════════════════
 #  LazyImport (main class)
 # ═══════════════════════════════════════════════════════════════
+
 
 class LazyImport:
     """
@@ -221,6 +221,7 @@ class LazyImport:
             match = _search_symbol_enhanced(name, auto=True)
             if match:
                 from .._proxy._symbol import LazySymbol
+
                 return LazySymbol(
                     symbol_name=match.symbol_name,
                     module_name=match.module_name,
@@ -266,10 +267,20 @@ class LazyImport:
 
     def __dir__(self) -> List[str]:
         base = [
-            "module", "alias", "symbol", "cache",
-            "config", "analyze", "profile", "hooks",
-            "async_", "install", "export", "background",
-            "version", "rc",
+            "module",
+            "alias",
+            "symbol",
+            "cache",
+            "config",
+            "analyze",
+            "profile",
+            "hooks",
+            "async_",
+            "install",
+            "export",
+            "background",
+            "version",
+            "rc",
         ]
         base.extend(_ALIAS_MAP.keys())
         return sorted(set(base))

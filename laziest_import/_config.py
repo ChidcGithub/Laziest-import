@@ -11,18 +11,17 @@ Setters (which do `mod.X = value` via sys.modules) live in _state_setters.py
 to avoid circular imports.
 """
 
-from typing import Dict, List, Optional, Set, Any, Tuple, Callable
-from pathlib import Path
 import json
-import threading
 import re
-import sys
+import threading
 from dataclasses import dataclass, field
-
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 # ============================================================
 # Version loading
 # ============================================================
+
 
 def _load_version_config() -> Dict[str, Any]:
     vf = Path(__file__).parent / "version.json"
@@ -99,6 +98,7 @@ def check_version_range(
 # ============================================================
 # Dataclasses (imported widely)
 # ============================================================
+
 
 @dataclass
 class ImportStats:
@@ -207,9 +207,12 @@ _IMPORT_CONTEXT_LOCK = threading.Lock()
 # Stats
 _IMPORT_STATS: ImportStats = ImportStats()
 _CACHE_STATS: Dict[str, Any] = {
-    "symbol_hits": 0, "symbol_misses": 0,
-    "module_hits": 0, "module_misses": 0,
-    "last_build_time": 0.0, "build_count": 0,
+    "symbol_hits": 0,
+    "symbol_misses": 0,
+    "module_hits": 0,
+    "module_misses": 0,
+    "last_build_time": 0.0,
+    "build_count": 0,
 }
 
 # Hooks
@@ -218,21 +221,32 @@ _POST_IMPORT_HOOKS: List[Callable[[str, Any], None]] = []
 
 # Retry config
 _RETRY_CONFIG: Dict[str, Any] = {
-    "enabled": False, "max_retries": 3,
-    "retry_delay": 0.5, "retry_modules": set(),
+    "enabled": False,
+    "max_retries": 3,
+    "retry_delay": 0.5,
+    "retry_modules": set(),
 }
 
 # Auto-install config
 _AUTO_INSTALL_CONFIG: Dict[str, Any] = {
-    "enabled": False, "interactive": True, "index": None,
-    "extra_args": [], "prefer_uv": False, "silent": False,
+    "enabled": False,
+    "interactive": True,
+    "index": None,
+    "extra_args": [],
+    "prefer_uv": False,
+    "silent": False,
 }
 
 # Symbol search config
 _SYMBOL_SEARCH_CONFIG: Dict[str, Any] = {
-    "enabled": True, "interactive": True, "exact_params": False,
-    "max_results": 5, "search_depth": 1, "cache_enabled": True,
-    "skip_private": True, "skip_stdlib": False,
+    "enabled": True,
+    "interactive": True,
+    "exact_params": False,
+    "max_results": 5,
+    "search_depth": 1,
+    "cache_enabled": True,
+    "skip_private": True,
+    "skip_stdlib": False,
 }
 
 # Symbol cache
@@ -254,45 +268,73 @@ _MODULE_PRIORITY: Dict[str, int] = {}
 
 # Symbol preferences
 _SYMBOL_PREFERENCES: Dict[str, str] = {
-    "DataFrame": "pandas", "Series": "pandas", "array": "numpy",
-    "ndarray": "numpy", "Tensor": "torch", "read_csv": "pandas",
-    "read_excel": "pandas", "read_json": "pandas", "concat": "pandas",
-    "merge": "pandas", "figure": "matplotlib.pyplot", "subplot": "matplotlib.pyplot",
-    "plot": "matplotlib.pyplot", "scatter": "matplotlib.pyplot",
-    "hist": "matplotlib.pyplot", "imshow": "matplotlib.pyplot",
-    "show": "matplotlib.pyplot", "savefig": "matplotlib.pyplot",
+    "DataFrame": "pandas",
+    "Series": "pandas",
+    "array": "numpy",
+    "ndarray": "numpy",
+    "Tensor": "torch",
+    "read_csv": "pandas",
+    "read_excel": "pandas",
+    "read_json": "pandas",
+    "concat": "pandas",
+    "merge": "pandas",
+    "figure": "matplotlib.pyplot",
+    "subplot": "matplotlib.pyplot",
+    "plot": "matplotlib.pyplot",
+    "scatter": "matplotlib.pyplot",
+    "hist": "matplotlib.pyplot",
+    "imshow": "matplotlib.pyplot",
+    "show": "matplotlib.pyplot",
+    "savefig": "matplotlib.pyplot",
 }
 
 # Symbol resolution config
 _SYMBOL_RESOLUTION_CONFIG: Dict[str, Any] = {
-    "auto_symbol": True, "auto_threshold": 0.7, "conflict_threshold": 0.3,
-    "symbol_misspelling": True, "context_aware": True,
-    "warn_on_conflict": True, "save_preferences": True,
+    "auto_symbol": True,
+    "auto_threshold": 0.7,
+    "conflict_threshold": 0.3,
+    "symbol_misspelling": True,
+    "context_aware": True,
+    "warn_on_conflict": True,
+    "save_preferences": True,
     "strict": False,
 }
 
 # Cache config
 _CACHE_CONFIG: Dict[str, Any] = {
-    "enabled": True, "max_size_mb": 100, "cleanup_threshold": 0.8,
-    "file_cache_enabled": True, "symbol_index_enabled": True,
-    "persist_across_sessions": True, "symbol_index_ttl": 86400,
-    "stdlib_cache_ttl": 604800, "third_party_cache_ttl": 86400,
-    "enable_compression": False, "max_cache_size_mb": 100,
+    "enabled": True,
+    "max_size_mb": 100,
+    "cleanup_threshold": 0.8,
+    "file_cache_enabled": True,
+    "symbol_index_enabled": True,
+    "persist_across_sessions": True,
+    "symbol_index_ttl": 86400,
+    "stdlib_cache_ttl": 604800,
+    "third_party_cache_ttl": 86400,
+    "enable_compression": False,
+    "max_cache_size_mb": 100,
 }
 
 # Incremental & background config
 _INCREMENTAL_INDEX_CONFIG: Dict[str, Any] = {
-    "enabled": True, "check_version": True, "check_mtime": False,
-    "background_build": True, "background_timeout": 60.0,
+    "enabled": True,
+    "check_version": True,
+    "check_mtime": False,
+    "background_build": True,
+    "background_timeout": 60.0,
 }
 _MODULE_SKIP_CONFIG: Dict[str, Any] = {
-    "skip_test_modules": True, "skip_internal_modules": True,
-    "skip_large_modules": True, "large_module_threshold": 100,
+    "skip_test_modules": True,
+    "skip_internal_modules": True,
+    "skip_large_modules": True,
+    "large_module_threshold": 100,
     "skip_modules_file": None,
 }
 _PREHEAT_CONFIG: Dict[str, Any] = {
-    "enabled": True, "async_index_build": True,
-    "preload_common_modules": True, "max_preload_threads": 4,
+    "enabled": True,
+    "async_index_build": True,
+    "preload_common_modules": True,
+    "max_preload_threads": 4,
 }
 
 # Background index state
@@ -304,11 +346,25 @@ _TRACKED_PACKAGES: Dict[str, Dict[str, Any]] = {}
 
 # Reserved names
 _RESERVED_NAMES: Set[str] = {
-    "__name__", "__doc__", "__package__", "__loader__",
-    "__spec__", "__path__", "__file__", "__cached__",
-    "__builtins__", "__import__", "__all__", "__version__",
-    "__author__", "__email__", "__license__", "__copyright__",
-    "__credits__", "__maintainer__", "__status__",
+    "__name__",
+    "__doc__",
+    "__package__",
+    "__loader__",
+    "__spec__",
+    "__path__",
+    "__file__",
+    "__cached__",
+    "__builtins__",
+    "__import__",
+    "__all__",
+    "__version__",
+    "__author__",
+    "__email__",
+    "__license__",
+    "__copyright__",
+    "__credits__",
+    "__maintainer__",
+    "__status__",
 }
 
 
@@ -319,29 +375,49 @@ _RESERVED_NAMES: Set[str] = {
 # These are imported at the end of this module to avoid circular deps.
 # They are declared here for documentation/IDE support.
 
+
 def _set_symbol_index_built(value: bool) -> None: ...
 def _set_stdlib_cache_built(value: bool) -> None: ...
 def _set_third_party_cache_built(value: bool) -> None: ...
 def _set_background_index_building(value: bool) -> None: ...
 def reset_all() -> None: ...
-def _load_priorities_from_file() -> Dict[str, int]: ...
-def get_importing_modules() -> Set[str]: ...
+def _load_priorities_from_file() -> Dict[str, int]:
+    return {}
+
+
+def get_importing_modules() -> Set[str]:
+    return set()
 
 
 # ── Dynamically replace stubs with real implementations ──────────────
 
+
 def _activate_state_setters() -> None:
     """Replace stub functions with real implementations."""
+    import laziest_import._config as _self
+
+    from ._state_setters import (
+        _load_priorities_from_file as _lpf,
+    )
+    from ._state_setters import (
+        _set_background_index_building as _s4,
+    )
+    from ._state_setters import (
+        _set_stdlib_cache_built as _s2,
+    )
     from ._state_setters import (
         _set_symbol_index_built as _s1,
-        _set_stdlib_cache_built as _s2,
+    )
+    from ._state_setters import (
         _set_third_party_cache_built as _s3,
-        _set_background_index_building as _s4,
-        reset_all as _r,
-        _load_priorities_from_file as _lpf,
+    )
+    from ._state_setters import (
         get_importing_modules as _gim,
     )
-    import laziest_import._config as _self
+    from ._state_setters import (
+        reset_all as _r,
+    )
+
     _self._set_symbol_index_built = _s1
     _self._set_stdlib_cache_built = _s2
     _self._set_third_party_cache_built = _s3

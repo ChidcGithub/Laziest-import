@@ -6,8 +6,8 @@ from typing import List
 
 from .. import _config
 from .._fuzzy import _search_module
-from ._module import LazyModule
 from ._factory import _get_lazy_module
+from ._module import LazyModule
 
 
 class LazyProxy:
@@ -27,6 +27,7 @@ class LazyProxy:
         df = lazy.pnda.DataFrame()         # pnda -> pandas
         net = lazy.nn.Linear(10, 5)        # nn -> torch.nn
     """
+
     __slots__ = ()
 
     def __getattr__(self, name: str) -> LazyModule:
@@ -45,9 +46,9 @@ class LazyProxy:
         if available:
             msg += f" Similar modules: {available}..."
         raise AttributeError(msg)
-    
+
     def __dir__(self) -> List[str]:
         return list(_config._ALIAS_MAP.keys())
-    
+
     def __repr__(self) -> str:
-        return f"<LazyProxy (auto-correction enabled)>"
+        return "<LazyProxy (auto-correction enabled)>"

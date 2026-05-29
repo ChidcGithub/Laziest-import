@@ -2,19 +2,19 @@
 Background index building for laziest-import.
 """
 
-from typing import Optional, Callable
-import time
 import logging
 import threading
+import time
+from typing import Callable, Optional
 
 from .. import _config
-
 
 # Lock for thread-safe background build state modification
 _BACKGROUND_BUILD_LOCK = threading.Lock()
 
 
 # ============== Background Index Building ==============
+
 
 def _start_background_index_build(callback: Optional[Callable[[], None]] = None) -> bool:
     """Start background symbol index build.
@@ -106,8 +106,8 @@ def get_preheat_config() -> dict:
 
 __all__ = [
     "_BACKGROUND_BUILD_LOCK",
-    "_start_background_index_build",
     "_is_background_index_building",
+    "_start_background_index_build",
     "_wait_for_background_index",
     "enable_background_build",
     "get_preheat_config",

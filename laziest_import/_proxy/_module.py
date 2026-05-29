@@ -2,13 +2,12 @@
 LazyModule class for lazy loading modules.
 """
 
-from typing import Any, List
-import sys
-import time
-import logging
-import importlib
 import asyncio
+import importlib
+import logging
+import time
 from types import ModuleType
+from typing import Any, List, Optional
 
 from .. import _config
 from .._cache import _record_module_load
@@ -26,9 +25,9 @@ class LazyModule:
 
     __slots__ = (
         "_alias",
-        "_module_name",
-        "_cached_module",
         "_auto_searched",
+        "_cached_module",
+        "_module_name",
         "_submodule_cache",
     )
 
@@ -69,9 +68,7 @@ class LazyModule:
                     hook(module_name)
                 except Exception as e:
                     if c._DEBUG_MODE:
-                        logging.warning(
-                            f"Pre-import hook failed for {module_name}: {e}"
-                        )
+                        logging.warning(f"Pre-import hook failed for {module_name}: {e}")
 
             start_time = time.perf_counter()
 
@@ -84,7 +81,7 @@ class LazyModule:
                 retry_delay = c._RETRY_CONFIG["retry_delay"]
                 retry_modules = c._RETRY_CONFIG["retry_modules"]
 
-                if retry_modules and name.split(".")[0] not in retry_modules:
+                if retry_modules and name.split(".", maxsplit=1)[0] not in retry_modules:
                     return importlib.import_module(name)
 
                 # Check if we're in an async context to avoid blocking
@@ -104,7 +101,7 @@ class LazyModule:
                         )
                     return importlib.import_module(name)
 
-                last_error = None
+                last_error: Optional[ImportError] = None
                 for attempt in range(max_retries + 1):
                     try:
                         return importlib.import_module(name)
@@ -112,11 +109,13 @@ class LazyModule:
                         last_error = e
                         if attempt < max_retries:
                             if c._DEBUG_MODE:
-                                logging.info(
-                                    f"Retry {attempt + 1}/{max_retries} for {name}"
-                                )
+                                logging.info(f"Retry {attempt + 1}/{max_retries} for {name}")
                             time.sleep(retry_delay)
-                raise last_error
+                raise (
+                    last_error
+                    if last_error is not None
+                    else ImportError(f"Failed to import {name}")
+                )
 
             try:
                 # Measure memory before import
@@ -163,14 +162,12 @@ class LazyModule:
 
                 object.__setattr__(self, "_cached_module", module)
 
-                for hook in c._POST_IMPORT_HOOKS:
+                for hook in c._POST_IMPORT_HOOKS:  # type: ignore[assignment]
                     try:
-                        hook(module_name, module)
+                        hook(module_name, module)  # type: ignore[call-arg]
                     except Exception as e:
                         if c._DEBUG_MODE:
-                            logging.warning(
-                                f"Post-import hook failed for {module_name}: {e}"
-                            )
+                            logging.warning(f"Post-import hook failed for {module_name}: {e}")
 
                 if c._DEBUG_MODE:
                     logging.info(
@@ -212,9 +209,7 @@ class LazyModule:
 
                     should_install = True
                     if c._AUTO_INSTALL_CONFIG["interactive"]:
-                        should_install = _interactive_install_confirm(
-                            module_name, pip_package
-                        )
+                        should_install = _interactive_install_confirm(module_name, pip_package)
 
                     if should_install:
                         success, message = _install_package_sync(
@@ -271,9 +266,7 @@ class LazyModule:
                 "__version__",
             }
             if name not in allowed_dunder:
-                raise AttributeError(
-                    f"'{type(self).__name__}' object has no attribute '{name}'"
-                )
+                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         module = self._get_module()
         attr = getattr(module, name)
@@ -304,6 +297,4 @@ class LazyModule:
         if callable(module):
             return module(*args, **kwargs)
         module_name = object.__getattribute__(self, "_module_name")
-        raise TypeError(
-            f"Module '{module_name}' ({type(module).__name__}) is not callable"
-        )
+        raise TypeError(f"Module '{module_name}' ({type(module).__name__}) is not callable")

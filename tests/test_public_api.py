@@ -247,7 +247,7 @@ class TestSearchClass:
         """Test searching for stdlib class."""
         from laziest_import import lz
 
-        result = lz.symbol.search("defaultdict", symbol_type='class')
+        result = lz.symbol.search("defaultdict", symbol_type="class")
         if result:
             assert isinstance(result[0].module_name, str)
             assert len(result[0].module_name) > 0
@@ -256,7 +256,7 @@ class TestSearchClass:
         """Test searching for non-existent class."""
         from laziest_import import lz
 
-        result = lz.symbol.search("ThisClassDoesNotExist12345", symbol_type='class')
+        result = lz.symbol.search("ThisClassDoesNotExist12345", symbol_type="class")
         assert result == []
 
 
@@ -274,9 +274,7 @@ class TestValidateAliasesImportable:
         """Test validating non-importable aliases."""
         from laziest_import._alias import validate_aliases_importable
 
-        result = validate_aliases_importable(
-            {"bad": "nonexistent_module_xyz123"}
-        )
+        result = validate_aliases_importable({"bad": "nonexistent_module_xyz123"})
         assert "bad" in result["not_importable"]
 
 

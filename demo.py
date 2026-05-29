@@ -1,16 +1,18 @@
 """
 Demo: exercise laziest-import from a user's perspective.
 """
+
 import os as _os
+
 _RUN_ID = _os.urandom(4).hex()
 
 from laziest_import import lz
 
 
 def section(title: str) -> None:
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {title}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 # ── 1. Basic info ──────────────────────────────────────────────
@@ -27,7 +29,7 @@ os_mod = lz.os
 print(f"lz.os == os: {os_mod.__name__}")
 
 np_mod = lz.module.numpy
-print(f"lz.module.numpy: {np_mod.__name__}, array: {np_mod.array([1,2,3])}")
+print(f"lz.module.numpy: {np_mod.__name__}, array: {np_mod.array([1, 2, 3])}")
 
 try:
     lz.nonexistent_xyzzy
@@ -108,7 +110,7 @@ print(f"cache.config.max_size_mb:          {lz.cache.config.max_size_mb}")
 # ── 7. Alias operations ────────────────────────────────────────
 section("7. Alias Operations")
 result = lz.alias.validate()
-valid = result.get('valid', [])
+valid = result.get("valid", [])
 print(f"alias.validate(): {len(valid)} valid")
 print(f"aliases:           {lz.alias}")
 
@@ -117,9 +119,11 @@ print(f"aliases:           {lz.alias}")
 section("8. Hooks")
 called = False
 
+
 def my_hook(name: str) -> None:
     global called
     called = f"Hook fired for '{name}'"
+
 
 lz.hooks.pre.add(my_hook)
 lz.hooks.pre("pandas")
@@ -143,6 +147,6 @@ print(f"rc:       {lz.rc}")
 
 
 # ── Done ───────────────────────────────────────────────────────
-print(f"\n{'='*60}")
+print(f"\n{'=' * 60}")
 print("  ALL DEMO SECTIONS COMPLETED SUCCESSFULLY")
-print(f"{'='*60}")
+print(f"{'=' * 60}")

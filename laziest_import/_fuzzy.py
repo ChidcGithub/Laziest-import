@@ -2,22 +2,20 @@
 Fuzzy matching and spelling correction for laziest-import.
 """
 
-from typing import Dict, List, Optional, Set, Any, Tuple
-from pathlib import Path
-import sys
-import json
 import importlib.util
+import json
 import logging
-import warnings
-
+import sys
 import threading
+import warnings
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from . import _config
 from ._config import (
-     check_version_range,
-     get_version_range,
- )
-
+    check_version_range,
+    get_version_range,
+)
 
 # ============== Mapping Cache ==============
 _MAPPING_CACHE: Dict[str, Any] = {}
@@ -76,9 +74,7 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
         return result
     except (json.JSONDecodeError, OSError) as e:
         if _config._DEBUG_MODE:
-            logging.warning(
-                f"[laziest-import] Failed to load mapping file {filename}: {e}"
-            )
+            logging.warning(f"[laziest-import] Failed to load mapping file {filename}: {e}")
         return {}
 
 
@@ -120,7 +116,7 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     if len(s2) == 0:
         return len(s1)
 
-    previous_row = range(len(s2) + 1)
+    previous_row = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -172,26 +168,26 @@ def _get_common_symbol_misspellings() -> Dict[str, str]:
 
 
 def _infer_context() -> Set[str]:
-     """Infer the current context by examining loaded modules."""
-     loaded = set()
+    """Infer the current context by examining loaded modules."""
+    loaded = set()
 
-     # Check already loaded lazy modules
-     for alias, lazy_mod in _config._LAZY_MODULES.items():
-         cached = object.__getattribute__(lazy_mod, "_cached_module")
-         if cached is not None:
-             module_name = object.__getattribute__(lazy_mod, "_module_name")
-             base_module = module_name.split(".")[0]
-             loaded.add(base_module)
+    # Check already loaded lazy modules
+    for alias, lazy_mod in _config._LAZY_MODULES.items():
+        cached = object.__getattribute__(lazy_mod, "_cached_module")
+        if cached is not None:
+            module_name = object.__getattribute__(lazy_mod, "_module_name")
+            base_module = module_name.split(".")[0]
+            loaded.add(base_module)
 
-     # Check sys.modules for already imported modules
-     alias_values = set(_config._ALIAS_MAP.values())
-     for mod_name in sys.modules.keys():
-         if mod_name and not mod_name.startswith("_"):
-             base_module = mod_name.split(".")[0]
-             # Consider all loaded modules as context, not just known ones
-             loaded.add(base_module)
+    # Check sys.modules for already imported modules
+    alias_values = set(_config._ALIAS_MAP.values())
+    for mod_name in sys.modules.keys():
+        if mod_name and not mod_name.startswith("_"):
+            base_module = mod_name.split(".")[0]
+            # Consider all loaded modules as context, not just known ones
+            loaded.add(base_module)
 
-     return loaded
+    return loaded
 
 
 def _check_common_suffix_match(name: str, module: str) -> bool:
@@ -311,9 +307,7 @@ def _search_module(name: str) -> Optional[str]:
         corrected = misspellings[name_lower]
         if corrected in known_modules:
             if _config._DEBUG_MODE:
-                logging.debug(
-                    f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'"
-                )
+                logging.debug(f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'")
             return corrected
         try:
             spec = importlib.util.find_spec(corrected)

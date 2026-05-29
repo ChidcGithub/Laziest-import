@@ -3,21 +3,21 @@ from typing import Any, Dict, Optional, Union
 
 from .. import _config
 from .._cache import (
+    clear_file_cache,
     clear_symbol_cache,
+    disable_file_cache,
+    enable_cache_compression,
+    enable_file_cache,
+    force_save_cache,
+    get_cache_config,
+    get_cache_dir,
     get_cache_stats,
+    get_file_cache_info,
+    is_file_cache_enabled,
+    reset_cache_dir,
     reset_cache_stats,
     set_cache_config,
-    get_cache_config,
-    clear_file_cache,
-    get_file_cache_info,
-    force_save_cache,
-    enable_file_cache,
-    disable_file_cache,
-    is_file_cache_enabled,
     set_cache_dir,
-    get_cache_dir,
-    reset_cache_dir,
-    enable_cache_compression,
 )
 from .._symbol import rebuild_symbol_index
 
@@ -204,6 +204,7 @@ class CacheConfigNamespace:
 
     def export(self, path: Optional[str] = None) -> str:
         import json
+
         data = dict(get_cache_config())
         if path:
             with open(path, "w", encoding="utf-8") as f:

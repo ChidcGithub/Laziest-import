@@ -63,3 +63,30 @@ asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "ignore::FutureWarning",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "SIM", "PL", "RUF"]
+ignore = [
+    "E501",
+    "E731",
+    "SIM101",
+    "PLR0913",
+    "S101",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.9"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = false
+disallow_untyped_defs = false
+check_untyped_defs = false

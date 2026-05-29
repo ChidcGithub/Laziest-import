@@ -1,6 +1,6 @@
 from typing import Callable
 
-from ._config import _PRE_IMPORT_HOOKS, _POST_IMPORT_HOOKS
+from ._config import _POST_IMPORT_HOOKS, _PRE_IMPORT_HOOKS
 
 
 def add_pre_import_hook(hook: Callable) -> None:

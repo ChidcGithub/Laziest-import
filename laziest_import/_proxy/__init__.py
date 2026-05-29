@@ -10,21 +10,21 @@ This package provides:
 - _get_lazy_module: Factory function for creating LazyModule proxies
 """
 
-from ._symbol import LazySymbol
+from ._factory import _MODULE_PROXY_LOCK, _get_lazy_module
 from ._module import LazyModule
-from ._submodule import LazySubmodule
 from ._proxy import LazyProxy
-from ._factory import _get_lazy_module, _MODULE_PROXY_LOCK
+from ._submodule import LazySubmodule
+from ._symbol import LazySymbol
 
 # Create singleton instance
 lazy = LazyProxy()
 
 __all__ = [
-    'LazySymbol',
-    'LazyModule',
-    'LazySubmodule',
-    'LazyProxy',
-    'lazy',
-    '_get_lazy_module',
-    '_MODULE_PROXY_LOCK',
+    "_MODULE_PROXY_LOCK",
+    "LazyModule",
+    "LazyProxy",
+    "LazySubmodule",
+    "LazySymbol",
+    "_get_lazy_module",
+    "lazy",
 ]

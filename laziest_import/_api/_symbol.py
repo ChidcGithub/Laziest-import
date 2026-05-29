@@ -2,38 +2,24 @@ from typing import Any, Dict, List, Optional
 
 from .. import _config
 from .._symbol import (
-    search_symbol,
-    rebuild_symbol_index,
-    get_symbol_search_config,
-    get_symbol_cache_info,
-    set_symbol_preference,
-    get_symbol_preference,
-    clear_symbol_preference,
-    enable_symbol_search,
-    disable_symbol_search,
-    is_symbol_search_enabled,
-    enable_auto_symbol_resolution,
-    disable_auto_symbol_resolution,
-    get_symbol_resolution_config,
-    get_loaded_modules_context,
-    set_module_priority,
-    get_module_priority,
-    get_module_skip_config,
-    set_module_skip_config,
-    search_with_sharding,
-    enable_sharding,
-    disable_sharding,
-    get_sharding_config,
-    clear_shard_cache,
-    build_symbol_index_incremental,
-    _is_stdlib_module,
-    _scan_module_symbols,
+    _build_incremental_symbol_index,
     _build_symbol_index,
     _search_symbol_direct,
     _search_symbol_enhanced,
-    _handle_symbol_not_found,
-    _build_incremental_symbol_index,
-    _remove_package_symbols,
+    clear_symbol_preference,
+    disable_auto_symbol_resolution,
+    disable_symbol_search,
+    enable_auto_symbol_resolution,
+    enable_symbol_search,
+    get_symbol_cache_info,
+    get_symbol_preference,
+    get_symbol_resolution_config,
+    get_symbol_search_config,
+    is_symbol_search_enabled,
+    rebuild_symbol_index,
+    search_symbol,
+    search_with_sharding,
+    set_symbol_preference,
 )
 from .._which import which, which_all
 
@@ -50,6 +36,7 @@ class SymbolIndexNamespace:
 
     def reset(self) -> None:
         from .._cache import clear_symbol_cache
+
         clear_symbol_cache()
 
     def clear(self) -> None:
@@ -213,6 +200,7 @@ class SymbolConfigNamespace:
 
     def export(self, path: Optional[str] = None) -> str:
         import json
+
         data = self.snapshot()
         if path:
             with open(path, "w", encoding="utf-8") as f:
@@ -220,10 +208,7 @@ class SymbolConfigNamespace:
         return json.dumps(data, indent=2)
 
     def __repr__(self) -> str:
-        return (
-            f"<SymbolConfig: enabled={self.enabled}, "
-            f"auto_resolution={self.auto_resolution}>"
-        )
+        return f"<SymbolConfig: enabled={self.enabled}, auto_resolution={self.auto_resolution}>"
 
 
 class SymbolNamespace:
@@ -260,6 +245,7 @@ class SymbolNamespace:
 
     def conflicts(self, symbol: Optional[str] = None) -> Any:
         from .._analysis._conflict import find_symbol_conflicts
+
         all_conflicts = find_symbol_conflicts()
         if symbol:
             return all_conflicts.get(symbol)
@@ -267,10 +253,12 @@ class SymbolNamespace:
 
     def conflict_summary(self) -> Dict[str, Any]:
         from .._analysis._conflict import get_conflicts_summary
+
         return get_conflicts_summary()
 
     def show_conflicts(self, symbol_filter: Optional[str] = None, max_results: int = 20) -> None:
         from .._analysis._conflict import show_conflicts
+
         show_conflicts(symbol_filter, max_results)
 
     @property
@@ -284,7 +272,9 @@ class SymbolNamespace:
     def cache_info(self) -> Dict[str, Any]:
         return get_symbol_cache_info()
 
-    def _search_direct(self, name: str, symbol_type=None, signature=None, max_results=None) -> List[Any]:
+    def _search_direct(
+        self, name: str, symbol_type=None, signature=None, max_results=None
+    ) -> List[Any]:
         return _search_symbol_direct(name, symbol_type, signature, max_results)
 
     def _enhanced(self, name: str, auto: bool = True, symbol_type=None) -> Optional[Any]:

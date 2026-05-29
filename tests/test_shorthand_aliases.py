@@ -114,6 +114,7 @@ class TestCommonThirdPartyShorthand:
         plt_mod = namespace["plt"]
         try:
             import matplotlib
+
             assert plt_mod.__name__ == "matplotlib.pyplot"
         except (ImportError, ModuleNotFoundError):
             pytest.skip("matplotlib not installed")
@@ -134,6 +135,7 @@ class TestCommonThirdPartyShorthand:
         sns_mod = namespace["sns"]
         try:
             import seaborn
+
             assert sns_mod.__name__ == "seaborn"
         except (ImportError, ModuleNotFoundError):
             pytest.skip("seaborn not installed")
@@ -145,6 +147,7 @@ class TestCommonThirdPartyShorthand:
         try:
             go_mod = namespace["go"]
             import zoneinfo
+
             assert go_mod.__name__ == "plotly.graph_objects"
         except (ImportError, ModuleNotFoundError):
             pytest.skip("plotly not installed")
@@ -155,6 +158,7 @@ class TestCommonThirdPartyShorthand:
         cv_mod = namespace["cv"]
         try:
             import cv2
+
             assert cv_mod.__name__ == "cv2"
         except (ImportError, ModuleNotFoundError):
             pytest.skip("opencv-python not installed")
@@ -162,10 +166,20 @@ class TestCommonThirdPartyShorthand:
     def test_sklearn_aliases(self):
         namespace = {}
         exec("from laziest_import import *", namespace)
-        for alias in ("svm", "tree", "neighbors", "preprocessing",
-                      "model_selection", "pipeline", "naive_bayes",
-                      "cluster", "decomposition", "ensemble",
-                      "feature_extraction", "metrics"):
+        for alias in (
+            "svm",
+            "tree",
+            "neighbors",
+            "preprocessing",
+            "model_selection",
+            "pipeline",
+            "naive_bayes",
+            "cluster",
+            "decomposition",
+            "ensemble",
+            "feature_extraction",
+            "metrics",
+        ):
             assert alias in namespace, f"alias '{alias}' should be in __all__"
 
     def test_sklearn_submodules(self):
@@ -173,6 +187,7 @@ class TestCommonThirdPartyShorthand:
         exec("from laziest_import import *", namespace)
         try:
             import sklearn
+
             tree = namespace.get("tree")
             if tree is not None:
                 assert hasattr(tree, "DecisionTreeClassifier")
@@ -205,6 +220,7 @@ class TestLazyLoadingViaBareName:
 
     def test_bare_name_lazy_loading(self):
         from laziest_import import lz
+
         lz.cache.clear()
         namespace = {}
         exec("from laziest_import import *", namespace)
@@ -218,14 +234,18 @@ class TestLazyLoadingViaBareName:
         namespace = {}
         exec("from laziest_import import *", namespace)
         from laziest_import._proxy import LazyModule
+
         assert isinstance(namespace["math"], LazyModule)
 
     def test_bare_name_dir_includes_aliases(self):
         namespace = {}
-        exec("""
+        exec(
+            """
 from laziest_import import *
 names = dir()
-""", namespace)
+""",
+            namespace,
+        )
         all_names = namespace["names"]
         assert "np" in all_names
         assert "pd" in all_names
@@ -241,6 +261,7 @@ class TestShorthandAliasEdgeCases:
         alt_mod = namespace["alt"]
         try:
             import altair
+
             assert alt_mod.__name__ == "altair"
         except (ImportError, ModuleNotFoundError):
             pytest.skip("altair not installed")
@@ -253,13 +274,17 @@ class TestShorthandAliasEdgeCases:
 
     def test_list_loaded_via_bare_name(self):
         from laziest_import import lz
+
         lz.cache.clear()
         namespace = {}
-        exec("""
+        exec(
+            """
 from laziest_import import *
 _ = math.pi
 _ = os.getcwd()
-""", namespace)
+""",
+            namespace,
+        )
         loaded = lz.module.list_loaded()
         assert "math" in loaded
         assert "os" in loaded
@@ -267,12 +292,16 @@ _ = os.getcwd()
     def test_multiple_bare_names_interop(self):
         pytest.importorskip("numpy")
         namespace = {}
-        exec("""
+        exec(
+            """
 from laziest_import import *
 raw = np.array([1, 2, 3])
 result = json.dumps({'array': [int(x) for x in raw]})
-""", namespace)
+""",
+            namespace,
+        )
         import json as std_json
+
         expected = std_json.dumps({"array": [1, 2, 3]})
         assert namespace["result"] == expected
 

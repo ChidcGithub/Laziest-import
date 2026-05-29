@@ -186,6 +186,7 @@ class TestSearchModule:
 
         def check(r):
             return isinstance(r, list) and len(r) > 0
+
         assert check(result1) and check(result2)
 
     def test_search_nonexistent_module(self):
@@ -242,7 +243,7 @@ class TestSearchClass:
         """Test searching for class in stdlib."""
         from laziest_import import lz
 
-        result = lz.symbol.search("defaultdict", symbol_type='class')
+        result = lz.symbol.search("defaultdict", symbol_type="class")
         if result:
             assert isinstance(result[0].module_name, str)
             assert len(result[0].module_name) > 0
@@ -251,7 +252,7 @@ class TestSearchClass:
         """Test searching for non-existent class."""
         from laziest_import import lz
 
-        result = lz.symbol.search("ThisClassDefinitelyDoesNotExist12345", symbol_type='class')
+        result = lz.symbol.search("ThisClassDefinitelyDoesNotExist12345", symbol_type="class")
         assert result == []
 
     def test_search_class_cached(self):
@@ -259,9 +260,9 @@ class TestSearchClass:
         from laziest_import import lz
 
         # First search
-        result1 = lz.symbol.search("defaultdict", symbol_type='class')
+        result1 = lz.symbol.search("defaultdict", symbol_type="class")
         # Second search should use cache
-        result2 = lz.symbol.search("defaultdict", symbol_type='class')
+        result2 = lz.symbol.search("defaultdict", symbol_type="class")
         # Results should be consistent
         if result1 and result2:
             assert result1[0] == result2[0]
@@ -332,6 +333,7 @@ class TestMappingReload:
         from laziest_import import lz
 
         from laziest_import._config import _ALIAS_MAP
+
         before = len(_ALIAS_MAP)
         reload_mappings()
         after = len(_ALIAS_MAP)

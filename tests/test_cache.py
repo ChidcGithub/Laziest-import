@@ -275,6 +275,7 @@ class TestCacheInvalidation:
 
         # Invalidate
         from laziest_import._cache import invalidate_package_cache
+
         invalidate_package_cache("math")
 
         # Rebuild should still work
@@ -541,6 +542,7 @@ class TestCacheEdgeCases:
         # This test is platform-dependent and may require admin
         # Just verify the functions exist
         from laziest_import import lz
+
         assert callable(lz.cache.files.clear)
 
 

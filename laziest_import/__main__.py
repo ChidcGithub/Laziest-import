@@ -6,16 +6,16 @@ Usage:
     python -m laziest_import init    [--output FILE]
 """
 
-import sys
-import json
 import ast
-import os
+import json
+import sys
 from pathlib import Path
-from typing import Dict, Set, List, Optional
+from typing import Dict, List, Optional, Set
 
 
 def main() -> None:
     import laziest_import
+
     laziest_import  # ensure initialized
 
     if len(sys.argv) < 2:
@@ -36,15 +36,16 @@ def main() -> None:
 
 def _resolve_aliases() -> Dict[str, str]:
     from laziest_import._config import _ALIAS_MAP
+
     return dict(_ALIAS_MAP)
 
 
 def _scan_file_for_aliases(filepath: Path, aliases: Dict[str, str]) -> Dict[str, str]:
     """Scan a single Python file for alias usage and return alias -> module mapping."""
     try:
-        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+        with open(filepath, encoding="utf-8", errors="replace") as f:
             source = f.read()
-    except (OSError, IOError):
+    except OSError:
         return {}
 
     try:
@@ -63,9 +64,7 @@ def _scan_file_for_aliases(filepath: Path, aliases: Dict[str, str]) -> Dict[str,
     return found
 
 
-def _scan_path_for_aliases(
-    paths: List[str], aliases: Dict[str, str]
-) -> Dict[str, Set[str]]:
+def _scan_path_for_aliases(paths: List[str], aliases: Dict[str, str]) -> Dict[str, Set[str]]:
     """Scan paths for alias usage, return alias -> set of files using it."""
     result: Dict[str, Set[str]] = {}
 
@@ -123,15 +122,10 @@ def _cmd_freeze() -> None:
         "version": "1.0",
         "generated_by": "laziest-import freeze",
         "paths_scanned": [str(Path(p).resolve()) for p in paths],
-        "files_scanned": len({
-            f for files in usage.values() for f in files
-        }),
+        "files_scanned": len({f for files in usage.values() for f in files}),
         "alias_count": len(used_aliases),
         "aliases": used_aliases,
-        "files": {
-            alias: sorted(files)
-            for alias, files in sorted(usage.items())
-        },
+        "files": {alias: sorted(files) for alias, files in sorted(usage.items())},
     }
 
     with open(output, "w", encoding="utf-8") as f:
@@ -158,7 +152,7 @@ def _cmd_init() -> None:
             output = args[i]
             i += 1
 
-    from laziest_import._rcconfig import create_rc_file, _get_default_config_template
+    from laziest_import._rcconfig import _get_default_config_template
 
     if output:
         target = Path(output)

@@ -39,10 +39,7 @@ class TestDependencyNode:
         from laziest_import._analysis._dependency import DependencyNode
 
         node = DependencyNode(
-            module_name="numpy",
-            is_stdlib=False,
-            is_third_party=True,
-            version="1.24.0"
+            module_name="numpy", is_stdlib=False, is_third_party=True, version="1.24.0"
         )
         assert node.is_stdlib is False
         assert node.is_third_party is True
@@ -77,7 +74,7 @@ class TestDependencyTree:
         child = DependencyNode(module_name="child")
         root = DependencyNode(module_name="root", children=[child])
         tree = DependencyTree(root_module="root", tree=root, total_modules=2)
-        
+
         d = tree.to_dict()
         assert isinstance(d, dict)
         assert d["root_module"] == "root"
@@ -87,11 +84,7 @@ class TestDependencyTree:
         from laziest_import._analysis._dependency import DependencyTree
 
         tree = DependencyTree(
-            root_module="test",
-            total_modules=10,
-            stdlib_count=5,
-            third_party_count=3,
-            local_count=2
+            root_module="test", total_modules=10, stdlib_count=5, third_party_count=3, local_count=2
         )
         assert tree.total_modules == 10
         assert tree.stdlib_count == 5
@@ -111,7 +104,7 @@ class TestDependencyTreeFunction:
         """Test max_depth parameter."""
         tree1 = lz.analyze.dep_tree("json", max_depth=1)
         tree2 = lz.analyze.dep_tree("json", max_depth=2)
-        
+
         # Both should work
         assert tree1.root_module == "json"
         assert tree2.root_module == "json"
@@ -139,8 +132,6 @@ class TestDependencyTreeFunction:
         assert tree is not None
 
 
-
-
 class TestDependencyAnalyzer:
     """Test DependencyAnalyzer class."""
 
@@ -163,11 +154,7 @@ class TestDependencyAnalyzer:
         """Test analyzer with options."""
         from laziest_import._analysis._dependency import DependencyAnalyzer
 
-        analyzer = DependencyAnalyzer(
-            max_depth=2,
-            include_stdlib=False,
-            include_third_party=True
-        )
+        analyzer = DependencyAnalyzer(max_depth=2, include_stdlib=False, include_third_party=True)
         tree = analyzer.analyze("json")
         assert tree is not None
 

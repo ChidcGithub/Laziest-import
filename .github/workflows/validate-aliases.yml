@@ -1,0 +1,66 @@
+name: Validate & Check Aliases
+
+on:
+  pull_request:
+    paths:
+      - 'laziest_import/aliases/**'
+      - 'laziest_import/mappings/**'
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Validate JSON & check duplicates
+        run: python scripts/validate_aliases.py
+
+  stale-check:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Check stale aliases
+        id: stale
+        continue-on-error: true
+        run: python scripts/validate_aliases.py --stale
+
+      - name: Create issue if stale aliases found
+        if: steps.stale.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'aliases',
+            });
+            const hasOpen = issues.some(i =>
+              i.title === 'Stale aliases detected'
+            );
+            if (!hasOpen) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Stale aliases detected',
+                body: 'Weekly health check detected stale aliases (packages not importable).\nRun the workflow manually or submit a PR to fix.',
+                labels: ['aliases', 'automated'],
+              });
+            }

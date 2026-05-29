@@ -6,21 +6,21 @@ This module re-exports all components from the _proxy subpackage for backward co
 
 # Re-export all public API from the _proxy subpackage
 from ._proxy import (
-    LazySymbol,
-    LazyModule,
-    LazySubmodule,
-    LazyProxy,
-    lazy,
-    _get_lazy_module,
     _MODULE_PROXY_LOCK,
+    LazyModule,
+    LazyProxy,
+    LazySubmodule,
+    LazySymbol,
+    _get_lazy_module,
+    lazy,
 )
 
 __all__ = [
-    'LazySymbol',
-    'LazyModule',
-    'LazySubmodule',
-    'LazyProxy',
-    'lazy',
-    '_get_lazy_module',
-    '_MODULE_PROXY_LOCK',
+    "_MODULE_PROXY_LOCK",
+    "LazyModule",
+    "LazyProxy",
+    "LazySubmodule",
+    "LazySymbol",
+    "_get_lazy_module",
+    "lazy",
 ]

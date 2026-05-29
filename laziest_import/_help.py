@@ -2,40 +2,38 @@
 Interactive help system for laziest-import.
 """
 
-from typing import Optional, Dict, Any, List, Tuple
-import inspect
-import importlib
-import sys
 import locale
+import sys
+from typing import Any, Dict, List, Optional
 
-from ._which import which, which_all, SymbolLocation
-from ._config import _SYMBOL_CACHE, _ALIAS_MAP
+from ._which import which_all
 
 
 def _supports_unicode() -> bool:
     """Check if the terminal supports Unicode characters."""
     try:
         # Check if stdout supports unicode
-        if hasattr(sys.stdout, 'encoding') and sys.stdout.encoding:
+        if hasattr(sys.stdout, "encoding") and sys.stdout.encoding:
             encoding = sys.stdout.encoding.lower()
-            if encoding in ('utf-8', 'utf8', 'utf-16', 'utf16', 'utf-32', 'utf32'):
+            if encoding in ("utf-8", "utf8", "utf-16", "utf16", "utf-32", "utf32"):
                 return True
-        
+
         # Check locale
         preferred_encoding = locale.getpreferredencoding()
-        if preferred_encoding and preferred_encoding.lower() in ('utf-8', 'utf8'):
+        if preferred_encoding and preferred_encoding.lower() in ("utf-8", "utf8"):
             return True
-        
+
         # Windows with proper code page
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             try:
                 import ctypes
+
                 code_page = ctypes.windll.kernel32.GetConsoleOutputCP()
                 if code_page == 65001:  # UTF-8 code page
                     return True
             except Exception:
                 pass
-        
+
         return False
     except Exception:
         return False
@@ -322,7 +320,7 @@ def help(topic: Optional[str] = None) -> str:
         return str(_TOPICS[topic])
 
     # Try partial match
-    matches = [k for k in _TOPICS.keys() if topic in k]
+    matches = [k for k in _TOPICS if topic in k]
     if matches:
         suggestions = ", ".join(matches)
         return f"Topic '{topic}' not found. Did you mean: {suggestions}\n\n{_get_overview()}"
@@ -336,8 +334,7 @@ def _get_overview() -> str:
         _register_default_topics()
 
     topics_list = "\n".join(
-        f"  {name:<12} {topic.description.split('.')[0]}"
-        for name, topic in _TOPICS.items()
+        f"  {name:<12} {topic.description.split('.')[0]}" for name, topic in _TOPICS.items()
     )
 
     return f"""{_BOX_TOP_LEFT}{_BOX_HORIZONTAL * 58}{_BOX_TOP_RIGHT}
@@ -395,9 +392,7 @@ def get_symbol_help(symbol_name: str) -> str:
             doc_lines = loc.doc.split("\n")[:5]
             lines.append(f"    Doc: {doc_lines[0]}")
             if len(doc_lines) > 1:
-                lines.append(
-                    f"         {' '.join(d.strip() for d in doc_lines[1:3])}..."
-                )
+                lines.append(f"         {' '.join(d.strip() for d in doc_lines[1:3])}...")
 
         lines.append("")
 

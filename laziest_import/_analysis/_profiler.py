@@ -1,15 +1,16 @@
 """Import profiling module for performance analysis."""
 
-from typing import Dict, List, Optional, Any
-import time
 import threading
+import time
 import tracemalloc
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass
 class ModuleProfile:
     """Profile data for a single module."""
+
     module_name: str
     load_time: float = 0.0
     memory_before: int = 0
@@ -23,6 +24,7 @@ class ModuleProfile:
 @dataclass
 class ProfileReport:
     """Complete profile report."""
+
     total_time: float = 0.0
     total_memory: int = 0
     modules: Dict[str, ModuleProfile] = field(default_factory=dict)
@@ -35,7 +37,7 @@ class ProfileReport:
 class ImportProfiler:
     """
     Profile module imports to identify performance bottlenecks.
-    
+
     Usage:
         profiler = ImportProfiler()
         profiler.start()
@@ -43,10 +45,10 @@ class ImportProfiler:
         profiler.stop()
         report = profiler.get_report()
     """
-    
+
     _instance: Optional["ImportProfiler"] = None
     _lock = threading.Lock()
-    
+
     def __new__(cls) -> "ImportProfiler":
         if cls._instance is None:
             with cls._lock:
@@ -54,7 +56,7 @@ class ImportProfiler:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
@@ -63,7 +65,7 @@ class ImportProfiler:
         self._active = False
         self._lock = threading.Lock()
         self._initialized = True
-    
+
     def start(self) -> None:
         """Start profiling."""
         with self._lock:
@@ -71,12 +73,12 @@ class ImportProfiler:
             self._start_time = time.perf_counter()
             self._profiles.clear()
             self._memory_before = self._get_current_memory()
-    
+
     def stop(self) -> None:
         """Stop profiling."""
         with self._lock:
             self._active = False
-    
+
     def _get_current_memory(self) -> int:
         """Get current memory usage in bytes via tracemalloc."""
         try:
@@ -90,24 +92,25 @@ class ImportProfiler:
     def is_active(self) -> bool:
         """Check if profiling is active."""
         return self._active
-    
+
     def record_load(
-        self,
-        module_name: str,
-        load_time: float,
-        memory_delta: Optional[int] = None
+        self, module_name: str, load_time: float, memory_delta: Optional[int] = None
     ) -> None:
         """Record a module load event."""
         if not self._active:
             return
-        
+
         with self._lock:
             now = time.time()
-            
+
             if memory_delta is None:
                 current_mem = self._get_current_memory()
-                memory_delta = max(0, current_mem - self._memory_before) if hasattr(self, '_memory_before') else 0
-            
+                memory_delta = (
+                    max(0, current_mem - self._memory_before)
+                    if hasattr(self, "_memory_before")
+                    else 0
+                )
+
             if module_name not in self._profiles:
                 self._profiles[module_name] = ModuleProfile(
                     module_name=module_name,
@@ -115,7 +118,7 @@ class ImportProfiler:
                     memory_delta=memory_delta,
                     access_count=1,
                     first_access=now,
-                    last_access=now
+                    last_access=now,
                 )
             else:
                 profile = self._profiles[module_name]
@@ -123,51 +126,46 @@ class ImportProfiler:
                 profile.memory_delta += memory_delta
                 profile.access_count += 1
                 profile.last_access = now
-    
+
     def get_report(self, top_n: int = 10) -> ProfileReport:
         """
         Generate a profile report.
-        
+
         Args:
             top_n: Number of top modules to include
-            
+
         Returns:
             ProfileReport with analysis
         """
         with self._lock:
             total_time = sum(p.load_time for p in self._profiles.values())
             total_memory = sum(p.memory_delta for p in self._profiles.values())
-            
+
             # Find heavy modules (by memory)
-            sorted_by_memory = sorted(
-                self._profiles.items(),
-                key=lambda x: -x[1].memory_delta
-            )
+            sorted_by_memory = sorted(self._profiles.items(), key=lambda x: -x[1].memory_delta)
             heavy_modules = [m for m, _ in sorted_by_memory[:top_n]]
-            
+
             # Find slow modules (by time)
-            sorted_by_time = sorted(
-                self._profiles.items(),
-                key=lambda x: -x[1].load_time
-            )
+            sorted_by_time = sorted(self._profiles.items(), key=lambda x: -x[1].load_time)
             slow_modules = [m for m, _ in sorted_by_time[:top_n]]
-            
+
             # Generate recommendations
             recommendations = []
-            
+
             # Check if tracemalloc is running
             try:
                 import tracemalloc
+
                 tracemalloc_running = tracemalloc.is_tracing()
             except Exception:
                 tracemalloc_running = False
-            
+
             if not tracemalloc_running:
                 recommendations.append(
                     "Memory tracking is disabled. Start tracemalloc before imports "
                     "to measure memory usage: 'import tracemalloc; tracemalloc.start()'"
                 )
-            
+
             for module, profile in sorted_by_time[:3]:
                 if profile.load_time > 1.0:
                     recommendations.append(
@@ -179,7 +177,7 @@ class ImportProfiler:
                     recommendations.append(
                         f"'{module}' uses {mb:.1f}MB - consider alternatives or lazy loading"
                     )
-            
+
             return ProfileReport(
                 total_time=total_time,
                 total_memory=total_memory,
@@ -189,51 +187,54 @@ class ImportProfiler:
                 recommendations=recommendations,
                 tracemalloc_enabled=tracemalloc_running,
             )
-    
+
     def print_report(self, top_n: int = 10) -> None:
         """Print a formatted profile report."""
         report = self.get_report(top_n)
-        
+
         print("\n" + "=" * 60)
         print("             Import Profile Report")
         print("=" * 60)
-        
+
         print(f"\nTotal import time: {report.total_time:.3f}s")
-        
+
         # Check if tracemalloc is running to explain memory stats
         try:
             import tracemalloc
+
             tracemalloc_running = tracemalloc.is_tracing()
         except Exception:
             tracemalloc_running = False
-        
+
         if tracemalloc_running:
-            print(f"Total memory delta: {report.total_memory / (1024*1024):.2f}MB")
+            print(f"Total memory delta: {report.total_memory / (1024 * 1024):.2f}MB")
         else:
-            print(f"Total memory delta: {report.total_memory / (1024*1024):.2f}MB (tracemalloc not enabled)")
+            print(
+                f"Total memory delta: {report.total_memory / (1024 * 1024):.2f}MB (tracemalloc not enabled)"
+            )
             if report.total_memory == 0:
                 print("  Note: Memory tracking requires tracemalloc.")
                 print("  To enable: import tracemalloc; tracemalloc.start()")
                 print("  Or start profiling before any imports for automatic tracking.")
-        
+
         if report.slow_modules:
             print(f"\nTop {len(report.slow_modules)} slowest modules:")
             for i, mod in enumerate(report.slow_modules, 1):
                 p = report.modules[mod]
                 print(f"  {i}. {mod}: {p.load_time:.3f}s ({p.access_count} accesses)")
-        
+
         if report.heavy_modules:
             print(f"\nTop {len(report.heavy_modules)} heaviest modules (memory):")
             for i, mod in enumerate(report.heavy_modules, 1):
                 p = report.modules[mod]
                 mb = p.memory_delta / (1024 * 1024)
                 print(f"  {i}. {mod}: {mb:.2f}MB")
-        
+
         if report.recommendations:
             print("\nRecommendations:")
             for rec in report.recommendations:
                 print(f"  - {rec}")
-        
+
         print("\n" + "=" * 60)
 
 

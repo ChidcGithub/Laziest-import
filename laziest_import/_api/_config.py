@@ -1,24 +1,20 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Set
 
 from .. import _config
 from .._cache import (
     get_cache_config,
     set_cache_config,
-    enable_cache_compression,
-    get_cache_stats,
 )
 from .._symbol import (
-    get_symbol_search_config,
-    get_symbol_resolution_config,
     get_module_skip_config,
+    get_symbol_resolution_config,
+    get_symbol_search_config,
     set_module_skip_config,
-    enable_auto_symbol_resolution,
-    disable_auto_symbol_resolution,
 )
 
-
 # ─── Dataclasses ──────────────────────────────────────────────
+
 
 @dataclass
 class AutoInstallConfig:
@@ -87,6 +83,7 @@ class ModuleSkipConfig:
 
 # ─── Helpers ─────────────────────────────────────────────────
 
+
 def _apply_search_config(cfg: SymbolSearchConfig) -> None:
     _config._SYMBOL_SEARCH_CONFIG.update(asdict(cfg))
 
@@ -96,6 +93,7 @@ def _apply_resolution_config(cfg: SymbolResolutionConfig) -> None:
 
 
 # ─── Module-level API functions ──────────────────────────────
+
 
 def enable_debug_mode() -> None:
     _config._DEBUG_MODE = True
@@ -123,6 +121,7 @@ def is_auto_search_enabled() -> bool:
 
 def get_import_stats() -> Dict[str, Any]:
     from .._config import _IMPORT_STATS
+
     avg_time = (
         _IMPORT_STATS.total_time / _IMPORT_STATS.total_imports
         if _IMPORT_STATS.total_imports > 0
@@ -139,6 +138,7 @@ def get_import_stats() -> Dict[str, Any]:
 
 def reset_import_stats() -> None:
     from .._config import _IMPORT_STATS
+
     _IMPORT_STATS.total_imports = 0
     _IMPORT_STATS.total_time = 0.0
     _IMPORT_STATS.module_times.clear()
@@ -146,6 +146,7 @@ def reset_import_stats() -> None:
 
 
 # ─── ConfigNamespace ─────────────────────────────────────────
+
 
 class ConfigNamespace:
     def __init__(self) -> None:

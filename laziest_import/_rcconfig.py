@@ -5,10 +5,9 @@ User-level configuration file support (.laziestrc).
 import json
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from . import _config
-
 
 _LAZIESTRC_PATHS = [
     Path.home() / ".laziestrc",
@@ -62,9 +61,7 @@ def load_rc_config(force_reload: bool = False) -> Dict[str, Any]:
                 if _config._DEBUG_MODE:
                     import logging
 
-                    logging.warning(
-                        f"[laziest-import] Failed to load config from {path}: {e}"
-                    )
+                    logging.warning(f"[laziest-import] Failed to load config from {path}: {e}")
 
     _CONFIG_CACHE = config
     return config
@@ -74,7 +71,7 @@ def _load_file(path: Path) -> Dict[str, Any]:
     """Load config from a single file."""
     try:
         if path.suffix == ".json" or path.name == ".laziestrc":
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
     except json.JSONDecodeError:
         # Try as JSON lines or simple key=value
@@ -86,7 +83,7 @@ def _load_simple_config(path: Path) -> Dict[str, Any]:
     """Load simple config format (key: value lines)."""
     config = {}
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):

@@ -2,12 +2,11 @@
 Cache directory management for laziest-import.
 """
 
-from typing import Optional, Union
-from pathlib import Path
 import logging
+from pathlib import Path
+from typing import Optional, Union
 
 from .. import _config
-
 
 # Cache directory (can be customized)
 _CACHE_DIR: Optional[Path] = None
@@ -32,7 +31,7 @@ def _get_cache_size() -> int:
     try:
         for cache_file in cache_dir.glob("*.json"):
             total_size += cache_file.stat().st_size
-    except (OSError, IOError):
+    except OSError:
         pass
     return total_size
 
@@ -51,7 +50,7 @@ def _cleanup_cache_if_needed() -> None:
     try:
         for cache_file in cache_dir.glob("*.json"):
             cache_files.append((cache_file, cache_file.stat().st_mtime))
-    except (OSError, IOError):
+    except OSError:
         return
 
     cache_files.sort(key=lambda x: x[1])
@@ -65,7 +64,7 @@ def _cleanup_cache_if_needed() -> None:
             current_size -= file_size
             if c._DEBUG_MODE:
                 logging.debug(f"[laziest-import] Removed old cache file: {cache_file.name}")
-        except (OSError, IOError):
+        except OSError:
             continue
 
 
@@ -96,12 +95,12 @@ def reset_cache_dir() -> None:
 
 # Export internal functions for use within _cache subpackage
 __all__ = [
-    "_get_default_cache_dir",
+    "_check_cache_size_before_save",
+    "_cleanup_cache_if_needed",
     "_get_cache_dir",
     "_get_cache_size",
-    "_cleanup_cache_if_needed",
-    "_check_cache_size_before_save",
-    "set_cache_dir",
+    "_get_default_cache_dir",
     "get_cache_dir",
     "reset_cache_dir",
+    "set_cache_dir",
 ]

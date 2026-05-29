@@ -1,13 +1,12 @@
 """Persistence module for user preferences."""
 
-from typing import Dict
-from pathlib import Path
-import time
 import json
 import logging
+import time
+from pathlib import Path
+from typing import Dict
 
 from .. import _config
-
 
 _PREFERENCES_FILE = Path.home() / ".laziest_import" / "preferences.json"
 
@@ -20,25 +19,25 @@ def _ensure_preferences_dir() -> None:
 def save_preferences() -> bool:
     """
     Save current symbol preferences to file.
-    
+
     Returns:
         True if saved successfully
     """
     try:
         _ensure_preferences_dir()
-        
+
         data = {
             "symbol_preferences": dict(_config._SYMBOL_PREFERENCES),
             "timestamp": time.time(),
-            "version": "1.0"
+            "version": "1.0",
         }
-        
-        with open(_PREFERENCES_FILE, 'w', encoding='utf-8') as f:
+
+        with open(_PREFERENCES_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-        
+
         if _config._DEBUG_MODE:
             logging.info(f"[laziest-import] Saved preferences to {_PREFERENCES_FILE}")
-        
+
         return True
     except Exception as e:
         if _config._DEBUG_MODE:
@@ -49,17 +48,17 @@ def save_preferences() -> bool:
 def load_preferences() -> Dict[str, str]:
     """
     Load symbol preferences from file.
-    
+
     Returns:
         Dictionary of symbol -> module preferences
     """
     try:
         if not _PREFERENCES_FILE.exists():
             return {}
-        
-        with open(_PREFERENCES_FILE, 'r', encoding='utf-8') as f:
+
+        with open(_PREFERENCES_FILE, encoding="utf-8") as f:
             data = json.load(f)
-        
+
         return data.get("symbol_preferences", {})
     except Exception as e:
         if _config._DEBUG_MODE:

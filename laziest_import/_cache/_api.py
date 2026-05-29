@@ -2,45 +2,37 @@
 Public cache API for laziest-import.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from .. import _config
-
-from ._dir import (
-    set_cache_dir,
-    get_cache_dir,
-    reset_cache_dir,
-    _get_cache_size,
-)
-
-from ._file_cache import (
-    enable_file_cache,
-    disable_file_cache,
-    is_file_cache_enabled,
-    clear_file_cache,
-    get_file_cache_info,
-    force_save_cache,
-)
-
 from ._background import (
     enable_background_build,
     get_preheat_config,
 )
-
+from ._dir import (
+    get_cache_dir,
+    reset_cache_dir,
+    set_cache_dir,
+)
+from ._file_cache import (
+    clear_file_cache,
+    disable_file_cache,
+    enable_file_cache,
+    force_save_cache,
+    get_file_cache_info,
+    is_file_cache_enabled,
+)
 from ._incremental import (
     enable_incremental_index,
     get_incremental_config,
 )
-
-from ._version import (
-    get_package_version,
-    get_all_package_versions,
-    get_laziest_import_version,
-    get_cache_version,
-)
-
 from ._symbol_index import _save_tracked_packages
-
+from ._version import (
+    get_all_package_versions,
+    get_cache_version,
+    get_laziest_import_version,
+    get_package_version,
+)
 
 # ============== Cache Configuration API ==============
 
@@ -51,6 +43,7 @@ def set_cache_config(
     third_party_cache_ttl: Optional[int] = None,
     enable_compression: Optional[bool] = None,
     max_cache_size_mb: Optional[int] = None,
+    symbol_index_enabled: Optional[bool] = None,
 ) -> None:
     """Configure cache settings."""
     c = _config
@@ -64,6 +57,8 @@ def set_cache_config(
         c._CACHE_CONFIG["enable_compression"] = enable_compression
     if max_cache_size_mb is not None:
         c._CACHE_CONFIG["max_cache_size_mb"] = max_cache_size_mb
+    if symbol_index_enabled is not None:
+        c._CACHE_CONFIG["symbol_index_enabled"] = symbol_index_enabled
 
 
 def get_cache_config() -> Dict[str, Any]:

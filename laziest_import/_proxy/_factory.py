@@ -8,7 +8,6 @@ from .. import _config
 from .._alias import _lookup_alias_fast
 from ._module import LazyModule
 
-
 # Thread lock for LazyModule creation
 _MODULE_PROXY_LOCK = threading.Lock()
 

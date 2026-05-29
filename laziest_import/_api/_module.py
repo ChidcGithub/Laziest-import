@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Optional
 import importlib
+from typing import Any, List, Optional
 
-from .._config import _LAZY_MODULES, _ALIAS_MAP
+from .._config import _ALIAS_MAP, _LAZY_MODULES
 from .._proxy import _get_lazy_module
 
 
@@ -72,16 +72,11 @@ class ModuleNamespace:
         try:
             return _get_lazy_module(name)._get_module()
         except Exception as e:
-            raise AttributeError(
-                f"Cannot load module '{name}': {e}"
-            ) from e
+            raise AttributeError(f"Cannot load module '{name}': {e}") from e
 
     def __dir__(self) -> List[str]:
         return sorted(set(self.list_available()))
 
     def __repr__(self) -> str:
         loaded = self.list_loaded()
-        return (
-            f"<ModuleNamespace: "
-            f"{len(loaded)}/{len(self.list_available())} loaded>"
-        )
+        return f"<ModuleNamespace: {len(loaded)}/{len(self.list_available())} loaded>"

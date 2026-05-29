@@ -2,9 +2,9 @@
 LazySymbol class for lazy loading symbols (classes/functions).
 """
 
-from typing import Any
-import logging
 import importlib
+import logging
+from typing import Any
 
 from .. import _config
 
@@ -18,11 +18,11 @@ class LazySymbol:
     """
 
     __slots__ = (
-        "_symbol_name",
-        "_module_name",
-        "_symbol_type",
         "_cached_obj",
         "_loaded",
+        "_module_name",
+        "_symbol_name",
+        "_symbol_type",
     )
 
     def __init__(self, symbol_name: str, module_name: str, symbol_type: str = "class"):
@@ -52,9 +52,7 @@ class LazySymbol:
 
         obj = getattr(module, symbol_name, None)
         if obj is None:
-            raise AttributeError(
-                f"Module '{module_name}' has no attribute '{symbol_name}'"
-            )
+            raise AttributeError(f"Module '{module_name}' has no attribute '{symbol_name}'")
 
         object.__setattr__(self, "_cached_obj", obj)
         object.__setattr__(self, "_loaded", True)
@@ -69,9 +67,7 @@ class LazySymbol:
         )
 
         if c._DEBUG_MODE:
-            logging.info(
-                f"[laziest-import] Loaded symbol '{symbol_name}' from '{module_name}'"
-            )
+            logging.info(f"[laziest-import] Loaded symbol '{symbol_name}' from '{module_name}'")
 
         return obj
 
@@ -100,7 +96,9 @@ class LazySymbol:
 
         if loaded:
             obj = object.__getattribute__(self, "_cached_obj")
-            return f"<LazySymbol {symbol_type} '{symbol_name}' from '{module_name}' (loaded: {obj})>"
+            return (
+                f"<LazySymbol {symbol_type} '{symbol_name}' from '{module_name}' (loaded: {obj})>"
+            )
         return f"<LazySymbol {symbol_type} '{symbol_name}' from '{module_name}' (not loaded)>"
 
     def __str__(self) -> str:
@@ -258,7 +256,7 @@ class LazySymbol:
             # Fallback for Python < 3.9: create a simple wrapper
             # that mimics GenericAlias behavior for type hints
             class _LazyGenericAlias:
-                __slots__ = ("_origin", "_args")
+                __slots__ = ("_args", "_origin")
 
                 def __init__(self, origin, args):
                     object.__setattr__(self, "_origin", origin)
@@ -274,9 +272,7 @@ class LazySymbol:
 
                 def __eq__(self, other):
                     if isinstance(other, _LazyGenericAlias):
-                        return (
-                            self._origin == other._origin and self._args == other._args
-                        )
+                        return self._origin == other._origin and self._args == other._args
                     return NotImplemented
 
                 def __hash__(self):
