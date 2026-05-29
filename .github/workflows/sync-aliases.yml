@@ -40,19 +40,27 @@ jobs:
 
       - name: Create Pull Request
         if: steps.sync.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: 'chore: sync aliases from PyPI top packages'
-          title: 'chore: auto-sync aliases from PyPI'
-          body: |
-            Automated weekly sync of aliases from top PyPI packages.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b auto/sync-aliases
+          git add laziest_import/aliases/ laziest_import/mappings/
+          git commit -m "chore: sync aliases from PyPI top packages"
+          git push origin auto/sync-aliases --force
+          gh pr create \
+            --title "chore: auto-sync aliases from PyPI" \
+            --body "Automated weekly sync of aliases from top PyPI packages.
 
-            **Changes:**
+            Changes:
             - New alias entries for popular packages not yet covered
-            - Updated `package_rename.json` with new import↔pip name mappings
+            - Updated package_rename.json with new import-to-pip name mappings
 
-            Review and merge if appropriate.
-          branch: auto/sync-aliases
-          base: main
-          labels: aliases,automated
-          delete-branch: true
+            Review and merge if appropriate." \
+            --label "aliases,automated" \
+            --base main \
+            --head auto/sync-aliases 2>&1 || \
+          gh pr edit auto/sync-aliases \
+            --body "Updated: $(date -u '+%Y-%m-%d %H:%M UTC')" 2>&1 || \
+          echo "PR already exists, updated"
