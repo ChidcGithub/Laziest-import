@@ -3,6 +3,7 @@
 from typing import Dict, List, Optional, Any
 import time
 import threading
+import tracemalloc
 from dataclasses import dataclass, field
 
 
@@ -69,12 +70,23 @@ class ImportProfiler:
             self._active = True
             self._start_time = time.perf_counter()
             self._profiles.clear()
+            self._memory_before = self._get_current_memory()
     
     def stop(self) -> None:
         """Stop profiling."""
         with self._lock:
             self._active = False
     
+    def _get_current_memory(self) -> int:
+        """Get current memory usage in bytes via tracemalloc."""
+        try:
+            if tracemalloc.is_tracing():
+                _snapshot = tracemalloc.take_snapshot()
+                return _snapshot.statistics("lineno")[0].size if _snapshot else 0
+        except Exception:
+            pass
+        return 0
+
     def is_active(self) -> bool:
         """Check if profiling is active."""
         return self._active
@@ -83,7 +95,7 @@ class ImportProfiler:
         self,
         module_name: str,
         load_time: float,
-        memory_delta: int = 0
+        memory_delta: Optional[int] = None
     ) -> None:
         """Record a module load event."""
         if not self._active:
@@ -91,6 +103,10 @@ class ImportProfiler:
         
         with self._lock:
             now = time.time()
+            
+            if memory_delta is None:
+                current_mem = self._get_current_memory()
+                memory_delta = max(0, current_mem - self._memory_before) if hasattr(self, '_memory_before') else 0
             
             if module_name not in self._profiles:
                 self._profiles[module_name] = ModuleProfile(

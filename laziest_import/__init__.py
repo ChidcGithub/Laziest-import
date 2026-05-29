@@ -11,7 +11,7 @@ Or:
 """
 
 import time
-from typing import List, Dict, Optional, Any, Union, Set
+from typing import List, Dict, Optional, Any, Union, Set, Tuple
 
 # Import version
 from ._config import __version__
@@ -338,11 +338,11 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
     if name in _RESERVED_NAMES:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
-    if name in _NEGATIVE_CACHE:
-        _ts = _NEGATIVE_CACHE[name]
-        if time.time() - _ts < _NEGATIVE_CACHE_TTL:
-            raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
-        with _NEGATIVE_CACHE_LOCK:
+    with _NEGATIVE_CACHE_LOCK:
+        if name in _NEGATIVE_CACHE:
+            _ts = _NEGATIVE_CACHE[name]
+            if time.time() - _ts < _NEGATIVE_CACHE_TTL:
+                raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
             del _NEGATIVE_CACHE[name]
 
     # 1. Check lazy function registry (symbol, which, help, config, etc.)

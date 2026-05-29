@@ -160,7 +160,7 @@ def install_package(
     )
 
     if success:
-        if _config._config._DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.info(f"[laziest-import] {message}")
         # Rebuild module cache
         _build_known_modules_cache(force=True)

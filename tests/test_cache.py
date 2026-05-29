@@ -108,7 +108,6 @@ class TestCacheStatistics:
         from laziest_import import lz
 
         stats = lz.cache.stats
-        assert isinstance(stats, dict)
         assert "symbol_hits" in stats
         assert "symbol_misses" in stats
         assert "module_hits" in stats

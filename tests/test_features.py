@@ -467,7 +467,6 @@ class TestCacheAdvanced:
 
         reset_cache_stats()
         stats = lz.cache.stats
-        assert isinstance(stats, dict)
         assert "hit_rate" in stats
 
 

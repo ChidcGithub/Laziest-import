@@ -177,7 +177,7 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ## What's New
 
-### v0.1.0-rc3 (Current)
+### v0.1.0 (Current)
 
 - **Phase 5 — Fake Code Audit & Fix**: All placeholder/fake code replaced with real logic
 - **Fixed `assert True` tests**: 4 tests replaced with real assertions

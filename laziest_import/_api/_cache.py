@@ -226,8 +226,8 @@ class CacheNamespace:
         return _CACHE_FILES_NS
 
     @property
-    def stats(self) -> Dict[str, Any]:
-        return get_cache_stats()
+    def stats(self) -> CacheStatsNamespace:
+        return _CACHE_STATS_NS
 
     @property
     def config(self) -> CacheConfigNamespace:

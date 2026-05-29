@@ -321,10 +321,14 @@ class TestConfigEdgeCases:
     def test_reset_init_state(self):
         """Test resetting init state."""
         from laziest_import import lz
+        from laziest_import._config import is_initialized, _INITIALIZED
 
+        was_initialized = _INITIALIZED
         reset_init_state()
-        from laziest_import._config import is_initialized
         assert is_initialized() is False
+        if was_initialized:
+            from laziest_import import _do_initialize
+            _do_initialize()
 
     def test_repeated_enable_disable(self):
         """Test repeated enable/disable calls."""

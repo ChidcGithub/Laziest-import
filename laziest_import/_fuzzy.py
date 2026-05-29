@@ -41,7 +41,7 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
     file_path = mappings_dir / filename
 
     if not file_path.exists():
-        if not _config._DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.warning(f"[laziest-import] Mapping file not found: {file_path}")
         return {}
 
@@ -75,7 +75,7 @@ def _load_mapping_file(filename: str) -> Dict[str, Any]:
                 result[key] = value
         return result
     except (json.JSONDecodeError, OSError) as e:
-        if not _config._DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.warning(
                 f"[laziest-import] Failed to load mapping file {filename}: {e}"
             )

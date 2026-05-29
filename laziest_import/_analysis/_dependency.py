@@ -261,8 +261,20 @@ class DependencyAnalyzer:
         total = len(self._visited)
         stdlib = sum(1 for m in self._visited if self._is_stdlib(m))
         unavailable = sum(1 for m in self._visited if not self._is_available(m))
-        third_party = total - stdlib - unavailable
-        
+
+        # Count local modules from visited set
+        local = 0
+        for m in self._visited:
+            if not self._is_stdlib(m) and self._is_available(m):
+                spec = importlib.util.find_spec(m)
+                if spec and spec.origin and not any(
+                    path in spec.origin
+                    for path in ['site-packages', 'dist-packages']
+                ):
+                    local += 1
+
+        third_party = total - stdlib - unavailable - local
+
         def get_max_depth(node: Optional[DependencyNode]) -> int:
             if node is None:
                 return 0
@@ -275,7 +287,7 @@ class DependencyAnalyzer:
             total_modules=total,
             stdlib_count=stdlib,
             third_party_count=third_party,
-            local_count=0,  # Simplified
+            local_count=local,
             unavailable_count=unavailable,
             max_depth=get_max_depth(tree),
             tree=tree,

@@ -13,6 +13,7 @@ import logging
 import pkgutil
 import threading
 
+from . import _config as _alias_config
 from ._config import (
     _DEBUG_MODE,
     _ALIAS_MAP,
@@ -428,6 +429,8 @@ def _build_known_modules_cache(force: bool = False) -> Set[str]:
         # Update global variables inside the lock
         _KNOWN_MODULES_CACHE = modules
         _KNOWN_MODULES_CACHE_TIME = time.time()
+        _alias_config._KNOWN_MODULES_CACHE = modules
+        _alias_config._KNOWN_MODULES_CACHE_TIME = time.time()
         
         return modules
 
