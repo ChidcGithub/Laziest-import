@@ -1,6 +1,5 @@
 {
   "_comment": "Mapping of package import names to pip install names",
-  
   "common_packages": {
     "sklearn": "scikit-learn",
     "PIL": "pillow",
@@ -28,7 +27,6 @@
     "selenium": "selenium",
     "webdriver": "selenium"
   },
-  
   "visualization": {
     "dash": "dash",
     "dcc": "dash-core-components",
@@ -36,13 +34,11 @@
     "streamlit": "streamlit",
     "gradio": "gradio"
   },
-  
   "mlops": {
     "wandb": "wandb",
     "mlflow": "mlflow",
     "dvc": "dvc"
   },
-  
   "database_drivers": {
     "mysql": "pymysql",
     "postgres": "psycopg2",
@@ -51,7 +47,6 @@
     "pymongo": "pymongo",
     "redis": "redis"
   },
-  
   "web_frameworks": {
     "flask": "flask",
     "django": "django",
@@ -60,7 +55,6 @@
     "tornado": "tornado",
     "aiohttp": "aiohttp"
   },
-  
   "data_science": {
     "np": "numpy",
     "numpy": "numpy",
@@ -80,7 +74,6 @@
     "cat": "catboost",
     "catboost": "catboost"
   },
-  
   "deep_learning": {
     "tf": "tensorflow",
     "tensorflow": "tensorflow",
@@ -90,7 +83,6 @@
     "transformers": "transformers",
     "hf": "transformers"
   },
-  
   "nlp": {
     "nlp": "spacy",
     "spacy": "spacy",
@@ -98,7 +90,6 @@
     "gensim": "gensim",
     "textblob": "textblob"
   },
-  
   "image_processing": {
     "cv": "opencv-python",
     "opencv": "opencv-python",
@@ -107,7 +98,6 @@
     "skimage": "scikit-image",
     "imageio": "imageio"
   },
-  
   "web_scraping": {
     "requests": "requests",
     "httpx": "httpx",
@@ -116,7 +106,6 @@
     "lxml": "lxml",
     "pyquery": "pyquery"
   },
-  
   "testing": {
     "pytest": "pytest",
     "test": "pytest",
@@ -125,7 +114,6 @@
     "factory": "factory_boy",
     "coverage": "coverage"
   },
-  
   "cli": {
     "click": "click",
     "typer": "typer",
@@ -133,38 +121,32 @@
     "prompt_toolkit": "prompt-toolkit",
     "questionary": "questionary"
   },
-  
   "config": {
     "toml": "toml",
     "hydra": "hydra-core",
     "omegaconf": "omegaconf"
   },
-  
   "logging": {
     "loguru": "loguru",
     "structlog": "structlog",
     "sentry": "sentry-sdk"
   },
-  
   "security": {
     "cryptography": "cryptography",
     "passlib": "passlib",
     "bcrypt": "bcrypt"
   },
-  
   "data_validation": {
     "pydantic": "pydantic",
     "marshmallow": "marshmallow",
     "cerberus": "cerberus"
   },
-  
   "async_utils": {
     "celery": "celery",
     "huey": "huey",
     "rq": "rq",
     "dramatiq": "dramatiq"
   },
-  
   "gui": {
     "PyQt5": "PyQt5",
     "PyQt6": "PyQt6",
@@ -177,14 +159,12 @@
     "dearpygui": "dearpygui",
     "pygame": "pygame"
   },
-  
   "audio": {
     "pyaudio": "pyaudio",
     "soundfile": "soundfile",
     "librosa": "librosa",
     "pydub": "pydub"
   },
-  
   "office": {
     "openpyxl": "openpyxl",
     "xlrd": "xlrd",
@@ -193,7 +173,6 @@
     "PyPDF2": "PyPDF2",
     "reportlab": "reportlab"
   },
-  
   "cloud": {
     "aws": "boto3",
     "s3": "boto3",
@@ -202,14 +181,12 @@
     "gcs": "google-cloud-storage",
     "gcp": "google-cloud"
   },
-  
   "science": {
     "sympy": "sympy",
     "astropy": "astropy",
     "biopython": "biopython",
     "rdkit": "rdkit"
   },
-  
   "quant_finance": {
     "quantlib": "QuantLib",
     "zipline": "zipline",
@@ -217,10 +194,13 @@
     "yfinance": "yfinance",
     "ccxt": "ccxt"
   },
-  
   "utilities": {
     "tqdm": "tqdm",
     "psutil": "psutil",
     "typing_extensions": "typing-extensions"
+  },
+  "auto_sync": {
+    "google.protobuf": "protobuf",
+    "multipart": "python-multipart"
   }
 }
