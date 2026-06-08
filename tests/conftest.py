@@ -2,8 +2,9 @@
 pytest configuration for laziest-import tests.
 """
 
-import pytest
 import asyncio
+
+import pytest
 
 pytest_plugins = ["pytest_asyncio"]
 

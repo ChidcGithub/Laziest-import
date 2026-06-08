@@ -1,11 +1,12 @@
 import logging
-from typing import Any, Callable, Iterator, List
+from collections.abc import Iterator
+from typing import Any, Callable, List
 
 from .. import _config
 
 
 class HookList:
-    def __init__(self, hook_list: List[Callable]) -> None:
+    def __init__(self, hook_list: list[Callable]) -> None:
         self._hooks = hook_list
 
     def add(self, callback: Callable) -> None:

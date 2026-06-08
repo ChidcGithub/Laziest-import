@@ -25,33 +25,33 @@ Features tested:
 18. Typo correction / fuzzy matching
 """
 
-import sys
+import json
 import os
 import tempfile
-import json
-import asyncio
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
+
+from laziest_import._api._config import reset_import_stats
 
 # Direct imports for functions not exposed via OOP API
 from laziest_import._cache import (
-    invalidate_package_cache,
     get_incremental_config,
+    invalidate_package_cache,
     reset_cache_stats,
 )
 from laziest_import._config import reset_all
-from laziest_import._api._config import reset_import_stats
-from laziest_import._symbol import (
-    get_sharding_config,
-    enable_sharding,
-    disable_sharding,
-    clear_shard_cache,
-    set_module_priority,
-    get_module_priority,
-)
+from laziest_import._install import set_pip_extra_args, set_pip_index
 from laziest_import._introspect import get_module_info
-from laziest_import._install import set_pip_index, set_pip_extra_args
+from laziest_import._symbol import (
+    clear_shard_cache,
+    disable_sharding,
+    enable_sharding,
+    get_module_priority,
+    get_sharding_config,
+    set_module_priority,
+)
+import contextlib
 
 
 class TestRealWorldScenario_DataScience:
@@ -180,7 +180,7 @@ class TestRealWorldScenario_AliasManagement:
 
         # Verify all are available
         available = lz.module.list_available()
-        assert all(alias in available for alias in aliases.keys())
+        assert all(alias in available for alias in aliases)
 
         # Use one of them
         assert lz.my_json.dumps({"a": 1}) == '{"a": 1}'
@@ -229,7 +229,7 @@ class TestRealWorldScenario_AliasManagement:
 
         try:
             lz.alias.export(path=temp_path)
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 data = json.load(f)
             assert isinstance(data, dict)
         finally:
@@ -280,11 +280,8 @@ class TestRealWorldScenario_Search:
         # Ensure symbol index is built (with timeout)
         info = lz.symbol.cache_info()
         if not info["built"]:
-            try:
+            with contextlib.suppress(Exception):
                 lz.symbol.index.rebuild()
-            except Exception:
-                # If rebuild fails, skip the assertion about results
-                pass
 
         # Search for common symbols
         results = lz.symbol.search("sqrt", max_results=5)
@@ -438,7 +435,6 @@ class TestRealWorldScenario_Caching:
 
     def test_invalidate_package_cache(self):
         """Test invalidating cache for specific package."""
-        from laziest_import import lz
 
         # This should return False for non-tracked package
         result = invalidate_package_cache("nonexistent_package_xyz")
@@ -778,7 +774,6 @@ class TestRealWorldScenario_SymbolSharding:
 
     def test_get_sharding_config(self):
         """Test getting sharding configuration."""
-        from laziest_import import lz
 
         config = get_sharding_config()
         assert "enabled" in config
@@ -786,7 +781,6 @@ class TestRealWorldScenario_SymbolSharding:
 
     def test_enable_disable_sharding(self):
         """Test enabling/disabling sharding."""
-        from laziest_import import lz
 
         enable_sharding()
         config = get_sharding_config()
@@ -830,7 +824,6 @@ class TestRealWorldScenario_IncrementalIndex:
 
     def test_get_incremental_config(self):
         """Test getting incremental index configuration."""
-        from laziest_import import lz
 
         config = get_incremental_config()
         assert isinstance(config, dict)
@@ -883,7 +876,6 @@ class TestRealWorldScenario_ModuleIntrospection:
 
     def test_get_module_info(self):
         """Test getting module information."""
-        from laziest_import import lz
 
         info = get_module_info("json")
         assert isinstance(info, dict)
@@ -948,7 +940,6 @@ class TestRealWorldScenario_SymbolResolution:
 
     def test_module_priority(self):
         """Test module priority settings."""
-        from laziest_import import lz
 
         set_module_priority("test_priority_module", 100)
         priority = get_module_priority("test_priority_module")

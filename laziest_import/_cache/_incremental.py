@@ -12,7 +12,7 @@ from ._symbol_index import (
 # ============== Incremental Index Update ==============
 
 
-def _get_installed_packages() -> Set[str]:
+def _get_installed_packages() -> set[str]:
     """Get set of installed top-level packages."""
     try:
         from importlib.metadata import distributions
@@ -30,7 +30,7 @@ def _get_installed_packages() -> Set[str]:
         return set()
 
 
-def _detect_changed_packages() -> Tuple[Set[str], Set[str], Set[str]]:
+def _detect_changed_packages() -> tuple[set[str], set[str], set[str]]:
     """Detect package changes since last scan.
 
     Returns:
@@ -55,7 +55,7 @@ def _detect_changed_packages() -> Tuple[Set[str], Set[str], Set[str]]:
     return new_packages, updated_packages, removed_packages
 
 
-def _get_incremental_update_modules() -> Tuple[Set[str], bool]:
+def _get_incremental_update_modules() -> tuple[set[str], bool]:
     """Get modules that need incremental update.
 
     Returns:
@@ -93,7 +93,7 @@ def enable_incremental_index(enabled: bool = True) -> None:
     _config._INCREMENTAL_INDEX_CONFIG["enabled"] = enabled
 
 
-def get_incremental_config() -> Dict[str, Any]:
+def get_incremental_config() -> dict[str, Any]:
     """Get incremental index update configuration."""
     return dict(_config._INCREMENTAL_INDEX_CONFIG)
 

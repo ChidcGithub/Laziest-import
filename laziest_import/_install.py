@@ -34,10 +34,10 @@ def _check_uv_available() -> bool:
 def _install_package_sync(
     package_name: str,
     index: Optional[str] = None,
-    extra_args: Optional[List[str]] = None,
+    extra_args: Optional[list[str]] = None,
     prefer_uv: bool = False,
     silent: bool = False,
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """Install a package using pip or uv."""
     use_uv = prefer_uv and _check_uv_available()
 
@@ -57,7 +57,7 @@ def _install_package_sync(
         cmd.append("-q")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)  # noqa: S603 — list form, trusted input
 
         if result.returncode == 0:
             return True, result.stdout or f"Successfully installed {package_name}"
@@ -78,9 +78,7 @@ def _is_interactive_terminal() -> bool:
 
     if not sys.stdin.isatty():
         return False
-    if not sys.stdout.isatty():
-        return False
-    return True
+    return sys.stdout.isatty()
 
 
 def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
@@ -122,7 +120,7 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
 def install_package(
     package_name: str,
     index: Optional[str] = None,
-    extra_args: Optional[List[str]] = None,
+    extra_args: Optional[list[str]] = None,
     interactive: Optional[bool] = None,
 ) -> bool:
     """
@@ -146,9 +144,8 @@ def install_package(
     if interactive is None:
         interactive = _config._AUTO_INSTALL_CONFIG["interactive"]
 
-    if interactive:
-        if not _interactive_install_confirm(package_name, package_name):
-            return False
+    if interactive and not _interactive_install_confirm(package_name, package_name):
+        return False
 
     success, message = _install_package_sync(
         package_name,
@@ -172,7 +169,7 @@ def install_package(
 def enable_auto_install(
     interactive: bool = True,
     index: Optional[str] = None,
-    extra_args: Optional[List[str]] = None,
+    extra_args: Optional[list[str]] = None,
     prefer_uv: bool = False,
     silent: bool = False,
 ) -> None:
@@ -200,7 +197,7 @@ def is_auto_install_enabled() -> bool:
     return _config._AUTO_INSTALL_CONFIG["enabled"]
 
 
-def get_auto_install_config() -> Dict[str, Any]:
+def get_auto_install_config() -> dict[str, Any]:
     """Get current auto-install configuration."""
     return dict(_config._AUTO_INSTALL_CONFIG)
 
@@ -210,7 +207,7 @@ def set_pip_index(url: Optional[str]) -> None:
     _config._AUTO_INSTALL_CONFIG["index"] = url
 
 
-def set_pip_extra_args(args: List[str]) -> None:
+def set_pip_extra_args(args: list[str]) -> None:
     """Set extra arguments for pip install."""
     _config._AUTO_INSTALL_CONFIG["extra_args"] = args
 

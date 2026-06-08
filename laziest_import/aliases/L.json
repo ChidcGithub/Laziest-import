@@ -16,7 +16,6 @@
   "linear_model": "sklearn.linear_model",
   "linecache": "linecache",
   "linode": "linode_api4",
-  "litecoin": "litecoin",
   "llama_index": "llama_index",
   "llm": "langchain",
   "lmdb": "lmdb",

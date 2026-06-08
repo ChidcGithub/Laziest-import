@@ -35,7 +35,7 @@ def get_package_version(package_name: str) -> Optional[str]:
         return None
 
 
-def get_all_package_versions() -> Dict[str, str]:
+def get_all_package_versions() -> dict[str, str]:
     """Get versions of all installed packages.
 
     Returns:
@@ -78,7 +78,7 @@ def get_laziest_import_version() -> str:
                 version = data.get("_current_version")
                 if version:
                     return version
-    except Exception:
+    except Exception:  # noqa: S110 — version file not available
         pass
 
     # Fallback to importlib.metadata for installed package
@@ -86,7 +86,7 @@ def get_laziest_import_version() -> str:
         from importlib.metadata import version
 
         return version("laziest-import")
-    except Exception:
+    except Exception:  # noqa: S110 — package not installed in metadata
         pass
 
     return "unknown"

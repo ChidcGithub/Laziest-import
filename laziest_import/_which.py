@@ -7,6 +7,7 @@ import inspect
 from typing import Any, Dict, List, Optional, Tuple
 
 from ._config import _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT
+import contextlib
 
 
 class SymbolLocation:
@@ -46,7 +47,7 @@ class SymbolLocation:
             return f"{self.module_name}.{self.symbol_name} ({location})"
         return f"{self.module_name}.{self.symbol_name}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "module": self.module_name,
             "symbol": self.symbol_name,
@@ -60,7 +61,7 @@ class SymbolLocation:
 
 def _parse_dotted_symbol(
     symbol_name: str, module_hint: Optional[str] = None
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
     """
     Parse a potentially dotted symbol name into (symbol_name, module_hint).
 
@@ -150,7 +151,7 @@ def which(symbol_name: str, module_hint: Optional[str] = None) -> Optional[Symbo
     return _find_symbol_live(symbol_name, actual_module_hint)
 
 
-def which_all(symbol_name: str) -> List[SymbolLocation]:
+def which_all(symbol_name: str) -> list[SymbolLocation]:
     """
     Find all locations where a symbol is defined.
 
@@ -160,7 +161,7 @@ def which_all(symbol_name: str) -> List[SymbolLocation]:
     Returns:
         List of SymbolLocation objects
     """
-    locations: List[SymbolLocation] = []
+    locations: list[SymbolLocation] = []
 
     if symbol_name in _SYMBOL_CACHE:
         for loc in _SYMBOL_CACHE[symbol_name]:
@@ -171,16 +172,14 @@ def which_all(symbol_name: str) -> List[SymbolLocation]:
     # Also try live search for new modules
     if not _SYMBOL_INDEX_BUILT:
         location = _find_symbol_live(symbol_name, None)
-        if location:
-            # Avoid duplicates
-            if not any(l.module_name == location.module_name for l in locations):
-                locations.append(location)
+        if location and not any(loc.module_name == location.module_name for loc in locations):
+            locations.append(location)
 
     return locations
 
 
 def _create_location_from_tuple(
-    symbol_name: str, loc_tuple: Tuple[str, str, Optional[str]]
+    symbol_name: str, loc_tuple: tuple[str, str, Optional[str]]
 ) -> Optional[SymbolLocation]:
     """Create SymbolLocation from cached tuple."""
     module_name, sym_type, _ = loc_tuple
@@ -204,10 +203,8 @@ def _create_location_from_tuple(
 
         signature = None
         if callable(obj) and not isinstance(obj, type):
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 signature = str(inspect.signature(obj))
-            except (ValueError, TypeError):
-                pass
 
         return SymbolLocation(
             module_name=module_name,
@@ -303,17 +300,13 @@ def _get_location_from_object(module_name: str, symbol_name: str, obj: Any) -> S
         pass
 
     doc = None
-    try:
+    with contextlib.suppress(TypeError, RuntimeError):
         doc = inspect.getdoc(obj)
-    except (TypeError, RuntimeError):
-        pass
 
     signature = None
     if callable(obj) and not isinstance(obj, type):
-        try:
+        with contextlib.suppress(ValueError, TypeError, RuntimeError):
             signature = str(inspect.signature(obj))
-        except (ValueError, TypeError, RuntimeError):
-            pass
 
     return SymbolLocation(
         module_name=module_name,

@@ -8,21 +8,23 @@ Tests cover:
 - Async import error handling
 """
 
-import pytest
 import asyncio
+
+import pytest
+
+from laziest_import._api._cache import clear_cache
 from laziest_import._async_ops import (
+    disable_retry,
+    enable_retry,
     import_async,
     import_multiple_async,
-    enable_retry,
-    disable_retry,
     is_retry_enabled,
 )
-from laziest_import._api._cache import clear_cache
 from laziest_import._hooks import (
-    add_pre_import_hook,
     add_post_import_hook,
-    remove_pre_import_hook,
+    add_pre_import_hook,
     remove_post_import_hook,
+    remove_pre_import_hook,
 )
 
 
@@ -243,7 +245,6 @@ class TestAsyncImportCaching:
     @pytest.mark.asyncio
     async def test_async_import_caches_module(self):
         """Test that async import caches modules."""
-        from laziest_import import lz
 
         clear_cache()
 
@@ -259,7 +260,6 @@ class TestAsyncImportCaching:
     async def test_async_import_updates_stats(self):
         """Test that async import updates statistics."""
         from laziest_import import lz
-
         from laziest_import._api._config import reset_import_stats
 
         reset_import_stats()
@@ -277,7 +277,6 @@ class TestAsyncImportHooks:
     @pytest.mark.asyncio
     async def test_async_import_calls_hooks(self):
         """Test that async import calls import hooks."""
-        from laziest_import import lz
 
         called = []
 

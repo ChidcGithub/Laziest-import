@@ -21,7 +21,7 @@ def _create_lazy_magics():
         global _IPYTHON_AVAILABLE
         _IPYTHON_AVAILABLE = True
 
-        LAZY_MAGIC_COMMANDS = [
+        lazy_magic_commands = [
             "np",
             "pd",
             "plt",
@@ -43,7 +43,7 @@ def _create_lazy_magics():
 
             def __init__(self, shell: Optional[Any] = None) -> None:
                 super().__init__(shell)
-                self._lazy_modules: List[str] = []
+                self._lazy_modules: list[str] = []
 
             @cell_magic
             @magic_arguments()
@@ -92,7 +92,7 @@ def _create_lazy_magics():
                     %lazyimport np pd -q
                 """
                 args = parse_argstring(self.lazyimport, line)
-                modules = args.modules or LAZY_MAGIC_COMMANDS
+                modules = args.modules or lazy_magic_commands
                 quiet = args.quiet
 
                 import laziest_import as lz
@@ -111,10 +111,7 @@ def _create_lazy_magics():
                         "torch": "torch",
                     }
 
-                    if module in aliases:
-                        alias = aliases[module]
-                    else:
-                        alias = module.replace(".", "_")
+                    alias = aliases[module] if module in aliases else module.replace(".", "_")
 
                     try:
                         obj = getattr(lz, module.split(".")[0], None)

@@ -53,10 +53,10 @@ class SymbolIndexCache:
     timestamp: float
     symbol_count: int
     module_count: int
-    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]]
+    symbols: dict[str, list[tuple[str, str, Optional[str]]]]
     python_version: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "version": self.version,
             "cache_type": self.cache_type,
@@ -68,7 +68,7 @@ class SymbolIndexCache:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SymbolIndexCache":
+    def from_dict(cls, data: dict[str, Any]) -> "SymbolIndexCache":
         return cls(
             version=data.get("version", "0.0"),
             cache_type=data.get("cache_type", "all"),
@@ -80,7 +80,7 @@ class SymbolIndexCache:
         )
 
 
-def _save_compressed_json(data: Dict[str, Any], file_path: Path) -> bool:
+def _save_compressed_json(data: dict[str, Any], file_path: Path) -> bool:
     """Save data as compressed JSON using gzip."""
     try:
         json_str = json.dumps(data, indent=2, ensure_ascii=False)
@@ -93,7 +93,7 @@ def _save_compressed_json(data: Dict[str, Any], file_path: Path) -> bool:
         return False
 
 
-def _load_compressed_json(file_path: Path) -> Optional[Dict[str, Any]]:
+def _load_compressed_json(file_path: Path) -> Optional[dict[str, Any]]:
     """Load compressed JSON data using gzip."""
     try:
         with gzip.open(file_path, "rt", encoding="utf-8") as f:
@@ -113,7 +113,7 @@ def _get_compressed_path(file_path: Path) -> Path:
 
 
 def _save_symbol_index(
-    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]],
+    symbols: dict[str, list[tuple[str, str, Optional[str]]]],
     cache_type: str = "all",
     module_count: int = 0,
 ) -> bool:
@@ -188,7 +188,8 @@ def _load_symbol_index(cache_type: str = "all") -> Optional[SymbolIndexCache]:
                 try:
                     compressed_path.unlink()
                 except Exception:
-                    pass
+                    if _DEBUG_MODE:
+                        logging.debug(f"[laziest-import] Failed to remove corrupted cache {compressed_path}")
 
         # Fall back to uncompressed
         if data is None and cache_path.exists():
@@ -248,7 +249,7 @@ def _save_tracked_packages() -> bool:
         return False
 
 
-def _load_tracked_packages() -> Dict[str, Dict[str, Any]]:
+def _load_tracked_packages() -> dict[str, dict[str, Any]]:
     """Load tracked packages information."""
     try:
         path = _get_tracked_packages_path()
@@ -256,7 +257,8 @@ def _load_tracked_packages() -> Dict[str, Dict[str, Any]]:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
     except Exception:
-        pass
+        if _DEBUG_MODE:
+            logging.debug("[laziest-import] Failed to load tracked packages")
     return {}
 
 
@@ -289,10 +291,7 @@ def _check_package_changed(package_name: str) -> bool:
     tracked = _TRACKED_PACKAGES[package_name]
     current_version = _get_package_version(package_name)
 
-    if current_version and tracked.get("version") != current_version:
-        return True
-
-    return False
+    return bool(current_version and tracked.get("version") != current_version)
 
 
 __all__ = [

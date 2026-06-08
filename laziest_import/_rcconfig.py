@@ -16,7 +16,7 @@ _LAZIESTRC_PATHS = [
     Path.cwd() / ".laziestrc.json",
 ]
 
-_CONFIG_CACHE: Optional[Dict[str, Any]] = None
+_CONFIG_CACHE: Optional[dict[str, Any]] = None
 
 
 def find_rc_file() -> Optional[Path]:
@@ -27,7 +27,7 @@ def find_rc_file() -> Optional[Path]:
     return None
 
 
-def load_rc_config(force_reload: bool = False) -> Dict[str, Any]:
+def load_rc_config(force_reload: bool = False) -> dict[str, Any]:
     """
     Load configuration from .laziestrc files.
 
@@ -45,7 +45,7 @@ def load_rc_config(force_reload: bool = False) -> Dict[str, Any]:
     if _CONFIG_CACHE is not None and not force_reload:
         return _CONFIG_CACHE
 
-    config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
 
     # Load from environment variables first (highest priority)
     config.update(_load_from_env())
@@ -67,7 +67,7 @@ def load_rc_config(force_reload: bool = False) -> Dict[str, Any]:
     return config
 
 
-def _load_file(path: Path) -> Dict[str, Any]:
+def _load_file(path: Path) -> dict[str, Any]:
     """Load config from a single file."""
     try:
         if path.suffix == ".json" or path.name == ".laziestrc":
@@ -79,24 +79,24 @@ def _load_file(path: Path) -> Dict[str, Any]:
     return {}
 
 
-def _load_simple_config(path: Path) -> Dict[str, Any]:
+def _load_simple_config(path: Path) -> dict[str, Any]:
     """Load simple config format (key: value lines)."""
     config = {}
     try:
         with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
+            for raw_line in f:
+                line = raw_line.strip()
                 if not line or line.startswith("#"):
                     continue
                 if ":" in line:
                     key, value = line.split(":", 1)
                     config[key.strip()] = _parse_value(value.strip())
-    except Exception:
+    except Exception:  # noqa: S110 — config parse is best-effort
         pass
     return config
 
 
-def _load_from_env() -> Dict[str, Any]:
+def _load_from_env() -> dict[str, Any]:
     """Load configuration from environment variables."""
     config = {}
 
@@ -143,7 +143,7 @@ def _parse_value(value: str) -> Any:
     return value
 
 
-def _deep_update(base: Dict, update: Dict) -> None:
+def _deep_update(base: dict, update: dict) -> None:
     """Deep update base dict with update dict."""
     for key, value in update.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
@@ -186,10 +186,7 @@ def create_rc_file(path: Optional[Union[str, Path]] = None, template: bool = Tru
     if path.exists():
         raise FileExistsError(f"Config file already exists: {path}")
 
-    if template:
-        config = _get_default_config_template()
-    else:
-        config = {}
+    config = _get_default_config_template() if template else {}
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -203,7 +200,7 @@ def create_rc_file(path: Optional[Union[str, Path]] = None, template: bool = Tru
     return path
 
 
-def _get_default_config_template() -> Dict[str, Any]:
+def _get_default_config_template() -> dict[str, Any]:
     """Get default configuration template."""
     return {
         "aliases": {
@@ -233,7 +230,7 @@ def _get_default_config_template() -> Dict[str, Any]:
     }
 
 
-def save_rc_config(config: Dict[str, Any], path: Optional[Path] = None) -> Path:
+def save_rc_config(config: dict[str, Any], path: Optional[Path] = None) -> Path:
     """
     Save configuration to .laziestrc file.
 
@@ -259,17 +256,17 @@ def save_rc_config(config: Dict[str, Any], path: Optional[Path] = None) -> Path:
     return path
 
 
-def list_rc_paths() -> List[Path]:
+def list_rc_paths() -> list[Path]:
     """List all possible .laziestrc file paths."""
     return list(_LAZIESTRC_PATHS)
 
 
-def reload_rc_config() -> Dict[str, Any]:
+def reload_rc_config() -> dict[str, Any]:
     """Force reload configuration from files."""
     return load_rc_config(force_reload=True)
 
 
-def get_rc_info() -> Dict[str, Any]:
+def get_rc_info() -> dict[str, Any]:
     """Get information about RC configuration."""
     return {
         "paths_checked": [str(p) for p in _LAZIESTRC_PATHS],

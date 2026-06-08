@@ -2,13 +2,15 @@
 Deep debug: why search returns 0 after comprehensive test.
 """
 
-import sys, os, json
+import json
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from laziest_import._symbol import search_symbol, get_symbol_cache_info
-from laziest_import._config import _SYMBOL_SEARCH_CONFIG, _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT
+from laziest_import._config import _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT, _SYMBOL_SEARCH_CONFIG
 from laziest_import._fuzzy import _levenshtein_distance
+from laziest_import._symbol import get_symbol_cache_info, search_symbol
 
 print("SEARCH_CONFIG:", json.dumps(_SYMBOL_SEARCH_CONFIG))
 print("INDEX_BUILT before search:", _SYMBOL_INDEX_BUILT)

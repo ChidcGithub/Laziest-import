@@ -11,8 +11,10 @@ Tests cover:
 - Representation
 """
 
-import pytest
 import os
+
+import pytest
+
 from laziest_import import reset_import_stats
 
 
@@ -233,7 +235,6 @@ class TestLazyProxy:
 
     def test_lazy_proxy_misspelling_correction(self):
         """Test misspelling correction through lazy proxy."""
-        from laziest_import._proxy import lazy
         from laziest_import import lz
 
         lz.config.auto_search = True
@@ -353,8 +354,9 @@ class TestProxyThreadSafety:
 
     def test_concurrent_access(self):
         """Test concurrent access to lazy modules."""
-        from laziest_import import lz
         import threading
+
+        from laziest_import import lz
 
         errors = []
 

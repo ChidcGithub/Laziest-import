@@ -8,6 +8,7 @@ Tests cover:
 """
 
 import pytest
+
 from laziest_import._introspect import (
     get_module_info,
     list_module_symbols,

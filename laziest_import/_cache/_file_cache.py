@@ -24,7 +24,7 @@ _CACHE_LOCK = threading.Lock()
 # Current caller file info
 _CALLER_FILE_PATH: Optional[str] = None
 _CALLER_FILE_SHA: Optional[str] = None
-_CALLER_LOADED_MODULES: Set[str] = set()
+_CALLER_LOADED_MODULES: set[str] = set()
 
 
 # ============== File Cache System ==============
@@ -50,11 +50,11 @@ def _get_caller_file_path() -> Optional[str]:
     """Get the path of the file that imported laziest_import."""
     try:
         for frame_info in traceback.extract_stack():
-            if "laziest_import" not in frame_info.filename:
-                if not frame_info.filename.startswith("<"):
-                    return str(Path(frame_info.filename).resolve())
+            if "laziest_import" not in frame_info.filename and not frame_info.filename.startswith("<"):
+                return str(Path(frame_info.filename).resolve())
     except Exception:
-        pass
+        if _config._DEBUG_MODE:
+            logging.debug("[laziest-import] Failed to get caller info")
     return None
 
 
@@ -70,14 +70,14 @@ class FileCache:
 
     file_path: str
     file_sha: str
-    loaded_modules: List[str]
+    loaded_modules: list[str]
     timestamp: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "FileCache":
+    def from_dict(cls, data: dict[str, Any]) -> "FileCache":
         return cls(**data)
 
 
@@ -95,7 +95,7 @@ def _load_file_cache(file_path: str) -> Optional[FileCache]:
         return None
 
 
-def _save_file_cache(file_path: str, file_sha: str, modules: Set[str]) -> bool:
+def _save_file_cache(file_path: str, file_sha: str, modules: set[str]) -> bool:
     """Save cache for a file."""
     try:
         _cleanup_cache_if_needed()
@@ -156,7 +156,7 @@ def _init_file_cache() -> None:
             logging.info(f"[laziest-import] No cache found for {caller_path}")
 
 
-def _start_background_preload(modules: List[str]) -> None:
+def _start_background_preload(modules: list[str]) -> None:
     """Start background thread to preload modules in parallel."""
     from .._config import is_initialized
 
@@ -172,10 +172,10 @@ def _start_background_preload(modules: List[str]) -> None:
 
     def _preload_single(module_name: str) -> bool:
         """Preload a single module."""
+        import importlib
         try:
             spec = importlib.util.find_spec(module_name)
             if spec:
-                import importlib
 
                 importlib.import_module(module_name)
                 if _config._DEBUG_MODE:
@@ -282,7 +282,7 @@ def clear_file_cache(file_path: Optional[str] = None) -> int:
         return count
 
 
-def get_file_cache_info() -> Dict[str, Any]:
+def get_file_cache_info() -> dict[str, Any]:
     """Get file cache information."""
     return {
         "enabled": _config._FILE_CACHE_ENABLED,

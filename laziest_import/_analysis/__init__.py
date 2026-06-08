@@ -40,7 +40,7 @@ def analyze_source(source: str, file_path: str = "<string>") -> PreAnalysisResul
 
 def analyze_directory(
     dir_path: str, recursive: bool = True, exclude: Optional[set] = None
-) -> List[PreAnalysisResult]:
+) -> list[PreAnalysisResult]:
     return _get_analyzer().analyze_directory(dir_path, recursive, exclude)
 
 

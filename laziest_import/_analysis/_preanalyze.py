@@ -15,9 +15,9 @@ class PreAnalysisResult:
     """Result of pre-analysis scan."""
 
     file_path: str
-    predicted_imports: Set[str]
-    used_symbols: Set[str]
-    confidence: Dict[str, float]  # module -> confidence score
+    predicted_imports: set[str]
+    used_symbols: set[str]
+    confidence: dict[str, float]  # module -> confidence score
 
 
 class DependencyPreAnalyzer:
@@ -31,9 +31,9 @@ class DependencyPreAnalyzer:
     """
 
     def __init__(self):
-        self._known_modules: Optional[Set[str]] = None
-        self._alias_to_module: Dict[str, str] = {}
-        self._module_aliases: Dict[str, Set[str]] = defaultdict(set)
+        self._known_modules: Optional[set[str]] = None
+        self._alias_to_module: dict[str, str] = {}
+        self._module_aliases: dict[str, set[str]] = defaultdict(set)
         self._build_reverse_aliases()
 
     def _build_reverse_aliases(self) -> None:
@@ -42,7 +42,7 @@ class DependencyPreAnalyzer:
             self._alias_to_module[alias] = module
             self._module_aliases[module].add(alias)
 
-    def _get_known_modules(self) -> Set[str]:
+    def _get_known_modules(self) -> set[str]:
         """Get or build known modules cache."""
         if self._known_modules is None:
             self._known_modules = _build_known_modules_cache()
@@ -81,9 +81,9 @@ class DependencyPreAnalyzer:
         Returns:
             PreAnalysisResult with predicted imports
         """
-        predicted: Set[str] = set()
-        used_symbols: Set[str] = set()
-        confidence: Dict[str, float] = {}
+        predicted: set[str] = set()
+        used_symbols: set[str] = set()
+        confidence: dict[str, float] = {}
 
         try:
             tree = ast.parse(source)
@@ -130,14 +130,14 @@ class DependencyPreAnalyzer:
 
         # Normalize confidence scores
         max_conf = max(confidence.values()) if confidence else 1.0
-        for module in confidence:
-            confidence[module] = min(1.0, confidence[module] / max_conf)
+        for module, val in confidence.items():
+            confidence[module] = min(1.0, val / max_conf)
 
         return PreAnalysisResult(file_path, predicted, used_symbols, confidence)
 
     def analyze_directory(
-        self, dir_path: str, recursive: bool = True, exclude: Optional[Set[str]] = None
-    ) -> List[PreAnalysisResult]:
+        self, dir_path: str, recursive: bool = True, exclude: Optional[set[str]] = None
+    ) -> list[PreAnalysisResult]:
         """
         Analyze all Python files in a directory.
 
@@ -166,7 +166,7 @@ class DependencyPreAnalyzer:
 
         return results
 
-    def get_preload_order(self, results: List[PreAnalysisResult]) -> List[str]:
+    def get_preload_order(self, results: list[PreAnalysisResult]) -> list[str]:
         """
         Get optimal preload order based on analysis results.
 
@@ -177,7 +177,7 @@ class DependencyPreAnalyzer:
             List of module names in optimal load order
         """
         # Aggregate confidence scores
-        total_confidence: Dict[str, float] = defaultdict(float)
+        total_confidence: dict[str, float] = defaultdict(float)
 
         for result in results:
             for module, conf in result.confidence.items():
@@ -193,9 +193,9 @@ class _NameVisitor(ast.NodeVisitor):
     """AST visitor to collect names and attribute accesses."""
 
     def __init__(self):
-        self.names: Set[str] = set()
-        self.attribute_accesses: Set[Tuple[str, str]] = set()
-        self.imported_modules: Set[str] = set()
+        self.names: set[str] = set()
+        self.attribute_accesses: set[tuple[str, str]] = set()
+        self.imported_modules: set[str] = set()
 
     def visit_Name(self, node: ast.Name) -> None:
         self.names.add(node.id)

@@ -53,7 +53,7 @@ class AppState:
 
     # ── caches ───────────────────────────────────────
     @property
-    def known_modules_cache(self) -> Optional[Set[str]]:
+    def known_modules_cache(self) -> Optional[set[str]]:
         return self._cfg()._KNOWN_MODULES_CACHE
 
     @property
@@ -65,19 +65,19 @@ class AppState:
         return self._cfg()._KNOWN_MODULES_CACHE_TTL
 
     @property
-    def known_modules_class_map(self) -> Dict[str, str]:
+    def known_modules_class_map(self) -> dict[str, str]:
         return self._cfg()._CLASS_TO_MODULE_CACHE
 
     @property
-    def alias_map(self) -> Dict[str, str]:
+    def alias_map(self) -> dict[str, str]:
         return self._cfg()._ALIAS_MAP
 
     @property
-    def lazy_modules(self) -> Dict[str, Any]:
+    def lazy_modules(self) -> dict[str, Any]:
         return self._cfg()._LAZY_MODULES
 
     @property
-    def negative_cache(self) -> Dict[str, float]:
+    def negative_cache(self) -> dict[str, float]:
         return self._cfg()._NEGATIVE_CACHE
 
     @property
@@ -117,11 +117,11 @@ class AppState:
         return self._cfg()._SYMBOL_SEARCH_CONFIG
 
     @property
-    def confirmed_mappings(self) -> Dict[str, str]:
+    def confirmed_mappings(self) -> dict[str, str]:
         return self._cfg()._CONFIRMED_MAPPINGS
 
     @property
-    def module_priority(self) -> Dict[str, int]:
+    def module_priority(self) -> dict[str, int]:
         return self._cfg()._MODULE_PRIORITY
 
     # ── config dicts ──────────────────────────────────
@@ -130,31 +130,31 @@ class AppState:
         return self._cfg()._IMPORT_STATS
 
     @property
-    def cache_stats(self) -> Dict[str, Any]:
+    def cache_stats(self) -> dict[str, Any]:
         return self._cfg()._CACHE_STATS
 
     @property
-    def retry_config(self) -> Dict[str, Any]:
+    def retry_config(self) -> dict[str, Any]:
         return self._cfg()._RETRY_CONFIG
 
     @property
-    def auto_install_config(self) -> Dict[str, Any]:
+    def auto_install_config(self) -> dict[str, Any]:
         return self._cfg()._AUTO_INSTALL_CONFIG
 
     @property
-    def cache_config(self) -> Dict[str, Any]:
+    def cache_config(self) -> dict[str, Any]:
         return self._cfg()._CACHE_CONFIG
 
     @property
-    def incremental_index_config(self) -> Dict[str, Any]:
+    def incremental_index_config(self) -> dict[str, Any]:
         return self._cfg()._INCREMENTAL_INDEX_CONFIG
 
     @property
-    def module_skip_config(self) -> Dict[str, Any]:
+    def module_skip_config(self) -> dict[str, Any]:
         return self._cfg()._MODULE_SKIP_CONFIG
 
     @property
-    def preheat_config(self) -> Dict[str, Any]:
+    def preheat_config(self) -> dict[str, Any]:
         return self._cfg()._PREHEAT_CONFIG
 
     # ── background & tracking ────────────────────────
@@ -167,7 +167,7 @@ class AppState:
         return self._cfg()._BACKGROUND_INDEX_THREAD
 
     @property
-    def tracked_packages(self) -> Dict[str, Dict[str, Any]]:
+    def tracked_packages(self) -> dict[str, dict[str, Any]]:
         return self._cfg()._TRACKED_PACKAGES
 
     # ── hooks ─────────────────────────────────────────
@@ -181,7 +181,7 @@ class AppState:
 
     # ── reserved names ────────────────────────────────
     @property
-    def reserved_names(self) -> Set[str]:
+    def reserved_names(self) -> set[str]:
         return self._cfg()._RESERVED_NAMES
 
     # ── import context ────────────────────────────────
@@ -193,7 +193,7 @@ class AppState:
     def reset_all(self) -> None:
         self._cfg().reset_all()
 
-    def get_init_state(self) -> Dict[str, Any]:
+    def get_init_state(self) -> dict[str, Any]:
         return self._cfg().get_init_state()
 
 

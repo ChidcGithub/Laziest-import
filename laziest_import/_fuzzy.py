@@ -18,7 +18,7 @@ from ._config import (
 )
 
 # ============== Mapping Cache ==============
-_MAPPING_CACHE: Dict[str, Any] = {}
+_MAPPING_CACHE: dict[str, Any] = {}
 _MAPPINGS_LOADED: bool = False
 _MAPPINGS_LOCK = threading.Lock()
 _MAPPINGS_VERSION_CHECKED: bool = False  # Track if version has been checked
@@ -29,7 +29,7 @@ def _get_mappings_dir() -> Path:
     return Path(__file__).parent / "mappings"
 
 
-def _load_mapping_file(filename: str) -> Dict[str, Any]:
+def _load_mapping_file(filename: str) -> dict[str, Any]:
     """Load a mapping JSON file, removing metadata keys.
 
     Checks version range from version.json for the 'mappings' target (only once).
@@ -129,23 +129,23 @@ def _levenshtein_distance(s1: str, s2: str) -> int:
     return previous_row[-1]
 
 
-def _get_module_abbreviations() -> Dict[str, str]:
+def _get_module_abbreviations() -> dict[str, str]:
     """Get alias-to-module mapping from the unified alias system."""
     return dict(_config._ALIAS_MAP)
 
 
-def _get_package_rename_map() -> Dict[str, str]:
+def _get_package_rename_map() -> dict[str, str]:
     """Get mapping of package import names to pip install names from file."""
     _load_all_mappings()
     return _MAPPING_CACHE.get("package_rename", {})
 
 
-def _get_common_submodules() -> Dict[str, Tuple[str, str]]:
+def _get_common_submodules() -> dict[str, tuple[str, str]]:
     """Get submodule mappings from the unified alias system.
 
     Returns dict of alias -> (parent_module, full_module_path).
     """
-    result: Dict[str, Tuple[str, str]] = {}
+    result: dict[str, tuple[str, str]] = {}
     for alias, module in _config._ALIAS_MAP.items():
         parts = module.rsplit(".", 1)
         if len(parts) == 2:
@@ -155,19 +155,19 @@ def _get_common_submodules() -> Dict[str, Tuple[str, str]]:
     return result
 
 
-def _get_common_misspellings() -> Dict[str, str]:
+def _get_common_misspellings() -> dict[str, str]:
     """Get common misspelling corrections from file."""
     _load_all_mappings()
     return _MAPPING_CACHE.get("misspellings", {})
 
 
-def _get_common_symbol_misspellings() -> Dict[str, str]:
+def _get_common_symbol_misspellings() -> dict[str, str]:
     """Get common symbol name misspelling corrections from file."""
     _load_all_mappings()
     return _MAPPING_CACHE.get("symbol_misspellings", {})
 
 
-def _infer_context() -> Set[str]:
+def _infer_context() -> set[str]:
     """Infer the current context by examining loaded modules."""
     loaded = set()
 
@@ -181,7 +181,7 @@ def _infer_context() -> Set[str]:
 
     # Check sys.modules for already imported modules
     alias_values = set(_config._ALIAS_MAP.values())
-    for mod_name in sys.modules.keys():
+    for mod_name in sys.modules:
         if mod_name and not mod_name.startswith("_"):
             base_module = mod_name.split(".")[0]
             # Consider all loaded modules as context, not just known ones
@@ -258,7 +258,7 @@ def _check_common_suffix_match(name: str, module: str) -> bool:
         try:
             if pattern(name, module):
                 return True
-        except Exception:
+        except Exception:  # noqa: S112 — skip failing patterns
             continue
 
     return False
@@ -320,7 +320,7 @@ def _search_module(name: str) -> Optional[str]:
     context_modules = _infer_context()
 
     # Collect candidates with priority scores
-    candidates: List[Tuple[int, int, str]] = []
+    candidates: list[tuple[int, int, str]] = []
 
     for mod_name in known_modules:
         mod_lower = mod_name.lower()
@@ -378,7 +378,7 @@ def _search_module(name: str) -> Optional[str]:
     return None
 
 
-def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
+def _search_class_in_modules(class_name: str) -> Optional[tuple[str, Any]]:
     """Search for a class in loaded modules."""
     import importlib
 
@@ -401,7 +401,7 @@ def _search_class_in_modules(class_name: str) -> Optional[Tuple[str, Any]]:
             if obj is not None and isinstance(obj, type):
                 _config._CLASS_TO_MODULE_CACHE[class_name] = mod_name
                 return (mod_name, obj)
-        except Exception:
+        except Exception:  # noqa: S112 — skip failing class lookups
             continue
 
     return None

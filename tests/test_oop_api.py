@@ -1,11 +1,24 @@
 """Tests for the object-oriented API namespace classes."""
 
 import pytest
-from laziest_import import LazyImport, ModuleNamespace, AliasNamespace
-from laziest_import import SymbolNamespace, CacheNamespace, ConfigNamespace
-from laziest_import import AnalyzeNamespace, ProfileNamespace, HookNamespace
-from laziest_import import AsyncNamespace, InstallNamespace, ExportNamespace
-from laziest_import import BackgroundNamespace, VersionNamespace, RCConfigNamespace
+
+from laziest_import import (
+    AliasNamespace,
+    AnalyzeNamespace,
+    AsyncNamespace,
+    BackgroundNamespace,
+    CacheNamespace,
+    ConfigNamespace,
+    ExportNamespace,
+    HookNamespace,
+    InstallNamespace,
+    LazyImport,
+    ModuleNamespace,
+    ProfileNamespace,
+    RCConfigNamespace,
+    SymbolNamespace,
+    VersionNamespace,
+)
 
 
 class TestLazyImport:

@@ -6,6 +6,7 @@ as bare names after a wildcard import.
 """
 
 import sys
+
 import pytest
 
 

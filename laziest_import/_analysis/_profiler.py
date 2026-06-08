@@ -1,10 +1,13 @@
 """Import profiling module for performance analysis."""
 
+import logging
 import threading
 import time
 import tracemalloc
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+
+from .._config import _DEBUG_MODE
 
 
 @dataclass
@@ -27,10 +30,10 @@ class ProfileReport:
 
     total_time: float = 0.0
     total_memory: int = 0
-    modules: Dict[str, ModuleProfile] = field(default_factory=dict)
-    heavy_modules: List[str] = field(default_factory=list)
-    slow_modules: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    modules: dict[str, ModuleProfile] = field(default_factory=dict)
+    heavy_modules: list[str] = field(default_factory=list)
+    slow_modules: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     tracemalloc_enabled: bool = False  # Whether memory tracking was active
 
 
@@ -60,7 +63,7 @@ class ImportProfiler:
     def __init__(self):
         if self._initialized:
             return
-        self._profiles: Dict[str, ModuleProfile] = {}
+        self._profiles: dict[str, ModuleProfile] = {}
         self._start_time: Optional[float] = None
         self._active = False
         self._lock = threading.Lock()
@@ -86,7 +89,8 @@ class ImportProfiler:
                 _snapshot = tracemalloc.take_snapshot()
                 return _snapshot.statistics("lineno")[0].size if _snapshot else 0
         except Exception:
-            pass
+            if _DEBUG_MODE:
+                logging.warning("[laziest-import] Failed to get current memory via tracemalloc")
         return 0
 
     def is_active(self) -> bool:

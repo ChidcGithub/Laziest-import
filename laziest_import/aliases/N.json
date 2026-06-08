@@ -21,7 +21,6 @@
   "njit": "numba",
   "nlp": "spacy",
   "nltk": "nltk",
-  "nmap": "nmap",
   "nn": "torch.nn",
   "nose": "nose",
   "nose2": "nose2",

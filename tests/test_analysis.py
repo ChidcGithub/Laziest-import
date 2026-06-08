@@ -9,18 +9,19 @@ Tests cover:
 - Preferences management
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
 from pathlib import Path
+
+import pytest
 
 from laziest_import import lz
 from laziest_import._analysis import detect_environment, show_environment
 from laziest_import._analysis._preferences import (
-    save_preferences,
-    load_preferences,
     apply_preferences,
     clear_preferences,
+    load_preferences,
+    save_preferences,
 )
 
 
@@ -305,10 +306,9 @@ class TestAnalysisEdgeCases:
 
     def test_analyze_nonexistent_file(self):
         """Test analyzing non-existent file."""
-        try:
-            result = lz.analyze.file("/nonexistent/path/xyz.py")
-        except FileNotFoundError:
-            pass  # Expected
+        from contextlib import suppress
+        with suppress(FileNotFoundError):
+            lz.analyze.file("/nonexistent/path/xyz.py")
 
     def test_profile_without_imports(self):
         """Test profiling with no imports."""

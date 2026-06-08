@@ -99,7 +99,7 @@ def reset_all() -> None:
         pass
 
 
-def _load_priorities_from_file() -> Dict[str, int]:
+def _load_priorities_from_file() -> dict[str, int]:
     """Load module priorities from JSON file."""
     priorities_file = Path(__file__).parent / "mappings" / "priorities.json"
     if not priorities_file.exists():
@@ -107,7 +107,7 @@ def _load_priorities_from_file() -> Dict[str, int]:
     try:
         with open(priorities_file, encoding="utf-8") as f:
             data = json.load(f)
-        result: Dict[str, int] = {}
+        result: dict[str, int] = {}
         for key, value in data.items():
             if key.startswith("_"):
                 continue
@@ -118,7 +118,7 @@ def _load_priorities_from_file() -> Dict[str, int]:
         return {}
 
 
-def get_importing_modules() -> Set[str]:
+def get_importing_modules() -> set[str]:
     """Get the set of modules currently being imported (thread-local)."""
     c = _config()
     ctx = c._IMPORT_CONTEXT

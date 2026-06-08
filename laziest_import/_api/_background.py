@@ -46,7 +46,7 @@ class BackgroundNamespace:
         set_background_timeout(value)
 
     @property
-    def preheat(self) -> Dict[str, Any]:
+    def preheat(self) -> dict[str, Any]:
         return get_preheat_config()
 
     def enable(self, enabled: bool = True) -> None:

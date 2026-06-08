@@ -12,12 +12,10 @@ Tests cover:
 - Background operations
 """
 
-import pytest
 import tempfile
-import os
-import json
-import time
 from pathlib import Path
+
+import pytest
 
 
 class TestCacheDirectory:
@@ -297,8 +295,8 @@ class TestIncrementalIndex:
 
     def test_enable_incremental_index(self):
         """Test enabling incremental index."""
-        from laziest_import._cache._incremental import enable_incremental_index
         from laziest_import._cache import get_incremental_config
+        from laziest_import._cache._incremental import enable_incremental_index
 
         enable_incremental_index(True)
         config = get_incremental_config()
@@ -394,11 +392,12 @@ class TestCacheCompression:
 
     def test_compressed_save_load(self):
         """Test compressed save and load."""
-        from laziest_import._cache import (
-            _save_compressed_json,
-            _load_compressed_json,
-        )
         import tempfile
+
+        from laziest_import._cache import (
+            _load_compressed_json,
+            _save_compressed_json,
+        )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             test_path = Path(tmpdir) / "test.json.gz"
@@ -429,7 +428,7 @@ class TestSymbolIndexCache:
 
     def test_track_package(self):
         """Test tracking a package."""
-        from laziest_import._cache import _track_package, _check_package_changed
+        from laziest_import._cache import _check_package_changed, _track_package
 
         _track_package("test_package_xyz", "1.0.0")
         result = _check_package_changed("test_package_xyz")
@@ -486,8 +485,9 @@ class TestCacheThreadSafety:
 
     def test_concurrent_cache_access(self):
         """Test concurrent cache access."""
-        from laziest_import import lz
         import threading
+
+        from laziest_import import lz
 
         errors = []
 

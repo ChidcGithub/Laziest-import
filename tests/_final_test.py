@@ -1,10 +1,11 @@
 """
 Final comprehensive test: identify exact root cause.
 """
+# ruff: noqa: S603 — all subprocess calls use list form, not shell=True
 
+import os
 import subprocess
 import sys
-import os
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(base_dir)
@@ -21,6 +22,7 @@ def check_search():
         text=True,
         timeout=30,
         cwd=base_dir,
+        check=True,
     )
     for line in r.stdout.strip().splitlines():
         if line.startswith("numpy="):
@@ -39,6 +41,7 @@ subprocess.run(
     capture_output=True,
     timeout=120,
     cwd=base_dir,
+    check=True,
 )
 print("Fresh cache:", "WORKS" if check_search() else "FAILS")
 
@@ -68,7 +71,7 @@ preamble = content[:matches[0].start()]
 code = preamble + content[sec13_start:sec13_end]
 exec(compile(code, _f, 'exec'), {'__file__': _f, '__name__': '__main__'})
 """
-subprocess.run([sys.executable, "-c", script], capture_output=True, timeout=120, cwd=base_dir)
+subprocess.run([sys.executable, "-c", script], capture_output=True, timeout=120, cwd=base_dir, check=True)
 w13 = check_search()
 print("After section 13 only:", "WORKS" if w13 else "FAILS")
 
@@ -83,6 +86,7 @@ subprocess.run(
     capture_output=True,
     timeout=120,
     cwd=base_dir,
+    check=True,
 )
 script2 = r"""
 import sys, os
@@ -114,7 +118,7 @@ for i, m in enumerate(matches):
 code = preamble + content[sec7_start:sec7_end] + content[sec33_start:sec33_end]
 exec(compile(code, _f, 'exec'), {'__file__': _f, '__name__': '__main__'})
 """
-subprocess.run([sys.executable, "-c", script2], capture_output=True, timeout=120, cwd=base_dir)
+subprocess.run([sys.executable, "-c", script2], capture_output=True, timeout=120, cwd=base_dir, check=True)
 w33 = check_search()
 print("After section 33 only (with 7):", "WORKS" if w33 else "FAILS")
 
@@ -129,6 +133,7 @@ subprocess.run(
     capture_output=True,
     timeout=120,
     cwd=base_dir,
+    check=True,
 )
 script3 = r"""
 import sys, os
@@ -136,7 +141,7 @@ _f = os.path.join(os.getcwd(), 'tests', 'test_comprehensive_usage.py')
 sys.path.insert(0, os.path.dirname(os.path.dirname(_f)))
 exec(compile(open(_f).read(), _f, 'exec'), {'__file__': _f, '__name__': '__main__'})
 """
-subprocess.run([sys.executable, "-c", script3], capture_output=True, timeout=180, cwd=base_dir)
+subprocess.run([sys.executable, "-c", script3], capture_output=True, timeout=180, cwd=base_dir, check=True)
 wall = check_search()
 print("After ALL sections:", "WORKS" if wall else "FAILS")
 
@@ -151,6 +156,7 @@ subprocess.run(
     capture_output=True,
     timeout=120,
     cwd=base_dir,
+    check=True,
 )
 script4 = r"""
 import sys, os
@@ -174,7 +180,7 @@ for i, m in enumerate(matches):
 
 exec(compile(code, _f, 'exec'), {'__file__': _f, '__name__': '__main__'})
 """
-subprocess.run([sys.executable, "-c", script4], capture_output=True, timeout=180, cwd=base_dir)
+subprocess.run([sys.executable, "-c", script4], capture_output=True, timeout=180, cwd=base_dir, check=True)
 wex = check_search()
 print("Without sections 13 and 33:", "WORKS" if wex else "FAILS")
 
@@ -189,6 +195,7 @@ subprocess.run(
     capture_output=True,
     timeout=120,
     cwd=base_dir,
+    check=True,
 )
 script5 = r"""
 import sys, os
@@ -208,6 +215,6 @@ for i, m in enumerate(matches):
     code += content[m.start():end]
 exec(compile(code, _f, 'exec'), {'__file__': _f, '__name__': '__main__'})
 """
-subprocess.run([sys.executable, "-c", script5], capture_output=True, timeout=180, cwd=base_dir)
+subprocess.run([sys.executable, "-c", script5], capture_output=True, timeout=180, cwd=base_dir, check=True)
 wno13 = check_search()
 print("Without section 13:", "WORKS" if wno13 else "FAILS")

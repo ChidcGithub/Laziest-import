@@ -5,8 +5,11 @@ Analyze module dependencies and visualize import relationships.
 """
 
 import importlib.util
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+from .._config import _DEBUG_MODE
 
 
 @dataclass
@@ -19,10 +22,10 @@ class DependencyNode:
     is_third_party: bool = False
     is_local: bool = False
     version: Optional[str] = None
-    children: List["DependencyNode"] = field(default_factory=list)
+    children: list["DependencyNode"] = field(default_factory=list)
     depth: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "module_name": self.module_name,
@@ -48,9 +51,9 @@ class DependencyTree:
     unavailable_count: int = 0
     max_depth: int = 0
     tree: Optional[DependencyNode] = None
-    circular_dependencies: List[Tuple[str, str]] = field(default_factory=list)
+    circular_dependencies: list[tuple[str, str]] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "root_module": self.root_module,
@@ -213,9 +216,9 @@ class DependencyAnalyzer:
         self.include_stdlib = include_stdlib
         self.include_third_party = include_third_party
         self.include_local = include_local
-        self._visited: Set[str] = set()
-        self._circular: List[Tuple[str, str]] = []
-        self._in_stack: Set[str] = set()
+        self._visited: set[str] = set()
+        self._circular: list[tuple[str, str]] = []
+        self._in_stack: set[str] = set()
 
     def _is_stdlib(self, module_name: str) -> bool:
         """Check if module is from standard library."""
@@ -238,7 +241,7 @@ class DependencyAnalyzer:
         except Exception:
             return None
 
-    def _get_submodules(self, module_name: str) -> List[str]:
+    def _get_submodules(self, module_name: str) -> list[str]:
         """Get list of submodules for a module."""
         submodules = []
         try:
@@ -252,7 +255,8 @@ class DependencyAnalyzer:
                     if full_name not in self._visited:
                         submodules.append(name)
         except Exception:
-            pass
+            if _DEBUG_MODE:
+                logging.warning(f"[laziest-import] Failed to get submodules for {module_name}")
         return submodules
 
     def _analyze_node(

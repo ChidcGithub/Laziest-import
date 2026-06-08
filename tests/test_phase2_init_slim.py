@@ -1,7 +1,7 @@
 """Tests for Phase 2: __init__.py slimming - lazy registry, hooks module, analysis moves."""
 
-import importlib
-from typing import Any, Callable, Dict
+from typing import Any
+import contextlib
 
 
 class TestLazyRegistry:
@@ -13,7 +13,7 @@ class TestLazyRegistry:
         reg.clear_resolved()
 
     def test_register_and_resolve(self):
-        from laziest_import._lazy_registry import register, resolve, has
+        from laziest_import._lazy_registry import has, register, resolve
 
         register("__version__", "laziest_import._config")
         assert has("__version__")
@@ -24,7 +24,7 @@ class TestLazyRegistry:
         assert result == __version__
 
     def test_resolve_caches(self):
-        from laziest_import._lazy_registry import register, resolve, _RESOLVED
+        from laziest_import._lazy_registry import _RESOLVED, register, resolve
 
         register("__version__", "laziest_import._config")
         resolve("__version__")
@@ -43,14 +43,13 @@ class TestLazyRegistry:
         assert a is b
 
     def test_has_returns_false_for_unregistered(self):
-        from laziest_import._lazy_registry import has, clear_resolved
+        from laziest_import._lazy_registry import clear_resolved, has
 
         clear_resolved()
         assert not has("__nonexistent_function_xyz__")
 
     def test_resolve_unregistered_raises(self):
-        from laziest_import._lazy_registry import resolve
-        from laziest_import._lazy_registry import clear_resolved
+        from laziest_import._lazy_registry import clear_resolved, resolve
 
         clear_resolved()
         try:
@@ -70,7 +69,7 @@ class TestLazyRegistry:
         assert result == __version__
 
     def test_clear_resolved(self):
-        from laziest_import._lazy_registry import register, resolve, clear_resolved, _RESOLVED
+        from laziest_import._lazy_registry import _RESOLVED, clear_resolved, register, resolve
 
         register("__version__", "laziest_import._config")
         resolve("__version__")
@@ -83,7 +82,7 @@ class TestHooksModule:
     """Test the new _hooks.py module."""
 
     def _count_hooks(self) -> int:
-        from laziest_import._config import _PRE_IMPORT_HOOKS, _POST_IMPORT_HOOKS
+        from laziest_import._config import _POST_IMPORT_HOOKS, _PRE_IMPORT_HOOKS
 
         return len(_PRE_IMPORT_HOOKS), len(_POST_IMPORT_HOOKS)
 
@@ -91,7 +90,7 @@ class TestHooksModule:
         from laziest_import._hooks import add_pre_import_hook, clear_import_hooks
 
         clear_import_hooks()
-        pre_before, post_before = self._count_hooks()
+        pre_before, _post_before = self._count_hooks()
         assert pre_before == 0
 
         def my_hook(name: str) -> None:
@@ -122,8 +121,8 @@ class TestHooksModule:
     def test_remove_pre_hook(self):
         from laziest_import._hooks import (
             add_pre_import_hook,
-            remove_pre_import_hook,
             clear_import_hooks,
+            remove_pre_import_hook,
         )
 
         clear_import_hooks()
@@ -139,8 +138,8 @@ class TestHooksModule:
     def test_remove_post_hook(self):
         from laziest_import._hooks import (
             add_post_import_hook,
-            remove_post_import_hook,
             clear_import_hooks,
+            remove_post_import_hook,
         )
 
         clear_import_hooks()
@@ -154,7 +153,7 @@ class TestHooksModule:
         assert post_after == 0
 
     def test_remove_nonexistent_hook(self):
-        from laziest_import._hooks import remove_pre_import_hook, remove_post_import_hook
+        from laziest_import._hooks import remove_post_import_hook, remove_pre_import_hook
 
         def my_hook(name: str) -> None:
             pass
@@ -164,8 +163,8 @@ class TestHooksModule:
 
     def test_clear_import_hooks(self):
         from laziest_import._hooks import (
-            add_pre_import_hook,
             add_post_import_hook,
+            add_pre_import_hook,
             clear_import_hooks,
         )
 
@@ -265,7 +264,7 @@ class TestLazyFunctionRegistration:
         assert has("search_in_module")
 
     def test_lazy_resolve_and_cache(self):
-        from laziest_import._lazy_registry import resolve, _RESOLVED
+        from laziest_import._lazy_registry import _RESOLVED, resolve
 
         assert "search_symbol" not in _RESOLVED
         fn = resolve("search_symbol")
@@ -295,16 +294,14 @@ class TestInitGetattr:
         assert callable(fn)
 
     def test_negative_cache_works(self):
+        import time
+
         import laziest_import
         from laziest_import._config import _NEGATIVE_CACHE, _NEGATIVE_CACHE_TTL
 
-        import time
-
         _NEGATIVE_CACHE.clear()
-        try:
+        with contextlib.suppress(AttributeError):
             laziest_import.__getattr__("__clearly_nonexistent_xyz__")
-        except AttributeError:
-            pass
         assert "__clearly_nonexistent_xyz__" in _NEGATIVE_CACHE
         assert isinstance(_NEGATIVE_CACHE["__clearly_nonexistent_xyz__"], float)
         # Respects TTL (not expired yet)

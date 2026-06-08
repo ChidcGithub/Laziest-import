@@ -1,4 +1,6 @@
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+import builtins
+from collections.abc import Iterator
+from typing import Any, Dict, List, Optional, Tuple
 
 from .._alias import (
     _ALIAS_MAP,
@@ -17,8 +19,8 @@ class AliasNamespace:
     def register(self, alias: str, module_name: str, category: Optional[str] = None) -> None:
         register_alias(alias, module_name, category=category)
 
-    def register_many(self, aliases: Dict[str, str]) -> List[str]:
-        registered: List[str] = []
+    def register_many(self, aliases: dict[str, str]) -> list[str]:
+        registered: list[str] = []
         for alias, mod in aliases.items():
             try:
                 register_alias(alias, mod)
@@ -41,7 +43,7 @@ class AliasNamespace:
     ) -> str:
         return export_aliases(path, include_categories, with_meta)
 
-    def validate(self, aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
+    def validate(self, aliases: Optional[dict[str, str]] = None) -> dict[str, list[str]]:
         return validate_aliases(aliases)
 
     def import_file(self, path: str) -> int:
@@ -55,7 +57,7 @@ class AliasNamespace:
         with open(p, encoding="utf-8") as f:
             data = json.load(f)
 
-        flattened: Dict[str, str] = {}
+        flattened: dict[str, str] = {}
         for k, v in data.items():
             if k == "_meta":
                 continue
@@ -67,22 +69,22 @@ class AliasNamespace:
         registered = self.register_many(flattened)
         return len(registered)
 
-    def search(self, pattern: str, by_module: bool = False) -> List[str]:
+    def search(self, pattern: str, by_module: bool = False) -> list[str]:
         if not pattern:
             return []
         pattern_lower = pattern.lower()
-        results: List[str] = []
+        results: list[str] = []
         for alias, module in _ALIAS_MAP.items():
             if pattern_lower in alias.lower() or (by_module and pattern_lower in module.lower()):
                 results.append(alias)
         return results
 
-    def list(self, category: Optional[str] = None) -> List[str]:
+    def list(self, category: Optional[str] = None) -> list[str]:
         if category is None:
             return sorted(_ALIAS_MAP.keys())
 
         category_lower = category.lower()
-        result: List[str] = []
+        result: list[str] = []
         for alias in _ALIAS_MAP:
             cat = get_alias_category(alias)
             if cat is not None and cat.lower() == category_lower:
@@ -114,9 +116,8 @@ class AliasNamespace:
                 for compat_cat in compat_map[category_lower]:
                     for alias in _ALIAS_MAP:
                         cat = get_alias_category(alias)
-                        if cat is not None and cat.lower() == compat_cat.lower():
-                            if alias not in result:
-                                result.append(alias)
+                        if cat is not None and cat.lower() == compat_cat.lower() and alias not in result:
+                            result.append(alias)
 
         return sorted(result)
 
@@ -125,7 +126,7 @@ class AliasNamespace:
         package: Optional[str] = None,
         installed: bool = False,
         pattern: Optional[str] = None,
-    ) -> List[str]:
+    ) -> builtins.list[str]:
         if package is not None:
             return self._suggest_for_package(package)
         if installed:
@@ -134,9 +135,9 @@ class AliasNamespace:
             return self._suggest_by_pattern(pattern)
         return sorted(_ALIAS_MAP.keys())
 
-    def _suggest_for_package(self, package: str) -> List[str]:
+    def _suggest_for_package(self, package: str) -> builtins.list[str]:
         pkg_lower = package.lower()
-        seen: Dict[str, int] = {}
+        seen: dict[str, int] = {}
 
         for alias, module in _ALIAS_MAP.items():
             mod_base = module.split(".")[0].lower()
@@ -158,9 +159,9 @@ class AliasNamespace:
 
         return sorted(seen.keys(), key=lambda a: seen[a])
 
-    def _suggest_installed(self) -> List[str]:
+    def _suggest_installed(self) -> builtins.list[str]:
         known = _build_known_modules_cache()
-        suggestions: List[str] = []
+        suggestions: list[str] = []
 
         for alias, module in _ALIAS_MAP.items():
             mod_base = module.split(".")[0]
@@ -169,9 +170,9 @@ class AliasNamespace:
 
         return sorted(suggestions)
 
-    def _suggest_by_pattern(self, pattern: str) -> List[str]:
+    def _suggest_by_pattern(self, pattern: str) -> builtins.list[str]:
         pat_lower = pattern.lower()
-        results: List[str] = []
+        results: list[str] = []
         for alias, module in _ALIAS_MAP.items():
             if pat_lower in alias.lower() or pat_lower in module.lower():
                 results.append(alias)
@@ -198,13 +199,13 @@ class AliasNamespace:
     def __iter__(self) -> Iterator[str]:
         return iter(_ALIAS_MAP)
 
-    def keys(self) -> List[str]:
+    def keys(self) -> builtins.list[str]:
         return list(_ALIAS_MAP.keys())
 
-    def values(self) -> List[str]:
+    def values(self) -> builtins.list[str]:
         return list(_ALIAS_MAP.values())
 
-    def items(self) -> List[Tuple[str, str]]:
+    def items(self) -> builtins.list[tuple[str, str]]:
         return list(_ALIAS_MAP.items())
 
     def get(self, alias: str, default: Optional[str] = None) -> Optional[str]:

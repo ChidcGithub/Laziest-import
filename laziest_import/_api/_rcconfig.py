@@ -14,7 +14,7 @@ from .._rcconfig import (
 
 
 class RCConfigNamespace:
-    def load(self, force_reload: bool = False) -> Dict[str, Any]:
+    def load(self, force_reload: bool = False) -> dict[str, Any]:
         return load_rc_config(force_reload)
 
     def get(self, key: str, default: Any = None) -> Any:
@@ -23,20 +23,20 @@ class RCConfigNamespace:
     def create(self, path: Optional[str] = None, template: bool = True) -> Path:
         return create_rc_file(path, template)
 
-    def save(self, config: Dict[str, Any], path: Optional[str] = None) -> Path:
+    def save(self, config: dict[str, Any], path: Optional[str] = None) -> Path:
         return save_rc_config(config, Path(path) if path else None)
 
-    def paths(self) -> List[str]:
+    def paths(self) -> list[str]:
         return [str(p) for p in _LAZIESTRC_PATHS]
 
     @property
-    def paths_list(self) -> List[str]:
+    def paths_list(self) -> list[str]:
         return self.paths()
 
-    def reload(self) -> Dict[str, Any]:
+    def reload(self) -> dict[str, Any]:
         return reload_rc_config()
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         return get_rc_info()
 
     def __repr__(self) -> str:

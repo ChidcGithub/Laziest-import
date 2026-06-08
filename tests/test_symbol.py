@@ -189,7 +189,6 @@ class TestSymbolConflicts:
     def test_list_symbol_conflicts(self):
         """Test listing symbol conflicts."""
         from laziest_import import lz
-
         from laziest_import._analysis._conflict import SymbolConflict
 
         conflicts = lz.symbol.conflicts("sqrt") or []
@@ -253,7 +252,7 @@ class TestModulePriority:
 
     def test_set_module_priority(self):
         """Test setting module priority."""
-        from laziest_import._symbol import set_module_priority, get_module_priority
+        from laziest_import._symbol import get_module_priority, set_module_priority
 
         set_module_priority("test_module", 100)
         priority = get_module_priority("test_module")
@@ -301,7 +300,7 @@ class TestSymbolSharding:
 
     def test_disable_sharding(self):
         """Test disabling sharding."""
-        from laziest_import._symbol import disable_sharding, get_sharding_config, enable_sharding
+        from laziest_import._symbol import disable_sharding, enable_sharding, get_sharding_config
 
         disable_sharding()
         config = get_sharding_config()

@@ -33,11 +33,11 @@ class BenchmarkResult:
 class BenchmarkReport:
     """Complete benchmark report."""
 
-    results: List[BenchmarkResult] = field(default_factory=list)
-    comparison: Dict[str, float] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    results: list[BenchmarkResult] = field(default_factory=list)
+    comparison: dict[str, float] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "results": [
@@ -69,7 +69,7 @@ class ImportComparison:
     regular_memory: int = 0
     lazy_memory: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "module_name": self.module_name,
@@ -117,7 +117,7 @@ class BenchmarkRunner:
         self,
         func: Callable,
         iterations: int,
-    ) -> List[float]:
+    ) -> list[float]:
         """Measure execution time over multiple iterations."""
         times = []
 
@@ -143,7 +143,7 @@ class BenchmarkRunner:
 
         return times
 
-    def _calculate_stats(self, times: List[float]) -> Tuple[float, float, float, float]:
+    def _calculate_stats(self, times: list[float]) -> tuple[float, float, float, float]:
         """Calculate statistics from timing data."""
         if not times:
             return 0.0, 0.0, 0.0, 0.0
@@ -295,7 +295,7 @@ class BenchmarkRunner:
 
     def run_suite(
         self,
-        benchmarks: List[Dict[str, Any]],
+        benchmarks: list[dict[str, Any]],
     ) -> BenchmarkReport:
         """
         Run a suite of benchmarks.
@@ -400,7 +400,7 @@ def benchmark(
 
 
 def benchmark_imports(
-    modules: List[str],
+    modules: list[str],
     iterations: int = 5,
     compare_lazy: bool = True,
 ) -> BenchmarkReport:

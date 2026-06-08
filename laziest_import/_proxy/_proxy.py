@@ -47,7 +47,7 @@ class LazyProxy:
             msg += f" Similar modules: {available}..."
         raise AttributeError(msg)
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         return list(_config._ALIAS_MAP.keys())
 
     def __repr__(self) -> str:

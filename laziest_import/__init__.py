@@ -167,7 +167,7 @@ from ._config import (
 # ═══════════════════════════════════════════════════════════════
 #  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
-from ._deprecated import (  # noqa: F401
+from ._deprecated import (  # noqa: F401, F811 — deprecated wrappers intentionally shadow modern imports
     analyze_directory,
     analyze_file,
     analyze_source,
@@ -225,7 +225,6 @@ from ._deprecated import (  # noqa: F401
     get_symbol_resolution_config,
     get_symbol_search_config,
     get_version,
-    help,
     import_async,
     import_multiple_async,
     install_package,
@@ -287,18 +286,6 @@ from ._hooks import (
     clear_import_hooks,
     remove_post_import_hook,
     remove_pre_import_hook,
-)
-
-# Import install functionality
-from ._install import (
-    disable_auto_install,
-    enable_auto_install,
-    get_auto_install_config,
-    install_package,
-    is_auto_install_enabled,
-    rebuild_module_cache,
-    set_pip_extra_args,
-    set_pip_index,
 )
 
 # Import proxy classes
@@ -397,7 +384,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
     msg = f"module '{__name__}' has no attribute '{name}'."
 
     # Find closest alias by Levenshtein distance
-    best_match: Optional[Tuple[str, str, int]] = None
+    best_match: Optional[tuple[str, str, int]] = None
     name_lower = name.lower()
     for alias, module in _ALIAS_MAP.items():
         alias_lower = alias.lower()
@@ -412,9 +399,8 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
             best_match = (alias, module, 0)
             break
         threshold = max(1, len(name_lower) // 3)
-        if min_dist <= threshold:
-            if best_match is None or min_dist < best_match[2]:
-                best_match = (alias, module, min_dist)
+        if min_dist <= threshold and (best_match is None or min_dist < best_match[2]):
+            best_match = (alias, module, min_dist)
 
     if best_match and best_match[2] == 0:
         msg += f" Did you mean `{best_match[1]}`? (alias: `{best_match[0]}`)"
@@ -542,7 +528,7 @@ _OLD_API_NAMES = [
 ]
 
 
-def __dir__() -> List[str]:
+def __dir__() -> list[str]:
     """Return list of public module attributes for tab completion."""
     result = list(_ALIAS_MAP.keys())
     result.extend(_BASE_EXPORTS)
@@ -642,10 +628,10 @@ _BASE_EXPORTS = [
     "print_benchmark_report",
 ]
 
-__all__ = sorted(_BASE_EXPORTS)
+__all__ = sorted(_BASE_EXPORTS)  # noqa: PLE0605 — computed __all__ is intentional
 
 # Keep deprecated functional API in __all__ for backward compat (will remove in v0.2)
-__all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES))
+__all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES))  # noqa: PLE0605 — computed __all__ is intentional
 
 
 # ============== Initialization ==============
@@ -783,7 +769,7 @@ def easter_egg(name: str = "default") -> str:
 
     if name in eggs:
         messages = eggs[name]
-        return random.choice(messages) if len(messages) > 1 else messages[0]
+        return random.choice(messages) if len(messages) > 1 else messages[0]  # noqa: S311 — easter egg, not crypto
     else:
         available = ", ".join(f'"{k}"' for k in eggs)
         return f"[?] Unknown easter egg '{name}'. Try one of: {available}"

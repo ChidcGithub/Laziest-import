@@ -2,39 +2,39 @@
 laziest_import Test Suite - Comprehensive Tests
 """
 
-import sys
-import pytest
-import tempfile
 import os
+import sys
+import tempfile
 from pathlib import Path
+
+import pytest
 
 # Ensure laziest_import can be imported
 sys.path.insert(0, ".")
 
-from laziest_import import lz
-
 from laziest_import import (
+    get_init_error,
+    is_init_failed,
     is_initialized,
     is_initializing,
-    is_init_failed,
-    get_init_error,
+    lz,
     reload_mappings,
 )
-from laziest_import._symbol import (
-    get_loaded_modules_context,
-    set_module_priority,
-    get_module_priority,
+from laziest_import._alias import (
+    get_config_dirs,
+    get_config_paths,
+    validate_aliases_importable,
 )
 from laziest_import._api._config import reset_import_stats
 from laziest_import._async_ops import import_async, import_multiple_async
-from laziest_import._cache._api import reset_cache_stats, invalidate_package_cache
-from laziest_import._alias import (
-    validate_aliases_importable,
-    get_config_paths,
-    get_config_dirs,
+from laziest_import._cache._api import invalidate_package_cache, reset_cache_stats
+from laziest_import._install import set_pip_extra_args, set_pip_index
+from laziest_import._symbol import (
+    get_loaded_modules_context,
+    get_module_priority,
+    set_module_priority,
 )
-from laziest_import._install import set_pip_index, set_pip_extra_args
-from laziest_import._cache._incremental import get_incremental_config
+import contextlib
 
 
 class TestBasicImport:
@@ -43,7 +43,6 @@ class TestBasicImport:
     def test_module_version(self):
         """Test module version exists"""
         import json
-        from pathlib import Path
 
         assert hasattr(lz, "__version__")
 
@@ -157,11 +156,22 @@ class TestFromImport:
 
     def test_from_import_star(self):
         """Test from laziest_import import *"""
-        # Create a new namespace
-        namespace = {}
-        exec("from laziest_import import *", namespace)
+        import json
+        import subprocess
+        import sys
+        r = subprocess.run(  # noqa: S603 — list form, trusted input
+            [
+                sys.executable,
+                "-c",
+                "from laziest_import import *; import json; print(json.dumps({k: str(type(v)) for k, v in list(locals().items()) if not k.startswith('_')}))",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        namespace = json.loads(r.stdout.strip())
 
-        # Check that common aliases are imported
         assert "np" in namespace
         assert "pd" in namespace
         assert "plt" in namespace
@@ -170,16 +180,20 @@ class TestFromImport:
 
     def test_from_import_usage(self):
         """Test actual usage after from import"""
-        namespace = {}
-        exec("from laziest_import import *", namespace)
-
-        # Use math module
-        math = namespace["math"]
-        assert math.pi > 3.14
-
-        # Use os module
-        os_mod = namespace["os"]
-        assert callable(os_mod.getcwd)
+        import subprocess
+        import sys
+        r = subprocess.run(  # noqa: S603 — list form, trusted input
+            [
+                sys.executable,
+                "-c",
+                "from laziest_import import *; m = math; assert m.pi > 3.14; o = os; assert callable(o.getcwd); print('OK')",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        assert r.stdout.strip() == "OK"
 
 
 class TestFunctions:
@@ -473,7 +487,6 @@ class TestFileCache:
 
     def test_set_cache_dir(self):
         """Test setting custom cache directory"""
-        from pathlib import Path
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -780,7 +793,7 @@ class TestAliasExport:
             # Check file is valid JSON
             import json
 
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 data = json.load(f)
             assert isinstance(data, dict)
         finally:
@@ -1149,7 +1162,6 @@ class TestConfigFlexibility:
         """Test setting custom module priority"""
 
         # Set a custom priority
-        from laziest_import._symbol import set_module_priority
 
         set_module_priority("test_module_xyz", 42)
 
@@ -1560,10 +1572,8 @@ class TestImportHooksEdgeCases:
         lz.hooks.post.add(tracking_hook)
 
         # Try to import something that will fail
-        try:
+        with contextlib.suppress(AttributeError, ImportError):
             _ = lz.nonexistent_module_xyz_12345.pi
-        except (AttributeError, ImportError):
-            pass
 
         lz.hooks.post.remove(tracking_hook)
         # Hook may or may not be called on failed import
@@ -1643,7 +1653,6 @@ class TestModulePriority:
         """Test updating existing priority"""
 
         original = get_module_priority("pandas")
-        from laziest_import._symbol import set_module_priority
 
         set_module_priority("pandas", 200)
 
@@ -1652,8 +1661,7 @@ class TestModulePriority:
 
         # Restore original
         if original is not None:
-            from laziest_import._symbol import set_module_priority
-        set_module_priority("pandas", original)
+            set_module_priority("pandas", original)
 
 
 class TestAutoInstallConfig:
@@ -1928,7 +1936,6 @@ class TestMemoryEfficiency:
 
     def test_unloaded_modules_dont_consume_memory(self):
         """Test that unloaded modules don't consume significant memory"""
-        import sys
 
         lz.cache.clear()
 
@@ -2455,8 +2462,8 @@ class TestModuleSkipConfig:
     def test_set_module_skip_config(self):
         """Test setting module skip config"""
         from laziest_import._symbol import (
-            set_module_skip_config,
             get_module_skip_config,
+            set_module_skip_config,
         )
 
         # Set new values
@@ -2502,13 +2509,12 @@ class TestCacheCompression:
 
     def test_save_and_load_compressed_cache(self):
         """Test saving and loading compressed cache"""
+
         from laziest_import._cache import (
-            _save_compressed_json,
-            _load_compressed_json,
             _get_cache_dir,
+            _load_compressed_json,
+            _save_compressed_json,
         )
-        import tempfile
-        import os
 
         # Create test data
         test_data = {
@@ -2575,10 +2581,9 @@ class TestRemovePackageSymbols:
     def test_remove_package_symbols_basic(self):
         """Test basic symbol removal"""
         from laziest_import._symbol import (
-            _remove_package_symbols,
             _SYMBOL_CACHE,
+            _remove_package_symbols,
         )
-        from laziest_import._config import _TRACKED_PACKAGES
 
         # Add some test symbols
         test_pkg = "__test_package_for_removal__"
@@ -2604,12 +2609,12 @@ class TestIntegrationNewFeatures:
     def test_full_workflow(self):
         """Test full workflow with new features"""
         from laziest_import._cache import (
-            enable_cache_compression,
             enable_background_build,
+            enable_cache_compression,
             enable_incremental_index,
             get_cache_config,
-            get_preheat_config,
             get_incremental_config,
+            get_preheat_config,
         )
         from laziest_import._symbol import (
             get_module_skip_config,
@@ -2764,7 +2769,7 @@ class TestInitStateVariableCopyFix:
         from laziest_import._config import is_initialized
 
         # Both should return the same value
-        assert config_module._INITIALIZED == is_initialized()
+        assert is_initialized() == config_module._INITIALIZED
 
         # The helper function should reflect the actual state
         assert is_initialized() is True
@@ -2970,10 +2975,10 @@ class TestEdgeCasesFixedBugs:
     def test_state_helper_functions_are_importable(self):
         """Test that state helper functions are importable from main module."""
         from laziest_import import (
+            get_init_error,
+            is_init_failed,
             is_initialized,
             is_initializing,
-            is_init_failed,
-            get_init_error,
         )
 
         assert callable(is_initialized)

@@ -5,20 +5,18 @@ This module contains intensive stress tests designed to push the library
 to its limits and uncover potential bugs under extreme conditions.
 """
 
-import sys
-import pytest
-import tempfile
-import os
-import gc
-import threading
-import time
 import asyncio
+import gc
 import random
 import string
-import weakref
+import sys
+import tempfile
+import threading
+import time
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import multiprocessing
+
+import pytest
+import contextlib
 
 # Ensure laziest_import can be imported
 sys.path.insert(0, ".")
@@ -323,7 +321,6 @@ class TestMemoryStress:
     def test_memory_leak_prevention(self):
         """Test that module cache doesn't leak memory"""
         from laziest_import import lz
-        import gc
 
         lz.cache.clear()
         gc.collect()
@@ -347,7 +344,6 @@ class TestMemoryStress:
     def test_weakref_handling(self):
         """Test that module results work correctly with memory management"""
         from laziest_import import lz
-        import gc
 
         lz.cache.clear()
 
@@ -413,7 +409,7 @@ class TestImportStress:
             try:
                 _ = lz.math.pi
                 success_count += 1
-            except Exception:
+            except Exception:  # noqa: S110 — expected failures in stress test
                 pass
 
         print(
@@ -671,8 +667,8 @@ class TestFuzzySearchStress:
                 # Random typos
                 typo = list(base)
                 if len(typo) > 2:
-                    pos = random.randint(0, len(typo) - 1)
-                    typo[pos] = random.choice(string.ascii_lowercase)
+                    pos = random.randint(0, len(typo) - 1)  # noqa: S311 — test data, not crypto
+                    typo[pos] = random.choice(string.ascii_lowercase)  # noqa: S311 — test data, not crypto
                 queries.append("".join(typo))
 
         start_time = time.perf_counter()
@@ -826,10 +822,8 @@ class TestRecoveryStress:
 
         # Cause many errors
         for _ in range(100):
-            try:
+            with contextlib.suppress(AttributeError, ImportError):
                 _ = lz.nonexistent_module.pi
-            except (AttributeError, ImportError):
-                pass
 
         # Should still work
         assert lz.math.pi > 3

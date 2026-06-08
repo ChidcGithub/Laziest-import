@@ -281,7 +281,7 @@ class LazyModule:
 
         return attr
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         module = self._get_module()
         return dir(module)
 

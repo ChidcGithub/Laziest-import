@@ -54,7 +54,7 @@ class CacheFilesNamespace:
     def clear(self, file_path: Optional[str] = None) -> int:
         return clear_file_cache(file_path)
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         return get_file_cache_info()
 
     def force_save(self) -> bool:
@@ -77,7 +77,7 @@ class CacheFilesNamespace:
 
 
 class CacheStatsNamespace:
-    def _get_stats(self) -> Dict[str, Any]:
+    def _get_stats(self) -> dict[str, Any]:
         return get_cache_stats()
 
     @property
@@ -199,7 +199,7 @@ class CacheConfigNamespace:
     def compression(self, value: bool) -> None:
         enable_cache_compression(value)
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> dict[str, Any]:
         return dict(get_cache_config())
 
     def export(self, path: Optional[str] = None) -> str:
@@ -247,7 +247,7 @@ class CacheNamespace:
     def symbol_count(self) -> int:
         return len(_config._SYMBOL_CACHE)
 
-    def file_info(self) -> Dict[str, Any]:
+    def file_info(self) -> dict[str, Any]:
         return get_file_cache_info()
 
     def clear_file_cache(self, file_path: Optional[str] = None) -> int:

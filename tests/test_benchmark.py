@@ -9,9 +9,10 @@ Tests cover:
 - print_benchmark_report() function
 """
 
-import pytest
 import time
-from laziest_import import lz
+
+import pytest
+
 from laziest_import._analysis._benchmark import benchmark, benchmark_imports, print_benchmark_report
 
 

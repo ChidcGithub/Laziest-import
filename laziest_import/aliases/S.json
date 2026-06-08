@@ -89,7 +89,6 @@
   "swagger": "swagger",
   "sympy": "sympy",
   "sys": "sys",
-  "syslog": "syslog",
   "s3fs": "s3fs",
   "s3transfer": "s3transfer",
   "sacremoses": "sacremoses",
@@ -174,7 +173,6 @@
   "server": "http.server",
   "subplots": "plotly.subplots",
   "sessionmaker": "sqlalchemy.orm",
-  "scaffold_eth": "scaffold_eth",
   "scikit_learn": "sklearn",
   "scvi_tools": "scvi_tools"
 }

@@ -1,9 +1,12 @@
 """Environment detection module."""
 
+import logging
 import os
 import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+
+from .._config import _DEBUG_MODE
 
 
 @dataclass
@@ -14,8 +17,8 @@ class EnvironmentInfo:
     executable: str
     virtual_env: Optional[str]
     venv_type: Optional[str]  # 'venv', 'conda', 'virtualenv', None
-    site_packages: List[str]
-    installed_packages: Dict[str, str]  # package -> version
+    site_packages: list[str]
+    installed_packages: dict[str, str]  # package -> version
 
 
 def detect_environment() -> EnvironmentInfo:
@@ -70,7 +73,8 @@ def detect_environment() -> EnvironmentInfo:
             if name:
                 installed_packages[name.lower()] = version
     except Exception:
-        pass
+        if _DEBUG_MODE:
+            logging.warning("[laziest-import] Failed to list installed packages")
 
     return EnvironmentInfo(
         python_version=python_version,

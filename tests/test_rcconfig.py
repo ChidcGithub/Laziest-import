@@ -7,10 +7,11 @@ Tests cover:
 - RC config values
 """
 
-import pytest
-import tempfile
 import json
+import tempfile
 from pathlib import Path
+
+import pytest
 
 
 class TestRCConfigInfo:

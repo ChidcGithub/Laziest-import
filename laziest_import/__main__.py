@@ -34,13 +34,13 @@ def main() -> None:
         sys.exit(1)
 
 
-def _resolve_aliases() -> Dict[str, str]:
+def _resolve_aliases() -> dict[str, str]:
     from laziest_import._config import _ALIAS_MAP
 
     return dict(_ALIAS_MAP)
 
 
-def _scan_file_for_aliases(filepath: Path, aliases: Dict[str, str]) -> Dict[str, str]:
+def _scan_file_for_aliases(filepath: Path, aliases: dict[str, str]) -> dict[str, str]:
     """Scan a single Python file for alias usage and return alias -> module mapping."""
     try:
         with open(filepath, encoding="utf-8", errors="replace") as f:
@@ -53,7 +53,7 @@ def _scan_file_for_aliases(filepath: Path, aliases: Dict[str, str]) -> Dict[str,
     except SyntaxError:
         return {}
 
-    found: Dict[str, str] = {}
+    found: dict[str, str] = {}
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
@@ -64,9 +64,9 @@ def _scan_file_for_aliases(filepath: Path, aliases: Dict[str, str]) -> Dict[str,
     return found
 
 
-def _scan_path_for_aliases(paths: List[str], aliases: Dict[str, str]) -> Dict[str, Set[str]]:
+def _scan_path_for_aliases(paths: list[str], aliases: dict[str, str]) -> dict[str, set[str]]:
     """Scan paths for alias usage, return alias -> set of files using it."""
-    result: Dict[str, Set[str]] = {}
+    result: dict[str, set[str]] = {}
 
     for path_str in paths:
         p = Path(path_str)
@@ -90,7 +90,7 @@ def _scan_path_for_aliases(paths: List[str], aliases: Dict[str, str]) -> Dict[st
 def _cmd_freeze() -> None:
     args = sys.argv[2:]
     output = "imports.laziest.json"
-    paths: List[str] = []
+    paths: list[str] = []
 
     i = 0
     while i < len(args):
@@ -114,7 +114,7 @@ def _cmd_freeze() -> None:
 
     usage = _scan_path_for_aliases(paths, aliases)
 
-    used_aliases: Dict[str, str] = {}
+    used_aliases: dict[str, str] = {}
     for alias in sorted(usage):
         used_aliases[alias] = aliases[alias]
 
@@ -154,10 +154,7 @@ def _cmd_init() -> None:
 
     from laziest_import._rcconfig import _get_default_config_template
 
-    if output:
-        target = Path(output)
-    else:
-        target = Path.home() / ".laziestrc"
+    target = Path(output) if output else Path.home() / ".laziestrc"
 
     if target.exists():
         print(f"[laziest-import init] File already exists: {target}")

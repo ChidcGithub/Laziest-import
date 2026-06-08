@@ -6,7 +6,6 @@
   "jaeger": "jaeger_client",
   "jax": "jax",
   "jit": "numba",
-  "jmeter": "jmeter",
   "jnius": "pyjnius",
   "joblib": "joblib",
   "jose": "jose",

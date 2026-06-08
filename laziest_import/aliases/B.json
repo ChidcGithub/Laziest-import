@@ -19,7 +19,6 @@
   "behave": "behave",
   "bigquery": "google.cloud.bigquery",
   "binascii": "binascii",
-  "binhex": "binhex",
   "bio": "Bio",
   "biopython": "Bio",
   "bisect": "bisect",

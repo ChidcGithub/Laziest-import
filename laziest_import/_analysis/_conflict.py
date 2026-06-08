@@ -12,18 +12,18 @@ class SymbolConflict:
     """Information about a symbol conflict."""
 
     symbol_name: str
-    locations: List[Tuple[str, str]]  # (module_name, symbol_type)
+    locations: list[tuple[str, str]]  # (module_name, symbol_type)
     recommended: Optional[str] = None
 
 
-def find_symbol_conflicts() -> Dict[str, SymbolConflict]:
+def find_symbol_conflicts() -> dict[str, SymbolConflict]:
     """
     Find all symbols that exist in multiple modules.
 
     Returns:
         Dictionary mapping symbol name to conflict info
     """
-    conflicts: Dict[str, SymbolConflict] = {}
+    conflicts: dict[str, SymbolConflict] = {}
 
     for symbol_name, locations in _config._SYMBOL_CACHE.items():
         if len(locations) > 1:
@@ -90,7 +90,7 @@ def show_conflicts(symbol_filter: Optional[str] = None, max_results: int = 20) -
     print("=" * 70)
 
 
-def get_conflicts_summary() -> Dict[str, Any]:
+def get_conflicts_summary() -> dict[str, Any]:
     """
     Get a summary of all symbol conflicts.
 
@@ -100,7 +100,7 @@ def get_conflicts_summary() -> Dict[str, Any]:
     conflicts = find_symbol_conflicts()
 
     # Count by module
-    module_counts: Dict[str, int] = defaultdict(int)
+    module_counts: dict[str, int] = defaultdict(int)
     for conflict in conflicts.values():
         for module, _ in conflict.locations:
             module_counts[module] += 1

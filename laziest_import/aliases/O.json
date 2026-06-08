@@ -16,7 +16,6 @@
   "openapi": "openapi",
   "openbabel": "openbabel",
   "opencv": "cv2",
-  "openmc": "openmc",
   "openmm": "openmm",
   "openpyxl": "openpyxl",
   "opensearch": "opensearch",

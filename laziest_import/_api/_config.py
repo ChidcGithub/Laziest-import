@@ -21,7 +21,7 @@ class AutoInstallConfig:
     enabled: bool = False
     interactive: bool = True
     index: Optional[str] = None
-    extra_args: List[str] = field(default_factory=list)
+    extra_args: list[str] = field(default_factory=list)
     prefer_uv: bool = False
     silent: bool = False
 
@@ -31,7 +31,7 @@ class RetryConfig:
     enabled: bool = False
     max_retries: int = 3
     retry_delay: float = 0.5
-    modules: Set[str] = field(default_factory=set)
+    modules: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -119,7 +119,7 @@ def is_auto_search_enabled() -> bool:
     return _config._AUTO_SEARCH_ENABLED
 
 
-def get_import_stats() -> Dict[str, Any]:
+def get_import_stats() -> dict[str, Any]:
     from .._config import _IMPORT_STATS
 
     avg_time = (
@@ -295,10 +295,10 @@ class ConfigNamespace:
         self._module_skip_cache = cfg
 
     @property
-    def import_stats(self) -> Dict[str, Any]:
+    def import_stats(self) -> dict[str, Any]:
         return get_import_stats()
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> dict[str, Any]:
         return {
             "debug": self.debug,
             "auto_search": self.auto_search,
@@ -310,7 +310,7 @@ class ConfigNamespace:
             "module_skip": asdict(self.module_skip),
         }
 
-    def restore(self, snapshot: Dict[str, Any]) -> None:
+    def restore(self, snapshot: dict[str, Any]) -> None:
         self.refresh()
         if "debug" in snapshot:
             self.debug = snapshot["debug"]
@@ -355,10 +355,10 @@ class ConfigNamespace:
 
 
 class ConfigContext:
-    def __init__(self, config_ns: ConfigNamespace, overrides: Dict[str, Any]) -> None:
+    def __init__(self, config_ns: ConfigNamespace, overrides: dict[str, Any]) -> None:
         self._config_ns = config_ns
         self._overrides = overrides
-        self._snap: Dict[str, Any] = {}
+        self._snap: dict[str, Any] = {}
 
     def __enter__(self) -> "ConfigContext":
         self._snap = self._config_ns.snapshot()

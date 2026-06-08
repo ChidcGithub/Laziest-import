@@ -3,7 +3,6 @@
     "category": "machine_learning",
     "description": "Machine learning frameworks and tools"
   },
-  "xdrlib": "xdrlib",
   "xgb": "xgboost",
   "xgboost": "xgboost",
   "xlrd": "xlrd",
@@ -25,8 +24,6 @@
   "xmlschema": "xmlschema",
   "xmlsec": "xmlsec",
   "xonsh": "xonsh",
-  "xpack": "xpack",
-  "xregexp": "xregexp",
   "xrootd": "xrootd",
   "xstatic": "xstatic",
   "xtermcolor": "xtermcolor",

@@ -10,16 +10,18 @@ Tests cover:
 - Version range checking
 """
 
-import pytest
 import json
 from pathlib import Path
+
+import pytest
+
 from laziest_import import (
-    is_initialized,
-    is_initializing,
-    is_init_failed,
+    __version__,
     get_init_error,
     get_init_lock,
-    __version__,
+    is_init_failed,
+    is_initialized,
+    is_initializing,
     reset_init_state,
 )
 
@@ -163,32 +165,27 @@ class TestInitializationState:
 
     def test_is_initialized(self):
         """Test checking if module is initialized."""
-        from laziest_import import lz
 
         # Should be initialized after import
         assert is_initialized() is True
 
     def test_is_not_initializing(self):
         """Test that module is not currently initializing."""
-        from laziest_import import lz
 
         assert is_initializing() is False
 
     def test_is_not_failed(self):
         """Test that initialization did not fail."""
-        from laziest_import import lz
 
         assert is_init_failed() is False
 
     def test_get_init_error_none(self):
         """Test that no init error exists."""
-        from laziest_import import lz
 
         assert get_init_error() is None
 
     def test_get_init_lock(self):
         """Test getting initialization lock."""
-        from laziest_import import lz
 
         lock = get_init_lock()
         assert lock is not None
@@ -218,21 +215,21 @@ class TestVersionRangeCheck:
         """Test version range with only minimum."""
         from laziest_import._config import check_version_range
 
-        is_valid, msg = check_version_range("0.0.1", None, "test")
+        is_valid, _msg = check_version_range("0.0.1", None, "test")
         assert isinstance(is_valid, bool)
 
     def test_check_version_range_max_only(self):
         """Test version range with only maximum."""
         from laziest_import._config import check_version_range
 
-        is_valid, msg = check_version_range(None, "1.0.0", "test")
+        is_valid, _msg = check_version_range(None, "1.0.0", "test")
         assert isinstance(is_valid, bool)
 
     def test_check_version_range_none(self):
         """Test version range with no constraints."""
         from laziest_import._config import check_version_range
 
-        is_valid, msg = check_version_range(None, None, "test")
+        is_valid, _msg = check_version_range(None, None, "test")
         assert is_valid is True
 
 
@@ -299,8 +296,9 @@ class TestConfigThreadSafety:
 
     def test_concurrent_config_access(self):
         """Test concurrent access to configuration."""
-        from laziest_import import lz
         import threading
+
+        from laziest_import import lz
 
         errors = []
 
@@ -328,8 +326,7 @@ class TestConfigEdgeCases:
 
     def test_reset_init_state(self):
         """Test resetting init state."""
-        from laziest_import import lz
-        from laziest_import._config import is_initialized, _INITIALIZED
+        from laziest_import._config import _INITIALIZED, is_initialized
 
         was_initialized = _INITIALIZED
         reset_init_state()

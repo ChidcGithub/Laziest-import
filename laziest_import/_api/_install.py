@@ -17,7 +17,7 @@ class InstallNamespace:
         self,
         package_name: str,
         index: Optional[str] = None,
-        extra_args: Optional[List[str]] = None,
+        extra_args: Optional[list[str]] = None,
         interactive: Optional[bool] = None,
     ) -> bool:
         return install_package(
@@ -39,7 +39,7 @@ class InstallNamespace:
         self,
         interactive: bool = True,
         index: Optional[str] = None,
-        extra_args: Optional[List[str]] = None,
+        extra_args: Optional[list[str]] = None,
         prefer_uv: bool = False,
         silent: bool = False,
     ) -> None:

@@ -18,8 +18,8 @@ class AnalyzeNamespace:
         self,
         dir_path: str,
         recursive: bool = True,
-        exclude: Optional[Set[str]] = None,
-    ) -> List[Any]:
+        exclude: Optional[set[str]] = None,
+    ) -> list[Any]:
         from .._analysis._preanalyze import DependencyPreAnalyzer
 
         analyzer = DependencyPreAnalyzer()

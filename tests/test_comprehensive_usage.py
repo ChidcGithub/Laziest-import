@@ -3,52 +3,50 @@ Comprehensive usage test for laziest-import.
 Covers every public API and demonstrates real-world usage patterns.
 """
 
-import sys
 import os
+import sys
 import tempfile
-import json
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from laziest_import import lz
-
-# "import directly" cases (migrated from deprecated API)
-from laziest_import._cache._api import invalidate_package_cache, reset_cache_stats
-from laziest_import._api._config import reset_import_stats
-from laziest_import._state_setters import reset_all
-from laziest_import._symbol import (
-    enable_sharding,
-    disable_sharding,
-    get_sharding_config,
-    clear_shard_cache,
-    set_module_priority,
-    get_module_priority,
-    get_loaded_modules_context,
-)
-from laziest_import._cache._incremental import get_incremental_config
-from laziest_import._install import set_pip_index, set_pip_extra_args
+from laziest_import import easter_egg, lz
+from laziest_import._alias import get_config_dirs, get_config_paths, validate_aliases_importable
 from laziest_import._analysis import detect_environment
-from laziest_import._analysis._environment import show_environment
-from laziest_import._analysis._preferences import (
-    save_preferences,
-    load_preferences,
-    apply_preferences,
-    clear_preferences,
-)
 from laziest_import._analysis._benchmark import (
+    BenchmarkReport,
+    BenchmarkResult,
     benchmark,
     benchmark_imports,
     print_benchmark_report,
-    BenchmarkResult,
-    BenchmarkReport,
 )
-from laziest_import._alias import get_config_paths, get_config_dirs, validate_aliases_importable
-from laziest_import._analysis._preanalyze import DependencyPreAnalyzer
-from laziest_import._analysis._profiler import ImportProfiler
 from laziest_import._analysis._dependency import DependencyNode, DependencyTree
-from laziest_import._introspect import list_module_symbols, get_module_info, search_in_module
-from laziest_import import easter_egg
+from laziest_import._analysis._environment import show_environment
+from laziest_import._analysis._preanalyze import DependencyPreAnalyzer
+from laziest_import._analysis._preferences import (
+    apply_preferences,
+    clear_preferences,
+    load_preferences,
+    save_preferences,
+)
+from laziest_import._analysis._profiler import ImportProfiler
+from laziest_import._api._config import reset_import_stats
+
+# "import directly" cases (migrated from deprecated API)
+from laziest_import._cache._api import invalidate_package_cache, reset_cache_stats
+from laziest_import._cache._incremental import get_incremental_config
+from laziest_import._install import set_pip_extra_args, set_pip_index
+from laziest_import._introspect import get_module_info, list_module_symbols, search_in_module
+from laziest_import._state_setters import reset_all
+from laziest_import._symbol import (
+    clear_shard_cache,
+    disable_sharding,
+    enable_sharding,
+    get_loaded_modules_context,
+    get_module_priority,
+    get_sharding_config,
+    set_module_priority,
+)
 
 
 def section(title):
@@ -92,7 +90,7 @@ try:
 except (ImportError, NameError):
     _have_numpy = False
     np = None
-    print(f"np = (numpy not installed)")
+    print("np = (numpy not installed)")
 if _have_numpy:
     del _test_arr
 
@@ -187,16 +185,16 @@ section("5. ALIAS MANAGEMENT")
 
 # register_alias
 lz.alias.register("my_math", "math")
-print(f"Registered 'my_math' -> 'math'")
+print("Registered 'my_math' -> 'math'")
 print(f"  lz.my_math.pi = {lz.my_math.pi}")
 
 # register_aliases batch
 lz.alias.register_many({"my_os": "os", "my_json": "json"})
-print(f"Batch registered: my_os, my_json")
+print("Batch registered: my_os, my_json")
 
 # unregister_alias
 lz.alias.unregister("my_os")
-print(f"Unregistered 'my_os'")
+print("Unregistered 'my_os'")
 
 # list_loaded
 print(f"Loaded modules: {lz.module.list_loaded()}")
@@ -258,7 +256,7 @@ cache_info = lz.cache.files.info()
 print(f"file_cache_info: {cache_info}")
 
 lz.cache.files.force_save()
-print(f"force_save_cache() done")
+print("force_save_cache() done")
 
 lz.cache.files.enabled = False
 print(f"file_cache disabled: {not lz.cache.files.enabled}")
@@ -275,10 +273,10 @@ stats = lz.cache.stats
 print(f"cache_stats hit_rate: {stats['hit_rate']:.2%}")
 
 reset_cache_stats()
-print(f"cache_stats reset")
+print("cache_stats reset")
 
 invalidate_package_cache("math")
-print(f"invalidate_package_cache('math') done")
+print("invalidate_package_cache('math') done")
 
 # Cache directory
 orig_dir = lz.cache.dir
@@ -379,7 +377,7 @@ def post_hook(name):
 
 lz.hooks.pre.add(pre_hook)
 lz.hooks.post.add(post_hook)
-print(f"hooks registered")
+print("hooks registered")
 
 lz.cache.clear()
 _ = lz.collections.Counter
@@ -387,10 +385,10 @@ print(f"hook_log: {hook_log}")
 
 lz.hooks.pre.remove(pre_hook)
 lz.hooks.post.remove(post_hook)
-print(f"hooks removed")
+print("hooks removed")
 
 lz.hooks.clear()
-print(f"all hooks cleared")
+print("all hooks cleared")
 
 
 # =============================================================================
@@ -429,7 +427,7 @@ print(f"symbol_search enabled: {lz.symbol.config.enabled}")
 
 lz.symbol.config.enable()
 lz.symbol.config.interactive = False
-print(f"symbol_search explicitly enabled")
+print("symbol_search explicitly enabled")
 
 # Search for symbols
 symbols = lz.symbol.search("sqrt", max_results=5)
@@ -452,15 +450,15 @@ print(f"symbol_cache_info keys: {list(ci.keys())}")
 
 # rebuild
 lz.symbol.index.rebuild()
-print(f"symbol_index rebuilt")
+print("symbol_index rebuilt")
 
 # clear
 lz.cache.symbols.clear()
-print(f"symbol_cache cleared")
+print("symbol_cache cleared")
 
 # sharding
 enable_sharding()
-print(f"sharding enabled")
+print("sharding enabled")
 
 ss = lz.symbol.sharded("sin", max_results=3)
 print(f"search_with_sharding('sin'): {len(ss)} results")
@@ -469,10 +467,10 @@ shard_config = get_sharding_config()
 print(f"sharding_config: {shard_config}")
 
 clear_shard_cache()
-print(f"shard_cache cleared")
+print("shard_cache cleared")
 
 disable_sharding()
-print(f"sharding disabled")
+print("sharding disabled")
 
 
 # =============================================================================
@@ -485,7 +483,7 @@ pref = lz.symbol.preference("array")
 print(f"symbol preference for 'array': {pref}")
 
 lz.symbol.clear_preference("array")
-print(f"symbol preference for 'array' cleared")
+print("symbol preference for 'array' cleared")
 
 set_module_priority("numpy", 100)
 prio = get_module_priority("numpy")
@@ -512,10 +510,10 @@ print(f"loaded_modules_context: {len(ctx)} modules")
 section("15. INCREMENTAL INDEX")
 
 lz.background.enable(True)
-print(f"incremental_index enabled")
+print("incremental_index enabled")
 
 lz.symbol.index.incremental()
-print(f"incremental build done")
+print("incremental build done")
 
 inc_config = get_incremental_config()
 print(f"incremental_config: {inc_config}")
@@ -529,19 +527,19 @@ section("16. AUTO INSTALL")
 print(f"auto_install enabled: {lz.install.enabled}")
 
 lz.install.enable(interactive=False)
-print(f"auto_install enabled (non-interactive)")
+print("auto_install enabled (non-interactive)")
 
 ac = lz.install.auto
 print(f"auto_install_config: {ac}")
 
 set_pip_index("https://pypi.org/simple/")
-print(f"pip_index set")
+print("pip_index set")
 
 set_pip_extra_args(["--no-deps"])
-print(f"pip_extra_args set")
+print("pip_extra_args set")
 
 lz.install.disable()
-print(f"auto_install disabled")
+print("auto_install disabled")
 
 
 # =============================================================================
@@ -559,7 +557,7 @@ from collections import defaultdict
 import math
 """
 result = lz.analyze.code(source)
-print(f"analyze_source:")
+print("analyze_source:")
 print(f"  predicted_imports: {result.predicted_imports}")
 print(f"  used_symbols: {result.used_symbols}")
 
@@ -581,17 +579,17 @@ with tempfile.TemporaryDirectory() as tmpdir:
 section("18. IMPORT PROFILER")
 
 profiler = ImportProfiler()
-print(f"ImportProfiler created")
+print("ImportProfiler created")
 
 lz.profile.start()
-print(f"profiling started")
+print("profiling started")
 
 _ = lz.math.pi
 _ = lz.json.dumps({})
 _ = lz.os.getcwd()
 
 lz.profile.stop()
-print(f"profiling stopped")
+print("profiling stopped")
 
 report = lz.profile.report()
 print(f"profile_report modules: {list(report.modules.keys())}")
@@ -616,7 +614,7 @@ lz.cache.clear()
 _ = lz.math.pi
 
 confs = lz.symbol.show_conflicts()
-print(f"show_conflicts done")
+print("show_conflicts done")
 
 summary = lz.symbol.conflict_summary()
 print(f"conflicts_summary: {summary}")
@@ -628,16 +626,16 @@ print(f"conflicts_summary: {summary}")
 section("20. PREFERENCES")
 
 save_preferences()
-print(f"preferences saved")
+print("preferences saved")
 
 load_preferences()
-print(f"preferences loaded")
+print("preferences loaded")
 
 apply_preferences()
-print(f"preferences applied")
+print("preferences applied")
 
 clear_preferences()
-print(f"preferences cleared")
+print("preferences cleared")
 
 
 # =============================================================================
@@ -646,7 +644,7 @@ print(f"preferences cleared")
 section("21. DEPENDENCY TREE")
 
 tree = lz.analyze.dep_tree("math", max_depth=2)
-print(f"dependency_tree('math', max_depth=2):")
+print("dependency_tree('math', max_depth=2):")
 print(f"  root: {tree.root_module}, children: {len(tree.tree.children) if tree.tree else 0}")
 print(f"  total_nodes: {tree.total_modules}")
 
@@ -809,7 +807,7 @@ lz.background.timeout = 30
 print(f"background_timeout set: {lz.background.timeout}")
 
 lz.background.wait(timeout=5)
-print(f"wait_for_index completed")
+print("wait_for_index completed")
 
 # Preheat config
 ph = lz.background.preheat
@@ -828,7 +826,7 @@ rc_val = lz.rc.get("default_search_mode")
 print(f"get_rc_value('default_search_mode'): {rc_val}")
 
 rc2 = lz.rc.reload()
-print(f"reload_rc_config done")
+print("reload_rc_config done")
 
 
 # =============================================================================
@@ -848,7 +846,7 @@ print(f"reload_module('math'): {ok}")
 section("31. ALIAS EXPORT & VALIDATION")
 
 lz.alias.register("demo_alias", "os")
-print(f"registered 'demo_alias' -> 'os'")
+print("registered 'demo_alias' -> 'os'")
 
 exported = lz.alias.export()
 print(f"export_aliases returned {len(exported)} chars (JSON)")
@@ -862,10 +860,10 @@ for alias, info in list(validation.items())[:3]:
     print(f"  {alias}: {info}")
 
 lz.alias.reload()
-print(f"aliases reloaded")
+print("aliases reloaded")
 
 lz.install.rebuild_cache()
-print(f"module cache rebuilt")
+print("module cache rebuilt")
 
 
 # =============================================================================
@@ -874,7 +872,7 @@ print(f"module cache rebuilt")
 section("32. CACHE COMPRESSION")
 
 lz.cache.config.compression = True
-print(f"cache compression enabled")
+print("cache compression enabled")
 
 cfg = lz.cache.config
 print(f"compression in config: {cfg.compression}")
@@ -886,10 +884,10 @@ print(f"compression in config: {cfg.compression}")
 section("33. RESET ALL")
 
 lz.cache.clear()
-print(f"clear_cache done")
+print("clear_cache done")
 
 reset_all()
-print(f"reset_all done (aliases reloaded, caches cleared)")
+print("reset_all done (aliases reloaded, caches cleared)")
 
 
 # =============================================================================
@@ -898,14 +896,13 @@ print(f"reset_all done (aliases reloaded, caches cleared)")
 section("34. NEGATIVE CACHE PERFORMANCE")
 
 import time
+import contextlib
 
 lz.cache.clear()
 t0 = time.perf_counter()
 for _ in range(100):
-    try:
+    with contextlib.suppress(AttributeError):
         _ = lz.this_module_does_not_exist_at_all_xyz.foo
-    except AttributeError:
-        pass
 t = time.perf_counter() - t0
 print(f"100 failed lookups: {t * 1000:.2f}ms total ({t / 100 * 1000:.4f}ms each)")
 assert t < 2.0, f"Negative cache too slow: {t:.2f}s"
@@ -937,7 +934,7 @@ stats = lz.config.import_stats
 print(f"Total imports: {stats['total_imports']}")
 loaded = lz.module.list_loaded()
 print(f"Modules loaded this session: {len(loaded)}")
-print(f"All tests passed!")
+print("All tests passed!")
 
 
 if __name__ == "__main__":

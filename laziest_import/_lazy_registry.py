@@ -2,8 +2,8 @@ import importlib
 import threading
 from typing import Any, Dict
 
-_LAZY_FUNCTION_REGISTRY: Dict[str, str] = {}
-_RESOLVED: Dict[str, Any] = {}
+_LAZY_FUNCTION_REGISTRY: dict[str, str] = {}
+_RESOLVED: dict[str, Any] = {}
 _RESOLVED_LOCK = threading.Lock()
 
 

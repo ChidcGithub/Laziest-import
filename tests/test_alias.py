@@ -11,11 +11,13 @@ Tests cover:
 - Duplicate detection
 """
 
-import pytest
-import tempfile
 import json
 import os
+import tempfile
 from pathlib import Path
+
+import pytest
+
 from laziest_import._alias import validate_aliases_importable
 
 
@@ -147,7 +149,6 @@ class TestAliasValidation:
 
     def test_validate_aliases_importable(self):
         """Test validating importable aliases."""
-        from laziest_import import lz
 
         result = validate_aliases_importable({"os_test": "os"})
         assert "os_test" in result["importable"]
@@ -155,7 +156,6 @@ class TestAliasValidation:
 
     def test_validate_aliases_not_importable(self):
         """Test validation of non-importable module."""
-        from laziest_import import lz
 
         result = validate_aliases_importable({"bad": "nonexistent_module_xyz12345"})
         assert "bad" in result["not_importable"]
@@ -200,7 +200,7 @@ class TestAliasExport:
         try:
             lz.alias.export(path=temp_path)
             assert os.path.exists(temp_path)
-            with open(temp_path, "r") as f:
+            with open(temp_path) as f:
                 data = json.load(f)
             assert isinstance(data, dict)
         finally:
@@ -242,7 +242,6 @@ class TestAliasLoading:
 
     def test_load_from_letter_file(self):
         """Test loading aliases from letter-based file."""
-        from laziest_import import lz
         from laziest_import._alias import _get_alias_dir
 
         alias_dir = _get_alias_dir()
@@ -264,7 +263,6 @@ class TestAliasLoading:
 
     def test_load_user_config_dir(self):
         """Test loading from user config directory."""
-        from laziest_import import lz
         from laziest_import._alias import _get_config_dirs
 
         dirs = _get_config_dirs()
@@ -277,14 +275,13 @@ class TestAliasVersionCheck:
 
     def test_version_file_exists(self):
         """Test that version.json exists."""
-        from laziest_import._alias import _get_alias_dir
 
         version_file = Path(__file__).parent.parent / "laziest_import" / "version.json"
         assert version_file.exists()
 
     def test_version_range_check(self):
         """Test version range checking."""
-        from laziest_import._config import check_version_range, get_version_range
+        from laziest_import._config import get_version_range
 
         min_ver, max_ver = get_version_range("aliases")
         # Should return something (even if None)
@@ -301,10 +298,7 @@ class TestAliasDuplicates:
 
         # Same alias with different modules
         duplicates = _check_duplicates(
-            {
-                "dup": "os",
-                "dup": "sys",  # This will overwrite in dict
-            }
+            dict([("dup", "os"), ("dup", "sys")])  # Intentional duplicate key
         )
         # Dict only keeps last value, so no duplicate
         assert len(duplicates) == 0
@@ -346,9 +340,8 @@ class TestAliasLookup:
     def test_lookup_by_letter_file(self):
         """Test that lookup uses letter-based files."""
         from laziest_import._alias import (
-            _lookup_alias_fast,
-            _load_aliases_from_letter_file,
             _get_alias_dir,
+            _load_aliases_from_letter_file,
         )
 
         # Load from N.json for numpy
@@ -362,8 +355,8 @@ class TestAliasRebuild:
 
     def test_rebuild_global_namespace(self):
         """Test rebuilding global namespace."""
-        from laziest_import._alias import _rebuild_global_namespace
         from laziest_import import lz
+        from laziest_import._alias import _rebuild_global_namespace
 
         before = len(lz.module.list_available())
         _rebuild_global_namespace()
@@ -403,8 +396,8 @@ class TestKnownModulesCache:
 
     def test_cache_ttl(self):
         """Test cache TTL behavior."""
+
         from laziest_import._alias import _build_known_modules_cache
-        import time
 
         modules1 = _build_known_modules_cache(force=True)
         modules2 = _build_known_modules_cache(force=False)

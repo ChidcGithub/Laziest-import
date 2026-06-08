@@ -45,7 +45,7 @@ def save_preferences() -> bool:
         return False
 
 
-def load_preferences() -> Dict[str, str]:
+def load_preferences() -> dict[str, str]:
     """
     Load symbol preferences from file.
 

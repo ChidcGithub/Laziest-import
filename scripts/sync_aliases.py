@@ -1,8 +1,8 @@
 """Fetch top PyPI packages and generate missing aliases + renames."""
 
+import argparse
 import json
 import sys
-import argparse
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -171,7 +171,7 @@ def pip_to_import(pkg: str) -> str:
     return name
 
 
-def load_aliases() -> Dict[str, str]:
+def load_aliases() -> dict[str, str]:
     result = {}
     for f in sorted(ALIASES_DIR.glob("*.json")):
         try:
@@ -185,7 +185,7 @@ def load_aliases() -> Dict[str, str]:
     return result
 
 
-def load_renames() -> Dict[str, str]:
+def load_renames() -> dict[str, str]:
     if not RENAME_FILE.exists():
         return {}
     try:
@@ -201,8 +201,8 @@ def load_renames() -> Dict[str, str]:
         return {}
 
 
-def add_to_letter_file(aliases: Dict[str, str]) -> None:
-    groups: Dict[str, Dict[str, str]] = {}
+def add_to_letter_file(aliases: dict[str, str]) -> None:
+    groups: dict[str, dict[str, str]] = {}
     for alias, module in aliases.items():
         letter = alias[0].upper() if alias and alias[0].isalpha() else "_"
         groups.setdefault(letter, {})[alias] = module
@@ -220,7 +220,7 @@ def add_to_letter_file(aliases: Dict[str, str]) -> None:
         print(f"  ⇢ {fpath.name}: {len(existing)} aliases (+{len(entries)} new)")
 
 
-def fetch_top_packages(limit: int = 300) -> List[Tuple[str, float]]:
+def fetch_top_packages(limit: int = 300) -> list[tuple[str, float]]:
     import requests
 
     print(f"Fetching top {limit} PyPI packages from {TOP_PYPI_URL} ...")
@@ -228,6 +228,26 @@ def fetch_top_packages(limit: int = 300) -> List[Tuple[str, float]]:
     resp.raise_for_status()
     rows = resp.json().get("rows", [])
     return [(r["project"], float(r.get("download_count", 0))) for r in rows[:limit]]
+
+
+def _write_sync_results(new_aliases: dict[str, str], new_renames: dict[str, str], dry_run: bool) -> None:
+    if dry_run:
+        print("Dry-run mode, no files modified")
+        return
+    if new_aliases:
+        add_to_letter_file(new_aliases)
+    if new_renames:
+        try:
+            data = json.loads(RENAME_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            data = {}
+        if "auto_sync" not in data:
+            data["auto_sync"] = {}
+        data["auto_sync"].update(new_renames)
+        with open(RENAME_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        print(f"  ⇢ package_rename.json: {len(new_renames)} new mappings")
 
 
 def main() -> int:
@@ -247,67 +267,35 @@ def main() -> int:
 
     existing_aliases = load_aliases()
     existing_renames = load_renames()
-    existing_modules = set(existing_aliases.values())
     existing_aliases_lower = {k.lower(): v for k, v in existing_aliases.items()}
 
-    new_aliases: Dict[str, str] = {}
-    new_renames: Dict[str, str] = {}
-    new_auto_renames: Dict[str, str] = {}
+    new_aliases: dict[str, str] = {}
+    new_renames: dict[str, str] = {}
 
     for pkg, downloads in top_pkgs:
         import_name = pip_to_import(pkg)
-        pip_name_for_rename = pkg
 
-        # Skip stdlib
         if import_name.lower() in STDLIB_MODULES:
             continue
-        # Skip already aliased
         if import_name.lower() in existing_aliases_lower:
             continue
-        # Skip if import name == pip name (no alias needed)
         if import_name.replace("_", "-") == pkg:
             continue
 
-        # Case 1: import name != pip name (needs package_rename mapping)
         if import_name != pkg.replace("-", "_"):
             if import_name not in existing_renames and import_name not in new_renames:
                 new_renames[import_name] = pkg
                 print(f"  [rename] '{pkg}' → '{import_name}'")
-        else:
-            # Case 2: direct alias (import name == pkg name after normalization)
-            if import_name not in existing_aliases and import_name not in new_aliases:
-                new_aliases[import_name] = import_name
-                print(f"  [alias] '{import_name}' (https://pypi.org/p/{pkg})")
+        elif import_name not in existing_aliases and import_name not in new_aliases:
+            new_aliases[import_name] = import_name
+            print(f"  [alias] '{import_name}' (https://pypi.org/p/{pkg})")
 
     print(f"\nSummary: {len(new_aliases)} new aliases, {len(new_renames)} new renames")
 
     if not new_aliases and not new_renames:
         return 0
 
-    if args.dry_run:
-        print("Dry-run mode, no files modified")
-        return 0
-
-    # Write new aliases
-    if new_aliases:
-        add_to_letter_file(new_aliases)
-
-    # Write new renames to package_rename.json
-    if new_renames:
-        try:
-            data = json.loads(RENAME_FILE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            data = {}
-
-        if "auto_sync" not in data:
-            data["auto_sync"] = {}
-        data["auto_sync"].update(new_renames)
-
-        with open(RENAME_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        print(f"  ⇢ package_rename.json: {len(new_renames)} new mappings")
-
+    _write_sync_results(new_aliases, new_renames, args.dry_run)
     return 0
 
 

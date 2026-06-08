@@ -148,8 +148,7 @@ class TestResetAll:
 
     def test_reset_all(self):
         """Test reset_all function."""
-        from laziest_import._config import reset_all
-        from laziest_import._config import _ALIAS_MAP
+        from laziest_import._config import _ALIAS_MAP, reset_all
 
         reset_all()
         # Verify state was reset

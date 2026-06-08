@@ -26,7 +26,7 @@ from ._config import (
 )
 
 # Global alias metadata: alias -> {category, description}
-_ALIAS_META: Dict[str, Dict[str, str]] = {}
+_ALIAS_META: dict[str, dict[str, str]] = {}
 
 
 def _get_alias_dir() -> Path:
@@ -48,10 +48,7 @@ def _lookup_alias_fast(alias: str) -> Optional[str]:
         return None
 
     first_char = alias[0].upper()
-    if first_char.isalpha():
-        letter = first_char
-    else:
-        letter = "_"
+    letter = first_char if first_char.isalpha() else "_"
 
     alias_dir = _get_alias_dir()
     letter_aliases = _load_aliases_from_letter_file(alias_dir, letter)
@@ -73,7 +70,7 @@ def _lookup_alias_fast(alias: str) -> Optional[str]:
     return None
 
 
-def _get_config_paths() -> List[Path]:
+def _get_config_paths() -> list[Path]:
     """Get configuration file paths in priority order."""
     paths = [
         Path.home() / ".laziest_import" / "aliases.json",
@@ -82,7 +79,7 @@ def _get_config_paths() -> List[Path]:
     return paths
 
 
-def _get_config_dirs() -> List[Path]:
+def _get_config_dirs() -> list[Path]:
     """Get configuration directory paths for letter-based alias files."""
     dirs = [
         Path.home() / ".laziest_import" / "aliases",
@@ -95,7 +92,7 @@ def _load_aliases_from_letter_file(
     dir_path: Path,
     letter: str,
     collect_meta: bool = False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Load aliases from a specific letter file (e.g., A.json, B.json).
 
@@ -109,7 +106,7 @@ def _load_aliases_from_letter_file(
     Returns:
         Dictionary of alias -> module_name mappings
     """
-    aliases: Dict[str, str] = {}
+    aliases: dict[str, str] = {}
 
     letter = letter.upper()
     if letter not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_":
@@ -124,7 +121,7 @@ def _load_aliases_from_letter_file(
             data = json.load(f)
 
         if isinstance(data, dict):
-            file_meta: Optional[Dict[str, str]] = None
+            file_meta: Optional[dict[str, str]] = None
             for key, value in data.items():
                 if key == "_meta" and isinstance(value, dict):
                     file_meta = value
@@ -164,7 +161,7 @@ def _check_aliases_version_range() -> None:
             )
 
 
-def _check_duplicates(aliases: Dict[str, str], source: str = "") -> List[Tuple[str, str, str]]:
+def _check_duplicates(aliases: dict[str, str], source: str = "") -> list[tuple[str, str, str]]:
     """
     Check for duplicate aliases with different module mappings.
 
@@ -175,7 +172,7 @@ def _check_duplicates(aliases: Dict[str, str], source: str = "") -> List[Tuple[s
     Returns:
         List of (alias, module1, module2) tuples for conflicts
     """
-    alias_sources: Dict[str, List[str]] = {}
+    alias_sources: dict[str, list[str]] = {}
     for alias, module in aliases.items():
         if alias not in alias_sources:
             alias_sources[alias] = []
@@ -190,7 +187,7 @@ def _check_duplicates(aliases: Dict[str, str], source: str = "") -> List[Tuple[s
     return duplicates
 
 
-def _load_aliases_from_dir(dir_path: Path, check_duplicates: bool = True) -> Dict[str, str]:
+def _load_aliases_from_dir(dir_path: Path, check_duplicates: bool = True) -> dict[str, str]:
     """
     Load aliases from A-Z letter files in a directory.
 
@@ -201,7 +198,7 @@ def _load_aliases_from_dir(dir_path: Path, check_duplicates: bool = True) -> Dic
     Returns:
         Dictionary of alias -> module_name mappings
     """
-    aliases: Dict[str, str] = {}
+    aliases: dict[str, str] = {}
 
     if not dir_path.exists() or not dir_path.is_dir():
         return aliases
@@ -210,18 +207,17 @@ def _load_aliases_from_dir(dir_path: Path, check_duplicates: bool = True) -> Dic
         letter_aliases = _load_aliases_from_letter_file(dir_path, letter, collect_meta=True)
         if letter_aliases:
             for alias, module in letter_aliases.items():
-                if alias in aliases and aliases[alias] != module:
-                    if check_duplicates:
-                        raise ValueError(
-                            f"[laziest-import] Duplicate alias '{alias}' with different modules: "
-                            f"'{aliases[alias]}' vs '{module}'"
-                        )
+                if alias in aliases and aliases[alias] != module and check_duplicates:
+                    raise ValueError(
+                        f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                        f"'{aliases[alias]}' vs '{module}'"
+                    )
                 aliases[alias] = module
 
     return aliases
 
 
-def _load_aliases_from_file(path: Path) -> Dict[str, str]:
+def _load_aliases_from_file(path: Path) -> dict[str, str]:
     """
     Load aliases from a JSON configuration file.
 
@@ -236,7 +232,7 @@ def _load_aliases_from_file(path: Path) -> Dict[str, str]:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
-        aliases: Dict[str, str] = {}
+        aliases: dict[str, str] = {}
         for key, value in data.items():
             if isinstance(value, dict):
                 aliases.update(value)
@@ -249,7 +245,7 @@ def _load_aliases_from_file(path: Path) -> Dict[str, str]:
         return {}
 
 
-def _load_all_aliases(check_duplicates: bool = True) -> Dict[str, str]:
+def _load_all_aliases(check_duplicates: bool = True) -> dict[str, str]:
     """
     Load aliases from all sources.
 
@@ -263,7 +259,7 @@ def _load_all_aliases(check_duplicates: bool = True) -> Dict[str, str]:
     # Check aliases version range from version.json
     _check_aliases_version_range()
 
-    aliases: Dict[str, str] = {}
+    aliases: dict[str, str] = {}
 
     # 1. Load from package aliases directory
     alias_dir = _get_alias_dir()
@@ -277,12 +273,11 @@ def _load_all_aliases(check_duplicates: bool = True) -> Dict[str, str]:
             dir_aliases = _load_aliases_from_dir(dir_path, check_duplicates=False)
             if dir_aliases:
                 for alias, module in dir_aliases.items():
-                    if alias in aliases and aliases[alias] != module:
-                        if check_duplicates:
-                            raise ValueError(
-                                f"[laziest-import] Duplicate alias '{alias}' with different modules: "
-                                f"'{aliases[alias]}' vs '{module}' (from {dir_path})"
-                            )
+                    if alias in aliases and aliases[alias] != module and check_duplicates:
+                        raise ValueError(
+                            f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                            f"'{aliases[alias]}' vs '{module}' (from {dir_path})"
+                        )
                     aliases[alias] = module
 
     # 3. Load from user/project config files
@@ -290,12 +285,11 @@ def _load_all_aliases(check_duplicates: bool = True) -> Dict[str, str]:
         file_aliases = _load_aliases_from_file(path)
         if file_aliases:
             for alias, module in file_aliases.items():
-                if alias in aliases and aliases[alias] != module:
-                    if check_duplicates:
-                        raise ValueError(
-                            f"[laziest-import] Duplicate alias '{alias}' with different modules: "
-                            f"'{aliases[alias]}' (from package) vs '{module}' (from {path})"
-                        )
+                if alias in aliases and aliases[alias] != module and check_duplicates:
+                    raise ValueError(
+                        f"[laziest-import] Duplicate alias '{alias}' with different modules: "
+                        f"'{aliases[alias]}' (from package) vs '{module}' (from {path})"
+                    )
                 aliases[alias] = module
 
     return aliases
@@ -319,11 +313,8 @@ def _validate_alias(alias: str, module_name: str) -> bool:
     if not alias.isidentifier():
         # Allow '-' and '.' for special use cases (e.g., pip package name mapping)
         # but warn that they cannot be used directly as attribute access
-        if "-" in alias or "." in alias:
-            # Only allow if the entire alias is a valid module/package name pattern
-            # (e.g., "my-package", "package.module")
-            if alias.replace("-", "_").replace(".", "_").isidentifier():
-                return True
+        if ("-" in alias or "." in alias) and alias.replace("-", "_").replace(".", "_").isidentifier():
+            return True
         warnings.warn(f"Alias '{alias}' is not a valid Python identifier")
         return False
     return True
@@ -353,7 +344,7 @@ def _rebuild_global_namespace() -> None:
 _CACHE_BUILD_LOCK = threading.Lock()
 
 
-def _build_known_modules_cache(force: bool = False) -> Set[str]:
+def _build_known_modules_cache(force: bool = False) -> set[str]:
     """
     Build cache of all known importable modules.
 
@@ -380,21 +371,29 @@ def _build_known_modules_cache(force: bool = False) -> Set[str]:
                 return _KNOWN_MODULES_CACHE
 
         # Build modules cache inside the lock
-        modules: Set[str] = set()
+        modules: set[str] = set()
 
         # Add already loaded modules
         modules.update(sys.modules.keys())
 
-        # Iterate through all modules in search paths
+        # Lightweight directory scan (avoids pkgutil.iter_modules which
+        # triggers expensive import-time side effects in packages like OpenGL)
+        seen: set[str] = set()
         for path in sys.path:
             if not path or path == ".":
                 continue
-            if not Path(path).exists():
-                continue
             try:
-                for finder, name, ispkg in pkgutil.iter_modules([path]):
-                    modules.add(name)
-            except (OSError, ImportError):
+                p = Path(path)
+                if not p.is_dir():
+                    continue
+                for entry in p.iterdir():
+                    name = entry.stem
+                    if name in seen or name.startswith("_") or name.startswith("."):
+                        continue
+                    seen.add(name)
+                    if entry.suffix == ".py" or entry.is_dir():
+                        modules.add(name)
+            except (OSError, ImportError, PermissionError):
                 continue
 
         # Add standard library modules
@@ -548,12 +547,12 @@ def _build_known_modules_cache(force: bool = False) -> Set[str]:
 # ============== Alias API ==============
 
 
-def get_config_paths() -> List[str]:
+def get_config_paths() -> list[str]:
     """Get configuration file paths as strings."""
     return [str(p) for p in _get_config_paths()]
 
 
-def get_config_dirs() -> List[str]:
+def get_config_dirs() -> list[str]:
     """Get configuration directory paths as strings."""
     return [str(p) for p in _get_config_dirs()]
 
@@ -566,7 +565,7 @@ def get_alias_category(alias: str) -> Optional[str]:
     return None
 
 
-def get_alias_meta(alias: str) -> Dict[str, str]:
+def get_alias_meta(alias: str) -> dict[str, str]:
     """Get all metadata for an alias, or empty dict if none."""
     return _ALIAS_META.get(alias, {})
 
@@ -601,7 +600,7 @@ def export_aliases(
         JSON string of aliases
     """
     if include_categories:
-        categorized: Dict[str, Any] = {}
+        categorized: dict[str, Any] = {}
         for alias, module in sorted(_ALIAS_MAP.items()):
             letter = alias[0].upper() if alias else "_"
             if letter not in categorized:
@@ -609,12 +608,12 @@ def export_aliases(
             categorized[letter][alias] = module
         output = json.dumps(categorized, indent=2, ensure_ascii=False)
     elif with_meta:
-        letter_groups: Dict[str, Dict[str, Any]] = {}
+        letter_groups: dict[str, dict[str, Any]] = {}
         for alias, module in sorted(_ALIAS_MAP.items()):
             letter = alias[0].upper() if alias else "_"
             if letter not in letter_groups:
                 letter_groups[letter] = {}
-            entry: Dict[str, Any] = {"module": module}
+            entry: dict[str, Any] = {"module": module}
             meta = _ALIAS_META.get(alias)
             if meta:
                 entry["_meta"] = meta
@@ -630,7 +629,7 @@ def export_aliases(
     return output
 
 
-def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
+def validate_aliases(aliases: Optional[dict[str, str]] = None) -> dict[str, list[str]]:
     """
     Validate alias entries.
 
@@ -643,7 +642,7 @@ def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List
     if aliases is None:
         aliases = _ALIAS_MAP
 
-    result: Dict[str, List[str]] = {
+    result: dict[str, list[str]] = {
         "valid": [],
         "invalid": [],
         "warnings": [],
@@ -698,7 +697,7 @@ def register_alias(
         _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 
-def register_aliases(aliases: Dict[str, str]) -> List[str]:
+def register_aliases(aliases: dict[str, str]) -> list[str]:
     """
     Register multiple aliases.
 
@@ -737,8 +736,8 @@ def unregister_alias(alias: str) -> bool:
 
 
 def validate_aliases_importable(
-    aliases: Optional[Dict[str, str]] = None,
-) -> Dict[str, Dict[str, Any]]:
+    aliases: Optional[dict[str, str]] = None,
+) -> dict[str, dict[str, Any]]:
     """Validate that aliases can actually be imported."""
     if aliases is None:
         aliases = _ALIAS_MAP

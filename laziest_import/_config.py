@@ -23,7 +23,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 # ============================================================
 
 
-def _load_version_config() -> Dict[str, Any]:
+def _load_version_config() -> dict[str, Any]:
     vf = Path(__file__).parent / "version.json"
     if not vf.exists():
         return {}
@@ -42,12 +42,12 @@ def get_cache_version() -> str:
     return _VERSION_CONFIG.get("_cache_version", __version__)
 
 
-def get_version_range(target: str) -> Tuple[Optional[str], Optional[str]]:
+def get_version_range(target: str) -> tuple[Optional[str], Optional[str]]:
     c = _VERSION_CONFIG.get(target, {})
     return c.get("_min_version"), c.get("_max_version")
 
 
-def _parse_version(v: str) -> Tuple[Tuple[int, ...], Optional[str]]:
+def _parse_version(v: str) -> tuple[tuple[int, ...], Optional[str]]:
     m = re.match(r"^(\d+(?:\.\d+)*)(?:-(.+))?$", v.strip())
     if not m:
         return ((0,), None)
@@ -84,7 +84,7 @@ def check_version_range(
     max_version: Optional[str],
     current_version: str = __version__,
     file_path: Optional[str] = None,
-) -> Tuple[bool, Optional[str]]:
+) -> tuple[bool, Optional[str]]:
     wl = []
     if min_version is not None and _compare_versions(current_version, min_version) < 0:
         s = f"Version {current_version} is below minimum {min_version}"
@@ -104,8 +104,8 @@ def check_version_range(
 class ImportStats:
     total_imports: int = 0
     total_time: float = 0.0
-    module_times: Dict[str, float] = field(default_factory=dict)
-    module_access_counts: Dict[str, int] = field(default_factory=dict)
+    module_times: dict[str, float] = field(default_factory=dict)
+    module_access_counts: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -144,7 +144,7 @@ def get_init_lock() -> threading.RLock:
     return _INIT_LOCK
 
 
-def get_init_state() -> Dict[str, Any]:
+def get_init_state() -> dict[str, Any]:
     return {
         "initializing": _INITIALIZING,
         "initialized": _INITIALIZED,
@@ -186,19 +186,19 @@ _DEBUG_MODE: bool = False
 _FILE_CACHE_ENABLED: bool = True
 
 # Known modules cache
-_KNOWN_MODULES_CACHE: Optional[Set[str]] = None
+_KNOWN_MODULES_CACHE: Optional[set[str]] = None
 _KNOWN_MODULES_CACHE_TIME: float = 0.0
 _KNOWN_MODULES_CACHE_TTL: float = 300.0
-_CLASS_TO_MODULE_CACHE: Dict[str, str] = {}
+_CLASS_TO_MODULE_CACHE: dict[str, str] = {}
 
 # Negative cache (name → timestamp)
-_NEGATIVE_CACHE: Dict[str, float] = {}
+_NEGATIVE_CACHE: dict[str, float] = {}
 _NEGATIVE_CACHE_TTL: float = 300.0
 _NEGATIVE_CACHE_LOCK: threading.Lock = threading.Lock()
 
 # Alias & module proxies
-_ALIAS_MAP: Dict[str, str] = {}
-_LAZY_MODULES: Dict[str, Any] = {}
+_ALIAS_MAP: dict[str, str] = {}
+_LAZY_MODULES: dict[str, Any] = {}
 
 # Thread-local import context
 _IMPORT_CONTEXT = threading.local()
@@ -206,7 +206,7 @@ _IMPORT_CONTEXT_LOCK = threading.Lock()
 
 # Stats
 _IMPORT_STATS: ImportStats = ImportStats()
-_CACHE_STATS: Dict[str, Any] = {
+_CACHE_STATS: dict[str, Any] = {
     "symbol_hits": 0,
     "symbol_misses": 0,
     "module_hits": 0,
@@ -216,11 +216,11 @@ _CACHE_STATS: Dict[str, Any] = {
 }
 
 # Hooks
-_PRE_IMPORT_HOOKS: List[Callable[[str], None]] = []
-_POST_IMPORT_HOOKS: List[Callable[[str, Any], None]] = []
+_PRE_IMPORT_HOOKS: list[Callable[[str], None]] = []
+_POST_IMPORT_HOOKS: list[Callable[[str, Any], None]] = []
 
 # Retry config
-_RETRY_CONFIG: Dict[str, Any] = {
+_RETRY_CONFIG: dict[str, Any] = {
     "enabled": False,
     "max_retries": 3,
     "retry_delay": 0.5,
@@ -228,7 +228,7 @@ _RETRY_CONFIG: Dict[str, Any] = {
 }
 
 # Auto-install config
-_AUTO_INSTALL_CONFIG: Dict[str, Any] = {
+_AUTO_INSTALL_CONFIG: dict[str, Any] = {
     "enabled": False,
     "interactive": True,
     "index": None,
@@ -238,7 +238,7 @@ _AUTO_INSTALL_CONFIG: Dict[str, Any] = {
 }
 
 # Symbol search config
-_SYMBOL_SEARCH_CONFIG: Dict[str, Any] = {
+_SYMBOL_SEARCH_CONFIG: dict[str, Any] = {
     "enabled": True,
     "interactive": True,
     "exact_params": False,
@@ -250,24 +250,24 @@ _SYMBOL_SEARCH_CONFIG: Dict[str, Any] = {
 }
 
 # Symbol cache
-_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
-_STDLIB_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
-_THIRD_PARTY_SYMBOL_CACHE: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+_SYMBOL_CACHE: dict[str, list[tuple[str, str, Optional[str]]]] = {}
+_STDLIB_SYMBOL_CACHE: dict[str, list[tuple[str, str, Optional[str]]]] = {}
+_THIRD_PARTY_SYMBOL_CACHE: dict[str, list[tuple[str, str, Optional[str]]]] = {}
 _SYMBOL_INDEX_BUILT: bool = False
 _STDLIB_CACHE_BUILT: bool = False
 _THIRD_PARTY_CACHE_BUILT: bool = False
 
 # Confirmed mappings
-_CONFIRMED_MAPPINGS: Dict[str, str] = {}
+_CONFIRMED_MAPPINGS: dict[str, str] = {}
 
 # Symbol cache lock
 _SYMBOL_CACHE_LOCK: threading.Lock = threading.Lock()
 
 # Module priority
-_MODULE_PRIORITY: Dict[str, int] = {}
+_MODULE_PRIORITY: dict[str, int] = {}
 
 # Symbol preferences
-_SYMBOL_PREFERENCES: Dict[str, str] = {
+_SYMBOL_PREFERENCES: dict[str, str] = {
     "DataFrame": "pandas",
     "Series": "pandas",
     "array": "numpy",
@@ -289,7 +289,7 @@ _SYMBOL_PREFERENCES: Dict[str, str] = {
 }
 
 # Symbol resolution config
-_SYMBOL_RESOLUTION_CONFIG: Dict[str, Any] = {
+_SYMBOL_RESOLUTION_CONFIG: dict[str, Any] = {
     "auto_symbol": True,
     "auto_threshold": 0.7,
     "conflict_threshold": 0.3,
@@ -301,7 +301,7 @@ _SYMBOL_RESOLUTION_CONFIG: Dict[str, Any] = {
 }
 
 # Cache config
-_CACHE_CONFIG: Dict[str, Any] = {
+_CACHE_CONFIG: dict[str, Any] = {
     "enabled": True,
     "max_size_mb": 100,
     "cleanup_threshold": 0.8,
@@ -316,21 +316,21 @@ _CACHE_CONFIG: Dict[str, Any] = {
 }
 
 # Incremental & background config
-_INCREMENTAL_INDEX_CONFIG: Dict[str, Any] = {
+_INCREMENTAL_INDEX_CONFIG: dict[str, Any] = {
     "enabled": True,
     "check_version": True,
     "check_mtime": False,
     "background_build": True,
     "background_timeout": 60.0,
 }
-_MODULE_SKIP_CONFIG: Dict[str, Any] = {
+_MODULE_SKIP_CONFIG: dict[str, Any] = {
     "skip_test_modules": True,
     "skip_internal_modules": True,
     "skip_large_modules": True,
     "large_module_threshold": 100,
     "skip_modules_file": None,
 }
-_PREHEAT_CONFIG: Dict[str, Any] = {
+_PREHEAT_CONFIG: dict[str, Any] = {
     "enabled": True,
     "async_index_build": True,
     "preload_common_modules": True,
@@ -342,10 +342,10 @@ _BACKGROUND_INDEX_BUILDING: bool = False
 _BACKGROUND_INDEX_THREAD: Optional[Any] = None
 
 # Tracked packages
-_TRACKED_PACKAGES: Dict[str, Dict[str, Any]] = {}
+_TRACKED_PACKAGES: dict[str, dict[str, Any]] = {}
 
 # Reserved names
-_RESERVED_NAMES: Set[str] = {
+_RESERVED_NAMES: set[str] = {
     "__name__",
     "__doc__",
     "__package__",
@@ -381,11 +381,11 @@ def _set_stdlib_cache_built(value: bool) -> None: ...
 def _set_third_party_cache_built(value: bool) -> None: ...
 def _set_background_index_building(value: bool) -> None: ...
 def reset_all() -> None: ...
-def _load_priorities_from_file() -> Dict[str, int]:
+def _load_priorities_from_file() -> dict[str, int]:
     return {}
 
 
-def get_importing_modules() -> Set[str]:
+def get_importing_modules() -> set[str]:
     return set()
 
 
@@ -394,7 +394,7 @@ def get_importing_modules() -> Set[str]:
 
 def _activate_state_setters() -> None:
     """Replace stub functions with real implementations."""
-    import laziest_import._config as _self
+    import laziest_import._config as _self  # noqa: PLW0406 — self-reference for state initialization
 
     from ._state_setters import (
         _load_priorities_from_file as _lpf,
@@ -427,7 +427,6 @@ def _activate_state_setters() -> None:
     _self.get_importing_modules = _gim
 
 
-try:
-    _activate_state_setters()
-except ImportError:
-    pass  # deferred activation in build/editable install environments
+from contextlib import suppress
+with suppress(ImportError):
+    _activate_state_setters()  # deferred activation in build/editable install environments

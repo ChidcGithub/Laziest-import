@@ -31,7 +31,7 @@ def _supports_unicode() -> bool:
                 code_page = ctypes.windll.kernel32.GetConsoleOutputCP()
                 if code_page == 65001:  # UTF-8 code page
                     return True
-            except Exception:
+            except Exception:  # noqa: S110 — Windows-only, best-effort
                 pass
 
         return False
@@ -63,9 +63,9 @@ class HelpTopic:
         self,
         name: str,
         description: str,
-        examples: Optional[List[str]] = None,
-        related: Optional[List[str]] = None,
-        details: Optional[Dict[str, Any]] = None,
+        examples: Optional[list[str]] = None,
+        related: Optional[list[str]] = None,
+        details: Optional[dict[str, Any]] = None,
     ) -> None:
         self.name = name
         self.description = description
@@ -101,7 +101,7 @@ class HelpTopic:
         return "\n".join(lines)
 
 
-_TOPICS: Dict[str, HelpTopic] = {}
+_TOPICS: dict[str, HelpTopic] = {}
 
 
 def _register_default_topics() -> None:
@@ -411,7 +411,7 @@ def add_topic(name: str, topic: HelpTopic) -> None:
     _TOPICS[name.lower()] = topic
 
 
-def list_topics() -> List[str]:
+def list_topics() -> list[str]:
     """List all available help topics."""
     if not _TOPICS:
         _register_default_topics()

@@ -10,9 +10,9 @@ Tests cover:
 import pytest
 
 from laziest_import._install import (
-    set_pip_index,
-    set_pip_extra_args,
     rebuild_module_cache,
+    set_pip_extra_args,
+    set_pip_index,
 )
 
 

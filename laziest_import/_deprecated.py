@@ -48,7 +48,7 @@ def _get_lz():
 # ─── Module loading functions ──────────────────────────────
 
 
-def list_loaded() -> List[str]:
+def list_loaded() -> list[str]:
     """Deprecated -> lz().module.list_loaded()"""
     _warn("list_loaded", "lz().module.list_loaded()")
     from ._api._module import list_loaded as _list_loaded
@@ -56,7 +56,7 @@ def list_loaded() -> List[str]:
     return _list_loaded()
 
 
-def list_available() -> List[str]:
+def list_available() -> list[str]:
     """Deprecated -> lz().module.list_available()"""
     _warn("list_available", "lz().module.list_available()")
     from ._api._module import list_available as _list_available
@@ -166,7 +166,7 @@ def is_debug_mode() -> bool:
 # ─── Statistics functions ──────────────────────────────────
 
 
-def get_import_stats() -> Dict[str, Any]:
+def get_import_stats() -> dict[str, Any]:
     """Deprecated -> lz.config.import_stats"""
     _warn("get_import_stats", "lz.config.import_stats")
     from ._api._config import get_import_stats as _get_import_stats
@@ -190,7 +190,7 @@ def search_symbol(
     symbol_type: Optional[str] = None,
     signature: Optional[str] = None,
     max_results: Optional[int] = None,
-) -> List[Any]:
+) -> list[Any]:
     """Deprecated -> lz().symbol.search(name, symbol_type, signature, max_results)"""
     _warn("search_symbol", "lz().symbol.search()")
     from ._symbol import search_symbol as _search_symbol
@@ -236,7 +236,7 @@ def rebuild_symbol_index() -> None:
     _rebuild()
 
 
-def get_symbol_search_config() -> Dict[str, Any]:
+def get_symbol_search_config() -> dict[str, Any]:
     """Deprecated -> lz().symbol.config.snapshot()"""
     _warn("get_symbol_search_config", "lz().symbol.config")
     from ._symbol import get_symbol_search_config as _get
@@ -244,7 +244,7 @@ def get_symbol_search_config() -> Dict[str, Any]:
     return _get()
 
 
-def get_symbol_cache_info() -> Dict[str, Any]:
+def get_symbol_cache_info() -> dict[str, Any]:
     """Deprecated -> lz().symbol.cache_info()"""
     _warn("get_symbol_cache_info", "lz().symbol.cache_info()")
     from ._symbol import get_symbol_cache_info as _get
@@ -276,7 +276,7 @@ def clear_symbol_preference(symbol: str) -> bool:
     return _clear(symbol)
 
 
-def list_symbol_conflicts(symbol: str) -> List[Dict[str, Any]]:
+def list_symbol_conflicts(symbol: str) -> list[dict[str, Any]]:
     """Deprecated -> lz().symbol.conflicts(symbol)"""
     _warn("list_symbol_conflicts", "lz().symbol.conflicts()")
     from ._symbol import list_symbol_conflicts as _list
@@ -320,7 +320,7 @@ def disable_auto_symbol_resolution() -> None:
     _disable()
 
 
-def get_symbol_resolution_config() -> Dict[str, Any]:
+def get_symbol_resolution_config() -> dict[str, Any]:
     """Deprecated -> lz().symbol.config"""
     _warn("get_symbol_resolution_config", "lz().symbol.config")
     from ._symbol import get_symbol_resolution_config as _get
@@ -328,7 +328,7 @@ def get_symbol_resolution_config() -> Dict[str, Any]:
     return _get()
 
 
-def get_loaded_modules_context() -> Set[str]:
+def get_loaded_modules_context() -> set[str]:
     """Deprecated -> lz().symbol namespace"""
     _warn("get_loaded_modules_context", "lz().symbol")
     from ._symbol import get_loaded_modules_context as _get
@@ -336,7 +336,7 @@ def get_loaded_modules_context() -> Set[str]:
     return _get()
 
 
-def get_module_skip_config() -> Dict[str, Any]:
+def get_module_skip_config() -> dict[str, Any]:
     """Deprecated -> lz.config.module_skip"""
     _warn("get_module_skip_config", "lz.config.module_skip")
     from ._symbol import get_module_skip_config as _get
@@ -360,7 +360,7 @@ def set_module_skip_config(
 # ─── Symbol index functions ──────────────────────────────
 
 
-def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[Any]:
+def search_with_sharding(symbol_name: str, max_results: int = 5) -> list[Any]:
     """Deprecated -> lz().symbol.sharded()"""
     _warn("search_with_sharding", "lz().symbol.sharded()")
     from ._symbol import search_with_sharding as _search
@@ -384,7 +384,7 @@ def disable_sharding() -> None:
     _disable()
 
 
-def get_sharding_config() -> Dict[str, Any]:
+def get_sharding_config() -> dict[str, Any]:
     """Deprecated -> lz().symbol.config"""
     _warn("get_sharding_config", "lz().symbol.config")
     from ._symbol import get_sharding_config as _get
@@ -431,7 +431,7 @@ def set_cache_config(
     )
 
 
-def get_cache_config() -> Dict[str, Any]:
+def get_cache_config() -> dict[str, Any]:
     """Deprecated -> lz().cache.config"""
     _warn("get_cache_config", "lz().cache.config")
     from ._cache import get_cache_config as _get
@@ -439,7 +439,7 @@ def get_cache_config() -> Dict[str, Any]:
     return _get()
 
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """Deprecated -> lz().cache.stats"""
     _warn("get_cache_stats", "lz().cache.stats")
     from ._cache import get_cache_stats as _get
@@ -514,7 +514,7 @@ def clear_file_cache(file_path: Optional[str] = None) -> int:
     return _clear(file_path)
 
 
-def get_file_cache_info() -> Dict[str, Any]:
+def get_file_cache_info() -> dict[str, Any]:
     """Deprecated -> lz().cache.files.info()"""
     _warn("get_file_cache_info", "lz().cache.files.info()")
     from ._cache import get_file_cache_info as _get
@@ -557,7 +557,7 @@ def enable_incremental_index(enabled: bool = True) -> None:
     _enable(enabled)
 
 
-def get_incremental_config() -> Dict[str, Any]:
+def get_incremental_config() -> dict[str, Any]:
     """Deprecated -> lz().background related"""
     _warn("get_incremental_config", "lz().background related")
     from ._cache import get_incremental_config as _get
@@ -576,7 +576,7 @@ def get_package_version(package_name: str) -> Optional[str]:
     return _get(package_name)
 
 
-def get_all_package_versions() -> Dict[str, str]:
+def get_all_package_versions() -> dict[str, str]:
     """Deprecated -> lz().version.all_packages()"""
     _warn("get_all_package_versions", "lz().version.all_packages()")
     from ._cache import get_all_package_versions as _get
@@ -603,7 +603,7 @@ def get_cache_version() -> str:
 # ─── Alias management functions ──────────────────────────────
 
 
-def get_config_paths() -> List[str]:
+def get_config_paths() -> list[str]:
     """Deprecated -> lz().alias related"""
     _warn("get_config_paths", "lz().alias")
     from ._alias import get_config_paths as _get
@@ -611,7 +611,7 @@ def get_config_paths() -> List[str]:
     return _get()
 
 
-def get_config_dirs() -> List[str]:
+def get_config_dirs() -> list[str]:
     """Deprecated -> lz().alias related"""
     _warn("get_config_dirs", "lz().alias")
     from ._alias import get_config_dirs as _get
@@ -635,7 +635,7 @@ def export_aliases(path: Optional[str] = None, include_categories: bool = True) 
     return _export(path, include_categories)
 
 
-def validate_aliases(aliases: Optional[Dict[str, str]] = None) -> Dict[str, List[str]]:
+def validate_aliases(aliases: Optional[dict[str, str]] = None) -> dict[str, list[str]]:
     """Deprecated -> lz().alias.validate(aliases)"""
     _warn("validate_aliases", "lz().alias.validate()")
     from ._alias import validate_aliases as _validate
@@ -651,7 +651,7 @@ def register_alias(alias: str, module_name: str) -> None:
     _register(alias, module_name)
 
 
-def register_aliases(aliases: Dict[str, str]) -> List[str]:
+def register_aliases(aliases: dict[str, str]) -> list[str]:
     """Deprecated -> lz().alias.register_many(aliases)"""
     _warn("register_aliases", "lz().alias.register_many()")
     from ._alias import register_aliases as _register
@@ -673,7 +673,7 @@ def unregister_alias(alias: str) -> bool:
 def install_package(
     package_name: str,
     index: Optional[str] = None,
-    extra_args: Optional[List[str]] = None,
+    extra_args: Optional[list[str]] = None,
     interactive: Optional[bool] = None,
 ) -> bool:
     """Deprecated -> lz().install.package(package_name, ...)"""
@@ -686,7 +686,7 @@ def install_package(
 def enable_auto_install(
     interactive: bool = True,
     index: Optional[str] = None,
-    extra_args: Optional[List[str]] = None,
+    extra_args: Optional[list[str]] = None,
     prefer_uv: bool = False,
     silent: bool = False,
 ) -> None:
@@ -713,7 +713,7 @@ def is_auto_install_enabled() -> bool:
     return _is_enabled()
 
 
-def get_auto_install_config() -> Dict[str, Any]:
+def get_auto_install_config() -> dict[str, Any]:
     """Deprecated -> lz().install.auto"""
     _warn("get_auto_install_config", "lz().install.auto")
     from ._install import get_auto_install_config as _get
@@ -729,7 +729,7 @@ def set_pip_index(url: Optional[str]) -> None:
     _set(url)
 
 
-def set_pip_extra_args(args: List[str]) -> None:
+def set_pip_extra_args(args: list[str]) -> None:
     """Deprecated -> lz().install related config"""
     _warn("set_pip_extra_args", "lz().install related config")
     from ._install import set_pip_extra_args as _set
@@ -756,7 +756,7 @@ async def import_async(alias: str) -> Any:
     return await _import(alias)
 
 
-async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
+async def import_multiple_async(aliases: list[str]) -> dict[str, Any]:
     """Deprecated -> await lz().async.fetch(*aliases)"""
     _warn("import_multiple_async", "await lz().async.fetch()")
     from ._async_ops import import_multiple_async as _import
@@ -765,7 +765,7 @@ async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
 
 
 def enable_retry(
-    max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[Set[str]] = None
+    max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[set[str]] = None
 ) -> None:
     """Deprecated -> lz.config.retry.enabled = True"""
     _warn("enable_retry", "lz.config.retry")
@@ -801,7 +801,7 @@ def which(symbol_name: str, module_hint: Optional[str] = None) -> Optional[Any]:
     return _which(symbol_name, module_hint)
 
 
-def which_all(symbol_name: str) -> List[Any]:
+def which_all(symbol_name: str) -> list[Any]:
     """Deprecated -> lz().symbol.which_all(symbol_name)"""
     _warn("which_all", "lz().symbol.which_all()")
     from ._which import which_all as _which_all
@@ -810,8 +810,8 @@ def which_all(symbol_name: str) -> List[Any]:
 
 
 def validate_aliases_importable(
-    aliases: Optional[Dict[str, str]] = None,
-) -> Dict[str, Dict[str, Any]]:
+    aliases: Optional[dict[str, str]] = None,
+) -> dict[str, dict[str, Any]]:
     """Deprecated -> lz().alias.validate(aliases)"""
     _warn("validate_aliases_importable", "lz().alias.validate()")
     from ._alias import validate_aliases_importable as _validate
@@ -840,7 +840,7 @@ def analyze_source(source: str, file_path: str = "<string>") -> Any:
 
 def analyze_directory(
     dir_path: str, recursive: bool = True, exclude: Optional[set] = None
-) -> List[Any]:
+) -> list[Any]:
     """Deprecated -> lz().analyze.dir(dir_path, recursive, exclude)"""
     _warn("analyze_directory", "lz().analyze.dir()")
     from ._analysis import analyze_directory as _analyze
@@ -913,7 +913,7 @@ def save_preferences() -> bool:
     return _save()
 
 
-def load_preferences() -> Dict[str, str]:
+def load_preferences() -> dict[str, str]:
     """Deprecated -> preference management"""
     _warn("load_preferences", "preference management API")
     from ._analysis._preferences import load_preferences as _load
@@ -1046,7 +1046,7 @@ def help(topic: Optional[str] = None) -> str:
 # ─── Internal symbols (not recommended for external use) ────────────────────
 
 
-def _infer_context() -> Set[str]:
+def _infer_context() -> set[str]:
     """Internal use, recommended to use lz().symbol related API"""
     _warn("_infer_context", "lz().symbol")
     from ._symbol import _infer_context as _ctx

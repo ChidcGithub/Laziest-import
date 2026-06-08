@@ -236,7 +236,7 @@ class LazyImport:
         # Smart error hint with nearest alias
         msg = f"'{type(self).__name__}' object has no attribute '{name}'."
         name_lower = name.lower()
-        best_match: Optional[Tuple[str, str, int]] = None
+        best_match: Optional[tuple[str, str, int]] = None
         for alias, module in _ALIAS_MAP.items():
             alias_lower = alias.lower()
             module_lower = module.split(".")[0].lower()
@@ -250,9 +250,8 @@ class LazyImport:
                 best_match = (alias, module, 0)
                 break
             threshold = max(1, len(name_lower) // 3)
-            if min_dist <= threshold:
-                if best_match is None or min_dist < best_match[2]:
-                    best_match = (alias, module, min_dist)
+            if min_dist <= threshold and (best_match is None or min_dist < best_match[2]):
+                best_match = (alias, module, min_dist)
 
         if best_match and best_match[2] == 0:
             msg += f" Did you mean `{best_match[1]}`? (alias: `{best_match[0]}`)"
@@ -265,7 +264,7 @@ class LazyImport:
             _config_module._NEGATIVE_CACHE[name] = time.time()
         raise AttributeError(msg)
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         base = [
             "module",
             "alias",

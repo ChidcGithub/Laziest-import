@@ -13,8 +13,8 @@ def list_module_symbols(
     module_name: str,
     include_private: bool = False,
     include_submodules: bool = True,
-    filter_types: Optional[Set[str]] = None,
-) -> List[str]:
+    filter_types: Optional[set[str]] = None,
+) -> list[str]:
     """
     List symbols available in a module without fully importing it.
 
@@ -40,8 +40,8 @@ def list_module_symbols(
     except ImportError:
         return []
 
-    symbols: List[str] = []
-    seen: Set[str] = set()
+    symbols: list[str] = []
+    seen: set[str] = set()
 
     for attr_name in dir(mod):
         if attr_name in seen:
@@ -72,7 +72,7 @@ def list_module_symbols(
     return sorted(symbols)
 
 
-def get_module_info(module_name: str) -> Dict[str, Any]:
+def get_module_info(module_name: str) -> dict[str, Any]:
     """
     Get information about a module.
 
@@ -89,7 +89,7 @@ def get_module_info(module_name: str) -> Dict[str, Any]:
         >>> info['path']
         '/path/to/python/lib/json/__init__.py'
     """
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "name": module_name,
         "path": None,
         "doc": None,
@@ -122,9 +122,9 @@ def get_module_info(module_name: str) -> Dict[str, Any]:
     return result
 
 
-def _get_submodules(module_name: str) -> List[str]:
+def _get_submodules(module_name: str) -> list[str]:
     """Get submodule names for a package."""
-    submodules: List[str] = []
+    submodules: list[str] = []
 
     try:
         mod = importlib.import_module(module_name)
@@ -165,7 +165,7 @@ def _get_symbol_type(obj: Any) -> str:
         return "constant"
 
 
-def search_in_module(module_name: str, pattern: str) -> List[str]:
+def search_in_module(module_name: str, pattern: str) -> list[str]:
     """
     Search for symbols matching a pattern in a module.
 

@@ -50,7 +50,7 @@ async def import_async(alias: str) -> Any:
     return await loop.run_in_executor(None, _sync_import)
 
 
-async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
+async def import_multiple_async(aliases: list[str]) -> dict[str, Any]:
     """
     Asynchronously import multiple modules in parallel.
 
@@ -75,7 +75,7 @@ async def import_multiple_async(aliases: List[str]) -> Dict[str, Any]:
 
 
 def enable_retry(
-    max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[Set[str]] = None
+    max_retries: int = 3, retry_delay: float = 0.5, modules: Optional[set[str]] = None
 ) -> None:
     """
     Enable automatic retry for module imports.

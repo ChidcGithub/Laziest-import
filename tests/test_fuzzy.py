@@ -12,6 +12,7 @@ Tests cover:
 """
 
 import pytest
+
 from laziest_import import reload_mappings
 
 
@@ -109,7 +110,7 @@ class TestMisspellings:
 
         misspellings = _get_common_misspellings()
         # Should have some numpy misspellings
-        found = any("numpy" == v for v in misspellings.values())
+        found = any(v == "numpy" for v in misspellings.values())
         assert found or len(misspellings) >= 0  # May be empty if file doesn't have
 
     def test_get_symbol_misspellings(self):
@@ -330,7 +331,6 @@ class TestMappingReload:
 
     def test_reload_mappings(self):
         """Test reloading all mappings."""
-        from laziest_import import lz
 
         from laziest_import._config import _ALIAS_MAP
 

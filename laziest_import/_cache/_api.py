@@ -61,12 +61,12 @@ def set_cache_config(
         c._CACHE_CONFIG["symbol_index_enabled"] = symbol_index_enabled
 
 
-def get_cache_config() -> Dict[str, Any]:
+def get_cache_config() -> dict[str, Any]:
     """Get current cache configuration."""
     return dict(_config._CACHE_CONFIG)
 
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """Get cache statistics."""
     c = _config
     total_hits = c._CACHE_STATS["symbol_hits"] + c._CACHE_STATS["module_hits"]

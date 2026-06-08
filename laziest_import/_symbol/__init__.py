@@ -45,7 +45,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 class AmbiguousSymbolError(ImportError):
     """Raised when a symbol is found in multiple modules and strict mode is enabled."""
 
-    def __init__(self, symbol: str, candidates: List["SymbolMatch"]):
+    def __init__(self, symbol: str, candidates: list["SymbolMatch"]):
         self.symbol = symbol
         self.candidates = candidates
         details = "; ".join(
@@ -254,22 +254,22 @@ def _get_signature_hint(obj: Any) -> Optional[str]:
 def _scan_module_symbols(
     module_name: str,
     depth: int = 1,
-    _scanned: Optional[Set[str]] = None,
+    _scanned: Optional[set[str]] = None,
     _current_depth: int = 0,
-) -> Dict[str, List[Tuple[str, str, Optional[str]]]]:
+) -> dict[str, list[tuple[str, str, Optional[str]]]]:
     """Scan a module for exported symbols (classes, functions, callables)."""
     if _scanned is None:
         _scanned = set()
 
-    MAX_DEPTH = 3
-    if _current_depth > MAX_DEPTH:
+    max_depth = 3
+    if _current_depth > max_depth:
         return {}
 
     if module_name in _scanned:
         return {}
     _scanned.add(module_name)
 
-    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]] = {}
+    symbols: dict[str, list[tuple[str, str, Optional[str]]]] = {}
 
     if _config._SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
         return symbols
@@ -347,13 +347,12 @@ def _scan_module_symbols(
         if (
             _config._MODULE_SKIP_CONFIG.get("skip_large_modules", True)
             and len(public_names) > large_threshold
-        ):
-            if not hasattr(module, "__all__"):
-                public_names = [n for n in public_names if not n.startswith("_")][:large_threshold]
+        ) and not hasattr(module, "__all__"):
+            public_names = [n for n in public_names if not n.startswith("_")][:large_threshold]
 
-        MAX_SYMBOLS_PER_MODULE = 100
-        if len(public_names) > MAX_SYMBOLS_PER_MODULE:
-            public_names = public_names[:MAX_SYMBOLS_PER_MODULE]
+        max_symbols_per_module = 100
+        if len(public_names) > max_symbols_per_module:
+            public_names = public_names[:max_symbols_per_module]
 
         for name in public_names:
             if skip_private and name.startswith("_"):
@@ -374,7 +373,7 @@ def _scan_module_symbols(
                         init = getattr(obj, "__init__", None)
                         if init and callable(init):
                             signature = _get_signature_hint(init)
-                    except Exception:
+                    except Exception:  # noqa: S110 — best-effort signature
                         pass
                 elif inspect.isfunction(obj):
                     symbol_type = "function"
@@ -382,7 +381,7 @@ def _scan_module_symbols(
                 elif callable(obj):
                     symbol_type = "callable"
                     signature = _get_signature_hint(obj)
-            except Exception:
+            except Exception:  # noqa: S112 — skip un-inspectable symbols
                 continue
 
             if symbol_type:
@@ -393,9 +392,9 @@ def _scan_module_symbols(
     if depth > 0 and hasattr(module, "__path__"):
         try:
             submodule_count = 0
-            MAX_SUBMODULES = 20
+            max_submodules = 20
             for finder, submod_name, ispkg in pkgutil.iter_modules(module.__path__):
-                if submodule_count >= MAX_SUBMODULES:
+                if submodule_count >= max_submodules:
                     break
                 full_submod_name = f"{module_name}.{submod_name}"
                 try:
@@ -407,9 +406,9 @@ def _scan_module_symbols(
                             symbols[sym_name] = []
                         symbols[sym_name].extend(locations)
                     submodule_count += 1
-                except Exception:
+                except Exception:  # noqa: S112 — skip un-scannable submodules
                     continue
-        except Exception:
+        except Exception:  # noqa: S110 — module path scanning is best-effort
             pass
 
     return symbols
@@ -590,7 +589,7 @@ def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: fl
                         if top_level not in _config._TRACKED_PACKAGES:
                             _track_package(top_level)
 
-                except Exception:
+                except Exception:  # noqa: S112 — skip individual module scan failures
                     continue
 
             build_success = True
@@ -636,15 +635,15 @@ def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
     if sig1 is None or sig2 is None:
         return 0.5
 
-    def extract_params(sig: str) -> Set[str]:
+    def extract_params(sig: str) -> set[str]:
         try:
             inner = sig.strip("()")
             if not inner:
                 return set()
             params = set()
             for part in inner.split(","):
-                part = part.strip()
-                if part:
+                stripped = part.strip()
+                if stripped:
                     param_name = part.split("=")[0].split(":")[0].strip()
                     if param_name and not param_name.startswith("*"):
                         params.add(param_name)
@@ -671,7 +670,7 @@ def search_symbol(
     symbol_type: Optional[str] = None,
     signature: Optional[str] = None,
     max_results: Optional[int] = None,
-) -> List[SearchResult]:
+) -> list[SearchResult]:
     """Search for a symbol (class/function) by name across installed packages."""
     if not _config._SYMBOL_SEARCH_CONFIG["enabled"]:
         return []
@@ -684,7 +683,7 @@ def search_symbol(
     if name not in _config._SYMBOL_CACHE:
         name_lower = name.lower()
         matches = []
-        for cached_name in _config._SYMBOL_CACHE.keys():
+        for cached_name in _config._SYMBOL_CACHE:
             if (
                 cached_name.lower() == name_lower
                 or name_lower in cached_name.lower()
@@ -718,7 +717,7 @@ def _search_symbol_direct(
     symbol_type: Optional[str] = None,
     signature: Optional[str] = None,
     max_results: Optional[int] = None,
-) -> List[SearchResult]:
+) -> list[SearchResult]:
     """Direct search for an exact symbol name in cache."""
     results: list[SearchResult] = []
 
@@ -755,7 +754,7 @@ def _search_symbol_direct(
     return results[:max_res]
 
 
-def _score_symbol_match(result: SearchResult, context: Set[str], original_name: str) -> SymbolMatch:
+def _score_symbol_match(result: SearchResult, context: set[str], original_name: str) -> SymbolMatch:
     """Score a symbol search result with context awareness and priority."""
     confidence = result.score
     module = result.module_name.split(".")[0]
@@ -838,9 +837,9 @@ def _search_symbol_enhanced(
 
     if not results and not corrected_name:
         name_lower = search_name.lower()
-        fuzzy_matches: List[Tuple[int, str]] = []
+        fuzzy_matches: list[tuple[int, str]] = []
 
-        for cached_name in _config._SYMBOL_CACHE.keys():
+        for cached_name in _config._SYMBOL_CACHE:
             dist = _levenshtein_distance(name_lower, cached_name.lower())
             max_dist = min(3, max(len(name_lower), len(cached_name)) // 3)
             if dist <= max_dist:
@@ -893,7 +892,7 @@ def _search_symbol_enhanced(
     return None
 
 
-def _warn_symbol_conflict(name: str, matches: List[SymbolMatch]) -> None:
+def _warn_symbol_conflict(name: str, matches: list[SymbolMatch]) -> None:
     """Warn about symbol conflict and suggest disambiguation."""
     if not matches:
         return
@@ -937,7 +936,7 @@ def _is_interactive_terminal() -> bool:
     return True
 
 
-def _interactive_confirm(results: List[SearchResult], symbol_name: str) -> Optional[str]:
+def _interactive_confirm(results: list[SearchResult], symbol_name: str) -> Optional[str]:
     """Interactively ask user to confirm which module to use."""
     if not results:
         return None
@@ -1014,7 +1013,7 @@ def _handle_symbol_not_found(name: str) -> Optional[str]:
 # ── Infer context ───────────────────────────────────────────
 
 
-def _infer_context() -> Set[str]:
+def _infer_context() -> set[str]:
     """Infer the current context by examining loaded modules."""
     loaded = set()
 
@@ -1028,7 +1027,7 @@ def _infer_context() -> Set[str]:
         except (AttributeError, TypeError):
             continue
 
-    for mod_name in sys.modules.keys():
+    for mod_name in sys.modules:
         if mod_name and not mod_name.startswith("_"):
             base_module = mod_name.split(".")[0]
             if (
@@ -1042,7 +1041,7 @@ def _infer_context() -> Set[str]:
 
 # ── Sharding ────────────────────────────────────────────────
 
-_SHARD_CONFIG: Dict[str, Any] = {
+_SHARD_CONFIG: dict[str, Any] = {
     "enabled": True,
     "shard_threshold": 100,
     "loaded_shards": {},
@@ -1060,7 +1059,7 @@ def _get_module_shard_name(module_name: str, prefix: str) -> str:
     return f"{module_name}.{prefix}.json"
 
 
-def _load_shard(module_name: str, prefix: str) -> Dict[str, List[Tuple[str, str, Optional[str]]]]:
+def _load_shard(module_name: str, prefix: str) -> dict[str, list[tuple[str, str, Optional[str]]]]:
     if module_name in _SHARD_CONFIG["loaded_shards"]:
         return _SHARD_CONFIG["loaded_shards"][module_name].get(prefix, {})
 
@@ -1077,14 +1076,14 @@ def _load_shard(module_name: str, prefix: str) -> Dict[str, List[Tuple[str, str,
 
             _SHARD_CONFIG["loaded_shards"][module_name][prefix] = data
             return data
-    except Exception:
+    except Exception:  # noqa: S110 — shard file not found or corrupt
         pass
 
     return {}
 
 
 def _save_shard(
-    module_name: str, prefix: str, data: Dict[str, List[Tuple[str, str, Optional[str]]]]
+    module_name: str, prefix: str, data: dict[str, list[tuple[str, str, Optional[str]]]]
 ) -> None:
     try:
         cache_dir = _get_cache_dir()
@@ -1106,7 +1105,7 @@ def _save_shard(
             logging.warning(f"[laziest-import] Failed to save shard: {e}")
 
 
-def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[SearchResult]:
+def search_with_sharding(symbol_name: str, max_results: int = 5) -> list[SearchResult]:
     """Search for symbol using sharded index (faster for large modules)."""
     results = []
 
@@ -1129,14 +1128,14 @@ def search_with_sharding(symbol_name: str, max_results: int = 5) -> List[SearchR
         shard_key = _get_shard_key(symbol_name)
 
         if shard_key in _SHARD_CONFIG["shard_index"]:
-            for module_name in _SHARD_CONFIG["shard_index"][shard_key]:
-                shard = _load_shard(module_name, shard_key)
+            for mod_name in _SHARD_CONFIG["shard_index"][shard_key]:
+                shard = _load_shard(mod_name, shard_key)
                 if symbol_name in shard:
                     for loc in shard[symbol_name][:max_results]:
-                        module_name, sym_type, signature = loc
+                        _mod_name, sym_type, signature = loc
                         results.append(
                             SearchResult(
-                                module_name=module_name,
+                                module_name=_mod_name,
                                 symbol_name=symbol_name,
                                 symbol_type=sym_type,
                                 signature=signature,
@@ -1159,7 +1158,7 @@ def disable_sharding() -> None:
     _SHARD_CONFIG["enabled"] = False
 
 
-def get_sharding_config() -> Dict[str, Any]:
+def get_sharding_config() -> dict[str, Any]:
     """Get current sharding configuration."""
     return {
         "enabled": _SHARD_CONFIG["enabled"],
@@ -1254,7 +1253,7 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
 
             scanned_count += 1
 
-        except Exception:
+        except Exception:  # noqa: S112 — skip individual symbol merge failures
             continue
 
     for pkg in packages_to_scan:
@@ -1351,12 +1350,12 @@ def rebuild_symbol_index() -> None:
     _build_symbol_index(force=True)
 
 
-def get_symbol_search_config() -> Dict[str, Any]:
+def get_symbol_search_config() -> dict[str, Any]:
     """Get current symbol search configuration."""
     return dict(_config._SYMBOL_SEARCH_CONFIG)
 
 
-def get_symbol_cache_info() -> Dict[str, Any]:
+def get_symbol_cache_info() -> dict[str, Any]:
     """Get information about the symbol cache."""
     import laziest_import._config as config
 
@@ -1396,7 +1395,7 @@ def clear_symbol_preference(symbol: str) -> bool:
     return False
 
 
-def list_symbol_conflicts(symbol: str) -> List[Dict[str, Any]]:
+def list_symbol_conflicts(symbol: str) -> list[dict[str, Any]]:
     """List all modules that export a symbol."""
     import laziest_import._config as config
 
@@ -1444,17 +1443,17 @@ def disable_auto_symbol_resolution() -> None:
     _config._SYMBOL_RESOLUTION_CONFIG["auto_symbol"] = False
 
 
-def get_symbol_resolution_config() -> Dict[str, Any]:
+def get_symbol_resolution_config() -> dict[str, Any]:
     """Get symbol resolution configuration."""
     return dict(_config._SYMBOL_RESOLUTION_CONFIG)
 
 
-def get_loaded_modules_context() -> Set[str]:
+def get_loaded_modules_context() -> set[str]:
     """Get the set of currently loaded module names."""
     return _infer_context()
 
 
-def get_module_skip_config() -> Dict[str, Any]:
+def get_module_skip_config() -> dict[str, Any]:
     """Get current module skip configuration."""
     return dict(_config._MODULE_SKIP_CONFIG)
 
@@ -1502,14 +1501,14 @@ class SymbolIndexCache:
     timestamp: float
     symbol_count: int
     module_count: int
-    symbols: Dict[str, List[Tuple[str, str, Optional[str]]]]
+    symbols: dict[str, list[tuple[str, str, Optional[str]]]]
     python_version: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SymbolIndexCache":
+    def from_dict(cls, data: dict[str, Any]) -> "SymbolIndexCache":
         return cls(
             version=data.get("version", "0.0"),
             cache_type=data.get("cache_type", "all"),

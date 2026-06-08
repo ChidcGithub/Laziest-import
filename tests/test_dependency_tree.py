@@ -9,6 +9,7 @@ Tests cover:
 """
 
 import pytest
+
 from laziest_import import lz
 
 
@@ -60,7 +61,7 @@ class TestDependencyTree:
 
     def test_tree_creation(self):
         """Test creating a DependencyTree."""
-        from laziest_import._analysis._dependency import DependencyTree, DependencyNode
+        from laziest_import._analysis._dependency import DependencyNode, DependencyTree
 
         root = DependencyNode(module_name="root")
         tree = DependencyTree(root_module="root", tree=root)
@@ -69,7 +70,7 @@ class TestDependencyTree:
 
     def test_tree_to_dict(self):
         """Test tree serialization to dict."""
-        from laziest_import._analysis._dependency import DependencyTree, DependencyNode
+        from laziest_import._analysis._dependency import DependencyNode, DependencyTree
 
         child = DependencyNode(module_name="child")
         root = DependencyNode(module_name="root", children=[child])

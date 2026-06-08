@@ -5,7 +5,7 @@ from .._config import _ALIAS_MAP, _LAZY_MODULES
 from .._proxy import _get_lazy_module
 
 
-def list_loaded() -> List[str]:
+def list_loaded() -> list[str]:
     return [
         alias
         for alias, lm in _LAZY_MODULES.items()
@@ -13,7 +13,7 @@ def list_loaded() -> List[str]:
     ]
 
 
-def list_available() -> List[str]:
+def list_available() -> list[str]:
     return list(_ALIAS_MAP.keys())
 
 
@@ -48,10 +48,10 @@ class ModuleNamespace:
     def reload(self, name: str) -> bool:
         return reload_module(name)
 
-    def list_loaded(self) -> List[str]:
+    def list_loaded(self) -> list[str]:
         return list_loaded()
 
-    def list_available(self) -> List[str]:
+    def list_available(self) -> list[str]:
         return list_available()
 
     def is_loaded(self, name: str) -> bool:
@@ -74,7 +74,7 @@ class ModuleNamespace:
         except Exception as e:
             raise AttributeError(f"Cannot load module '{name}': {e}") from e
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         return sorted(set(self.list_available()))
 
     def __repr__(self) -> str:

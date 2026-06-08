@@ -26,7 +26,7 @@ class VersionNamespace:
     def of(self, package: str) -> Optional[str]:
         return get_package_version(package)
 
-    def all_packages(self) -> Dict[str, str]:
+    def all_packages(self) -> dict[str, str]:
         return get_all_package_versions()
 
     def laziest_import(self) -> str:

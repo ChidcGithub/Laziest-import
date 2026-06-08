@@ -7,6 +7,5 @@
   "_io": "_io",
   "_collections_abc": "_collections_abc",
   "__future__": "__future__",
-  "2to3": "lib2to3",
   "3d": "vedo"
 }

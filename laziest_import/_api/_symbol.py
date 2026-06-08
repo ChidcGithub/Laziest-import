@@ -192,7 +192,7 @@ class SymbolConfigNamespace:
     def strict(self, value: bool) -> None:
         _config._SYMBOL_RESOLUTION_CONFIG["strict"] = value
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> dict[str, Any]:
         return {
             "search": dict(get_symbol_search_config()),
             "resolution": dict(get_symbol_resolution_config()),
@@ -218,10 +218,10 @@ class SymbolNamespace:
         symbol_type: Optional[str] = None,
         signature: Optional[str] = None,
         max_results: Optional[int] = None,
-    ) -> List[Any]:
+    ) -> list[Any]:
         return search_symbol(name, symbol_type, signature, max_results)
 
-    def sharded(self, name: str, max_results: int = 5) -> List[Any]:
+    def sharded(self, name: str, max_results: int = 5) -> list[Any]:
         return search_with_sharding(name, max_results)
 
     def which(
@@ -231,7 +231,7 @@ class SymbolNamespace:
     ) -> Optional[Any]:
         return which(name, module_hint)
 
-    def which_all(self, name: str) -> List[Any]:
+    def which_all(self, name: str) -> list[Any]:
         return which_all(name)
 
     def prefer(self, symbol: str, module: str) -> None:
@@ -251,7 +251,7 @@ class SymbolNamespace:
             return all_conflicts.get(symbol)
         return all_conflicts
 
-    def conflict_summary(self) -> Dict[str, Any]:
+    def conflict_summary(self) -> dict[str, Any]:
         from .._analysis._conflict import get_conflicts_summary
 
         return get_conflicts_summary()
@@ -269,12 +269,12 @@ class SymbolNamespace:
     def index(self) -> SymbolIndexNamespace:
         return _SYMBOL_INDEX_NS
 
-    def cache_info(self) -> Dict[str, Any]:
+    def cache_info(self) -> dict[str, Any]:
         return get_symbol_cache_info()
 
     def _search_direct(
         self, name: str, symbol_type=None, signature=None, max_results=None
-    ) -> List[Any]:
+    ) -> list[Any]:
         return _search_symbol_direct(name, symbol_type, signature, max_results)
 
     def _enhanced(self, name: str, auto: bool = True, symbol_type=None) -> Optional[Any]:

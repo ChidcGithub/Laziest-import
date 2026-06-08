@@ -7,7 +7,7 @@ class AsyncNamespace:
     async def get(self, alias: str) -> Any:
         return await import_async(alias)
 
-    async def fetch(self, *aliases: str) -> Dict[str, Any]:
+    async def fetch(self, *aliases: str) -> dict[str, Any]:
         return await import_multiple_async(list(aliases))
 
     def __repr__(self) -> str:

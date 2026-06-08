@@ -9,7 +9,6 @@
   "gc": "gc",
   "gcs": "google.cloud.storage",
   "gdal": "gdal",
-  "geant4": "geant4",
   "gensim": "gensim",
   "geocoder": "geocoder",
   "geopandas": "geopandas",

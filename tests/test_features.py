@@ -2,26 +2,26 @@
 Tests for new features in 0.0.4
 """
 
-import pytest
-import tempfile
 import json
-import os
+import tempfile
 from pathlib import Path
 
-from laziest_import import lz
+import pytest
+
 from laziest_import import help as lz_help
-from laziest_import._introspect import list_module_symbols, search_in_module, get_module_info
-from laziest_import._symbol import (
-    enable_sharding,
-    disable_sharding,
-    get_sharding_config,
-    clear_shard_cache,
-    enable_symbol_search,
-    disable_symbol_search,
-    set_module_priority,
-    get_module_priority,
-)
+from laziest_import import lz
 from laziest_import._cache import get_incremental_config, reset_cache_stats
+from laziest_import._introspect import get_module_info, list_module_symbols, search_in_module
+from laziest_import._symbol import (
+    clear_shard_cache,
+    disable_sharding,
+    disable_symbol_search,
+    enable_sharding,
+    enable_symbol_search,
+    get_module_priority,
+    get_sharding_config,
+    set_module_priority,
+)
 
 
 class TestWhichFunction:
