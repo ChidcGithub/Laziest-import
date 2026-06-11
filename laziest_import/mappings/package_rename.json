@@ -224,6 +224,9 @@
   },
   "auto_sync": {
     "google.protobuf": "protobuf",
-    "multipart": "python-multipart"
+    "multipart": "python-multipart",
+    "slugify": "python-slugify",
+    "rest_framework": "djangorestframework",
+    "redis.asyncio": "aioredis"
   }
 }
