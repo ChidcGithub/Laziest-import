@@ -677,12 +677,24 @@ def search_symbol(
         name_lower = name.lower()
         matches = []
         for cached_name in _config._SYMBOL_CACHE:
-            if (
-                cached_name.lower() == name_lower
-                or name_lower in cached_name.lower()
-                or _levenshtein_distance(name_lower, cached_name.lower()) <= 2
-            ):
+            cached_lower = cached_name.lower()
+            if cached_lower == name_lower or name_lower in cached_lower:
                 matches.append(cached_name)
+            else:
+                # Conservative fuzzy fallback: short queries must be very close to
+                # a cached symbol name to avoid spurious matches.
+                distance = _levenshtein_distance(name_lower, cached_lower)
+                min_len = min(len(name_lower), len(cached_lower))
+                # Symbol names are typically longer; be stricter than module
+                # matching to avoid spurious resolutions such as "osz" -> "HSZ".
+                if min_len <= 3:
+                    max_distance = 0
+                elif min_len <= 5:
+                    max_distance = 1
+                else:
+                    max_distance = min(2, min_len // 3)
+                if distance <= max_distance:
+                    matches.append(cached_name)
 
         if not matches:
             return []
@@ -833,8 +845,16 @@ def _search_symbol_enhanced(
         fuzzy_matches: list[tuple[int, str]] = []
 
         for cached_name in _config._SYMBOL_CACHE:
-            dist = _levenshtein_distance(name_lower, cached_name.lower())
-            max_dist = min(3, max(len(name_lower), len(cached_name)) // 3)
+            cached_lower = cached_name.lower()
+            dist = _levenshtein_distance(name_lower, cached_lower)
+            min_len = min(len(name_lower), len(cached_lower))
+            # Keep symbol fuzzy matching stricter than module matching.
+            if min_len <= 3:
+                max_dist = 0
+            elif min_len <= 5:
+                max_dist = 1
+            else:
+                max_dist = min(2, min_len // 3)
             if dist <= max_dist:
                 fuzzy_matches.append((dist, cached_name))
 

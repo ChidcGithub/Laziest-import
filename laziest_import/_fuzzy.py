@@ -359,7 +359,20 @@ def _search_module(name: str) -> Optional[str]:
             length_ratio = len(name_lower) / len(mod_lower) if len(mod_lower) > 0 else 0
             if 0.5 <= length_ratio <= 2.0:
                 distance = _levenshtein_distance(name_lower, mod_lower)
-                max_distance = min(3, max(len(name_lower), len(mod_lower)) // 3)
+                # Be stricter for short names to avoid false positives such as
+                # "osz" silently resolving to "os".  Very short names should only
+                # match exactly (handled above); otherwise require increasingly
+                # similar strings.
+                min_len = min(len(name_lower), len(mod_lower))
+                # Length 1-2 names must match exactly to avoid false positives
+                # (e.g. "osz" -> "os").  Length 3+ allows a single typo, longer
+                # names allow proportionally more edits.
+                if min_len <= 2:
+                    max_distance = 0
+                elif min_len <= 5:
+                    max_distance = 1
+                else:
+                    max_distance = min(2, min_len // 3)
                 if distance <= max_distance:
                     candidates.append((7 + context_bonus, distance, mod_name))
 
