@@ -167,6 +167,27 @@ from ._config import (
     reset_init_state,
 )
 
+# Names that should resolve to the object-oriented API namespaces on the global
+# LazyImport instance, rather than being treated as aliases or auto-searched modules.
+_API_NAMESPACE_NAMES: frozenset[str] = frozenset(
+    {
+        "module",
+        "alias",
+        "symbol",
+        "cache",
+        "config",
+        "analyze",
+        "profile",
+        "hooks",
+        "async_",
+        "install",
+        "export",
+        "background",
+        "version",
+        "rc",
+    }
+)
+
 # ═══════════════════════════════════════════════════════════════
 #  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
@@ -338,11 +359,17 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
     if _registry_has(name):
         return _registry_resolve(name)
 
-    # 2. Check alias map
+    # 2. Check API namespaces on the global LazyImport instance
+    #    This ensures `import laziest_import as lz; lz.config.debug = True`
+    #    works even when alias/auto-search would shadow names like 'config'.
+    if name in _API_NAMESPACE_NAMES:
+        return getattr(lz, name)
+
+    # 3. Check alias map
     if name in _ALIAS_MAP:
         return _get_lazy_module(name)
 
-    # 3. Try module auto-search
+    # 4. Try module auto-search
     if _AUTO_SEARCH_ENABLED:
         found = _search_module(name)
         if found:
