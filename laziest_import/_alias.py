@@ -5,13 +5,12 @@ Alias management for laziest-import.
 import importlib
 import json
 import logging
-import pkgutil
 import sys
 import threading
 import time
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from . import _config as _alias_config
 from ._config import (
@@ -313,7 +312,9 @@ def _validate_alias(alias: str, module_name: str) -> bool:
     if not alias.isidentifier():
         # Allow '-' and '.' for special use cases (e.g., pip package name mapping)
         # but warn that they cannot be used directly as attribute access
-        if ("-" in alias or "." in alias) and alias.replace("-", "_").replace(".", "_").isidentifier():
+        if ("-" in alias or "." in alias) and alias.replace("-", "_").replace(
+            ".", "_"
+        ).isidentifier():
             return True
         warnings.warn(f"Alias '{alias}' is not a valid Python identifier")
         return False

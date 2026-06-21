@@ -2,7 +2,7 @@
 Incremental index update detection for laziest-import.
 """
 
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 
 from .. import _config
 from ._symbol_index import (

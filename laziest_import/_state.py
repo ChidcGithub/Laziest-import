@@ -7,7 +7,7 @@ exclusively in _config.py.
 """
 
 import sys
-from typing import Any, Dict, Optional, Set
+from typing import Any, Optional
 
 
 def _config():

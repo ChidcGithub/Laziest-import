@@ -144,7 +144,9 @@ def _build_pypi_results(
     return result
 
 
-def _check_pypi_batch(module_names: set[str], alias_map: dict[str, str] | None = None) -> dict[str, bool | None]:
+def _check_pypi_batch(
+    module_names: set[str], alias_map: dict[str, str] | None = None
+) -> dict[str, bool | None]:
     all_candidates, module_to_aliases = _build_pypi_candidates(module_names, alias_map)
     remaining = [c for c in all_candidates if c not in _PYPI_CACHE]
     _batch_check_remaining(remaining)
@@ -243,11 +245,15 @@ def check_stale() -> int:
             for alias, info in sorted(truly_stale.items()):
                 print(f"  - '{alias}' -> '{info['module']}': {info['error']}", file=sys.stderr)
             if not_installed:
-                print(f"[INFO] {len(not_installed)} aliases skipped (valid on PyPI, just not installed)")
+                print(
+                    f"[INFO] {len(not_installed)} aliases skipped (valid on PyPI, just not installed)"
+                )
             return 1
 
         if not_installed:
-            print(f"[OK] No stale aliases ({len(not_installed)} valid on PyPI but not installed locally)")
+            print(
+                f"[OK] No stale aliases ({len(not_installed)} valid on PyPI but not installed locally)"
+            )
         return 0
 
     print(f"[OK] All {len(result.get('importable', {}))} aliases importable")

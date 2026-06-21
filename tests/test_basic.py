@@ -159,6 +159,7 @@ class TestFromImport:
         import json
         import subprocess
         import sys
+
         r = subprocess.run(  # noqa: S603 — list form, trusted input
             [
                 sys.executable,
@@ -182,6 +183,7 @@ class TestFromImport:
         """Test actual usage after from import"""
         import subprocess
         import sys
+
         r = subprocess.run(  # noqa: S603 — list form, trusted input
             [
                 sys.executable,

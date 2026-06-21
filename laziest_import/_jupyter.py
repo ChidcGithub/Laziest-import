@@ -2,7 +2,7 @@
 Jupyter/IPython magic commands for laziest-import.
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 _IPYTHON_AVAILABLE = False
 
@@ -61,7 +61,6 @@ def _create_lazy_magics():
                 args = parse_argstring(self.lazy, line)
 
                 modules = args.module or []
-                quiet = args.quiet
 
                 import laziest_import as lz
 
@@ -155,11 +154,12 @@ def _create_lazy_magics():
                         "Common Packages:",
                         ", ".join(c for c in common if c in available),
                     )
+                _max_display_others = 20
                 if other:
                     print(
                         "Other:",
-                        ", ".join(sorted(other)[:20]),
-                        "..." if len(other) > 20 else "",
+                        ", ".join(sorted(other)[:_max_display_others]),
+                        "..." if len(other) > _max_display_others else "",
                     )
 
                 if lazy_loaded:

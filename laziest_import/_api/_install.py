@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from .. import _config
 from .._install import (

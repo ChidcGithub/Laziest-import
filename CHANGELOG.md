@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0.2] - 2026-06-21
+
+### Fixed
+- `list_module_symbols(..., include_private=False)` no longer returns private submodule names like `__main__`
+- Removed invalid alias `3d` -> `vedo` which is not a legal Python identifier
+- `pyproject.toml` classifiers now match `requires-python = ">=3.9"` (dropped Python 3.8)
+- README test count badge updated to 1065
+
 ## [0.0.5-pre8] - 2026-05-13
 
 ### Added

@@ -10,7 +10,9 @@ import ast
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Optional
+
+_COMMAND_INDEX = 1
 
 
 def main() -> None:
@@ -18,11 +20,11 @@ def main() -> None:
 
     laziest_import  # ensure initialized
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) <= _COMMAND_INDEX:
         print(__doc__.strip())
         sys.exit(1)
 
-    command = sys.argv[1]
+    command = sys.argv[_COMMAND_INDEX]
 
     if command == "freeze":
         _cmd_freeze()

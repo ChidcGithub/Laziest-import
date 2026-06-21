@@ -1,6 +1,6 @@
 import builtins
 from collections.abc import Iterator
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from .._alias import (
     _ALIAS_MAP,
@@ -116,7 +116,11 @@ class AliasNamespace:
                 for compat_cat in compat_map[category_lower]:
                     for alias in _ALIAS_MAP:
                         cat = get_alias_category(alias)
-                        if cat is not None and cat.lower() == compat_cat.lower() and alias not in result:
+                        if (
+                            cat is not None
+                            and cat.lower() == compat_cat.lower()
+                            and alias not in result
+                        ):
                             result.append(alias)
 
         return sorted(result)

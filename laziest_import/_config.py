@@ -16,7 +16,7 @@ import re
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Optional
 
 # ============================================================
 # Version loading
@@ -428,5 +428,6 @@ def _activate_state_setters() -> None:
 
 
 from contextlib import suppress
+
 with suppress(ImportError):
     _activate_state_setters()  # deferred activation in build/editable install environments

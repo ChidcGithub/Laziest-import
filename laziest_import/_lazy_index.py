@@ -66,7 +66,6 @@ class BackgroundIndexBuilder:
     def _build_worker(self, build_func: Callable[[], bool], timeout: float) -> None:
         """Worker thread for building index."""
         start_time = time.perf_counter()
-        error_msg: Optional[str] = None
         success = False
 
         try:
@@ -111,7 +110,7 @@ class BackgroundIndexBuilder:
                             logging.warning(f"[laziest-import] Progress callback error: {e}")
 
         except Exception as e:
-            error_msg = str(e)
+            str(e)
             if _DEBUG_MODE:
                 logging.warning(f"[laziest-import] Background index build error: {e}")
             # Call progress callback on error

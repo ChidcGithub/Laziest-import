@@ -4,7 +4,6 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict
 
 from .. import _config
 

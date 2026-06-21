@@ -6,7 +6,7 @@ Provides ways to explore module contents without fully importing them.
 import importlib.util
 import inspect
 import pkgutil
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 
 def list_module_symbols(
@@ -67,7 +67,7 @@ def list_module_symbols(
             continue
 
     if include_submodules:
-        symbols.extend(_get_submodules(module_name))
+        symbols.extend(_get_submodules(module_name, include_private=include_private))
 
     return sorted(symbols)
 
@@ -122,7 +122,7 @@ def get_module_info(module_name: str) -> dict[str, Any]:
     return result
 
 
-def _get_submodules(module_name: str) -> list[str]:
+def _get_submodules(module_name: str, include_private: bool = True) -> list[str]:
     """Get submodule names for a package."""
     submodules: list[str] = []
 
@@ -139,7 +139,10 @@ def _get_submodules(module_name: str) -> list[str]:
         pkg_name = module_name
 
         for importer, name, ispkg in pkgutil.iter_modules(package_path, f"{pkg_name}."):
-            submodules.append(name.split(".")[-1])
+            short_name = name.split(".")[-1]
+            if not include_private and short_name.startswith("_"):
+                continue
+            submodules.append(short_name)
 
     except (ImportError, AttributeError):
         pass

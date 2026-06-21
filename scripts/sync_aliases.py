@@ -230,7 +230,9 @@ def fetch_top_packages(limit: int = 300) -> list[tuple[str, float]]:
     return [(r["project"], float(r.get("download_count", 0))) for r in rows[:limit]]
 
 
-def _write_sync_results(new_aliases: dict[str, str], new_renames: dict[str, str], dry_run: bool) -> None:
+def _write_sync_results(
+    new_aliases: dict[str, str], new_renames: dict[str, str], dry_run: bool
+) -> None:
     if dry_run:
         print("Dry-run mode, no files modified")
         return

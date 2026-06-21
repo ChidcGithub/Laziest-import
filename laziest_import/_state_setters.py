@@ -8,7 +8,6 @@ These functions MUST be accessed through laziest_import._config
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Set
 
 
 def _config():

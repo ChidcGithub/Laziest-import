@@ -9,7 +9,7 @@ import sys
 import threading
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from . import _config
 from ._config import (
@@ -180,7 +180,7 @@ def _infer_context() -> set[str]:
             loaded.add(base_module)
 
     # Check sys.modules for already imported modules
-    alias_values = set(_config._ALIAS_MAP.values())
+    set(_config._ALIAS_MAP.values())
     for mod_name in sys.modules:
         if mod_name and not mod_name.startswith("_"):
             base_module = mod_name.split(".")[0]
@@ -233,9 +233,9 @@ def _check_common_suffix_match(name: str, module: str) -> bool:
     ]
 
     for suffix in suffixes:
-        if module == f"{name}{suffix}" or module == f"{name}_{suffix}":
+        if module in (f"{name}{suffix}", f"{name}_{suffix}"):
             return True
-        if name == f"{module}{suffix}" or name == f"{module}_{suffix}":
+        if name in (f"{module}{suffix}", f"{module}_{suffix}"):
             return True
 
     patterns = [

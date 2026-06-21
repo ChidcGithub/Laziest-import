@@ -3,7 +3,7 @@ Version query utilities for laziest-import.
 """
 
 import json
-from typing import Dict, Optional
+from typing import Optional
 
 from .._config import get_cache_version as _get_cache_version_from_config
 
