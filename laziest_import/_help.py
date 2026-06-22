@@ -4,7 +4,7 @@ Interactive help system for laziest-import.
 
 import locale
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ._which import which_all
 
@@ -28,8 +28,9 @@ def _supports_unicode() -> bool:
             try:
                 import ctypes
 
+                _utf8_code_page = 65001
                 code_page = ctypes.windll.kernel32.GetConsoleOutputCP()
-                if code_page == 65001:  # UTF-8 code page
+                if code_page == _utf8_code_page:  # UTF-8 code page
                     return True
             except Exception:  # noqa: S110 — Windows-only, best-effort
                 pass

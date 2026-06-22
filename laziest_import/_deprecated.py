@@ -24,7 +24,7 @@ Old API -> New API mapping:
 
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Optional
 
 from . import _config
 

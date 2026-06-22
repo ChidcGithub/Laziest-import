@@ -7,7 +7,7 @@ import importlib
 import logging
 import time
 from types import ModuleType
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from .. import _config
 from .._cache import _record_module_load

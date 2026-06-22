@@ -4,7 +4,6 @@ File cache system for laziest-import.
 
 import atexit
 import hashlib
-import importlib.util
 import json
 import logging
 import sys
@@ -12,7 +11,7 @@ import threading
 import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 # Import config module directly to modify its global variables
 from .. import _config
@@ -50,7 +49,9 @@ def _get_caller_file_path() -> Optional[str]:
     """Get the path of the file that imported laziest_import."""
     try:
         for frame_info in traceback.extract_stack():
-            if "laziest_import" not in frame_info.filename and not frame_info.filename.startswith("<"):
+            if "laziest_import" not in frame_info.filename and not frame_info.filename.startswith(
+                "<"
+            ):
                 return str(Path(frame_info.filename).resolve())
     except Exception:
         if _config._DEBUG_MODE:
@@ -173,10 +174,10 @@ def _start_background_preload(modules: list[str]) -> None:
     def _preload_single(module_name: str) -> bool:
         """Preload a single module."""
         import importlib
+
         try:
             spec = importlib.util.find_spec(module_name)
             if spec:
-
                 importlib.import_module(module_name)
                 if _config._DEBUG_MODE:
                     logging.debug(f"[laziest-import] Preloaded {module_name}")

@@ -307,6 +307,7 @@ class TestAnalysisEdgeCases:
     def test_analyze_nonexistent_file(self):
         """Test analyzing non-existent file."""
         from contextlib import suppress
+
         with suppress(FileNotFoundError):
             lz.analyze.file("/nonexistent/path/xyz.py")
 

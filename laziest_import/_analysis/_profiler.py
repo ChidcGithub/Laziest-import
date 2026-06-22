@@ -5,7 +5,7 @@ import threading
 import time
 import tracemalloc
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
 from .._config import _DEBUG_MODE
 

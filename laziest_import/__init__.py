@@ -9,9 +9,12 @@ Or:
     import laziest_import as lz
     arr = lz.np.array([1, 2, 3])
 """
+# ruff: noqa: F401
+# The imports in this file intentionally re-export the public API;
+# names are exposed via __all__ and __dir__.
 
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 # Import config module for state access
 from . import _config as _config_module
@@ -164,10 +167,31 @@ from ._config import (
     reset_init_state,
 )
 
+# Names that should resolve to the object-oriented API namespaces on the global
+# LazyImport instance, rather than being treated as aliases or auto-searched modules.
+_API_NAMESPACE_NAMES: frozenset[str] = frozenset(
+    {
+        "module",
+        "alias",
+        "symbol",
+        "cache",
+        "config",
+        "analyze",
+        "profile",
+        "hooks",
+        "async_",
+        "install",
+        "export",
+        "background",
+        "version",
+        "rc",
+    }
+)
+
 # ═══════════════════════════════════════════════════════════════
 #  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
-from ._deprecated import (  # noqa: F401, F811 — deprecated wrappers intentionally shadow modern imports
+from ._deprecated import (  # noqa: F811 — deprecated wrappers intentionally shadow modern imports
     analyze_directory,
     analyze_file,
     analyze_source,
@@ -335,11 +359,17 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
     if _registry_has(name):
         return _registry_resolve(name)
 
-    # 2. Check alias map
+    # 2. Check API namespaces on the global LazyImport instance
+    #    This ensures `import laziest_import as lz; lz.config.debug = True`
+    #    works even when alias/auto-search would shadow names like 'config'.
+    if name in _API_NAMESPACE_NAMES:
+        return getattr(lz, name)
+
+    # 3. Check alias map
     if name in _ALIAS_MAP:
         return _get_lazy_module(name)
 
-    # 3. Try module auto-search
+    # 4. Try module auto-search
     if _AUTO_SEARCH_ENABLED:
         found = _search_module(name)
         if found:
@@ -389,7 +419,7 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
     for alias, module in _ALIAS_MAP.items():
         alias_lower = alias.lower()
         module_lower = module.split(".")[0].lower()
-        if alias_lower == name_lower or module_lower == name_lower:
+        if name_lower in (alias_lower, module_lower):
             best_match = (alias, module, 0)
             break
         dist_a = _levenshtein_distance(name_lower, alias_lower)

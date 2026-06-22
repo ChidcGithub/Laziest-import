@@ -11,7 +11,7 @@ Provides:
 - Benchmark: Performance benchmarking
 """
 
-from typing import List, Optional
+from typing import Optional
 
 # Pre-analysis
 from ._preanalyze import (
@@ -94,7 +94,7 @@ from ._profiler import (
     ImportProfiler,
     ModuleProfile,
     ProfileReport,
-    _profiler,
+    _profiler,  # noqa: F401 — re-export singleton profiler instance
     get_profile_report,
     print_profile_report,
     start_profiling,
@@ -102,48 +102,48 @@ from ._profiler import (
 )
 
 __all__ = [
-    # Pre-analysis
-    "PreAnalysisResult",
-    "DependencyPreAnalyzer",
-    "_NameVisitor",
-    "analyze_file",
-    "analyze_source",
-    "analyze_directory",
-    # Profiler
-    "ModuleProfile",
-    "ProfileReport",
-    "ImportProfiler",
-    "start_profiling",
-    "stop_profiling",
-    "get_profile_report",
-    "print_profile_report",
-    # Conflict visualization
-    "SymbolConflict",
-    "find_symbol_conflicts",
-    "show_conflicts",
-    "get_conflicts_summary",
-    # Environment detection
-    "EnvironmentInfo",
-    "detect_environment",
-    "show_environment",
-    # Preferences persistence
-    "save_preferences",
-    "load_preferences",
-    "apply_preferences",
-    "clear_preferences",
-    "get_preferences_path",
-    # Dependency tree
-    "DependencyNode",
-    "DependencyTree",
-    "DependencyAnalyzer",
-    "dependency_tree",
-    "print_dependency_tree",
+    "BenchmarkReport",
     # Benchmark
     "BenchmarkResult",
-    "BenchmarkReport",
-    "ImportComparison",
     "BenchmarkRunner",
+    "DependencyAnalyzer",
+    # Dependency tree
+    "DependencyNode",
+    "DependencyPreAnalyzer",
+    "DependencyTree",
+    # Environment detection
+    "EnvironmentInfo",
+    "ImportComparison",
+    "ImportProfiler",
+    # Profiler
+    "ModuleProfile",
+    # Pre-analysis
+    "PreAnalysisResult",
+    "ProfileReport",
+    # Conflict visualization
+    "SymbolConflict",
+    "_NameVisitor",
+    "analyze_directory",
+    "analyze_file",
+    "analyze_source",
+    "apply_preferences",
     "benchmark",
     "benchmark_imports",
+    "clear_preferences",
+    "dependency_tree",
+    "detect_environment",
+    "find_symbol_conflicts",
+    "get_conflicts_summary",
+    "get_preferences_path",
+    "get_profile_report",
+    "load_preferences",
     "print_benchmark_report",
+    "print_dependency_tree",
+    "print_profile_report",
+    # Preferences persistence
+    "save_preferences",
+    "show_conflicts",
+    "show_environment",
+    "start_profiling",
+    "stop_profiling",
 ]

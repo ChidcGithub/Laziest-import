@@ -7,7 +7,7 @@ Analyze module dependencies and visualize import relationships.
 import importlib.util
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from .._config import _DEBUG_MODE
 

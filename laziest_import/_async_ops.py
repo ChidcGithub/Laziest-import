@@ -5,7 +5,7 @@ Async operations for laziest-import.
 import asyncio
 import importlib
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from ._config import (
     _ALIAS_MAP,

@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 
 from .. import _config
 from .._cache import (

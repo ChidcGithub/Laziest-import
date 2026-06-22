@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-1055%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-1065%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -75,7 +75,7 @@
 | Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
 | Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
 | CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` commands |
-| 1055+ Tests | ![](https://img.shields.io/badge/tests-1055%2B-brightgreen.svg) | Comprehensive test coverage |
+| 1065+ Tests | ![](https://img.shields.io/badge/tests-1065%2B-brightgreen.svg) | Comprehensive test coverage |
 | 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
 ---

@@ -16,7 +16,7 @@ IDE Support:
 
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable
 
 __version__: str
 

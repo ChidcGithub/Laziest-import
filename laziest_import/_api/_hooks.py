@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Iterator
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 from .. import _config
 

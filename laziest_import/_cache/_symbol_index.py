@@ -9,7 +9,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from .._config import (
     _CACHE_CONFIG,
@@ -189,7 +189,9 @@ def _load_symbol_index(cache_type: str = "all") -> Optional[SymbolIndexCache]:
                     compressed_path.unlink()
                 except Exception:
                     if _DEBUG_MODE:
-                        logging.debug(f"[laziest-import] Failed to remove corrupted cache {compressed_path}")
+                        logging.debug(
+                            f"[laziest-import] Failed to remove corrupted cache {compressed_path}"
+                        )
 
         # Fall back to uncompressed
         if data is None and cache_path.exists():

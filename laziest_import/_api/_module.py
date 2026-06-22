@@ -1,5 +1,5 @@
 import importlib
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from .._config import _ALIAS_MAP, _LAZY_MODULES
 from .._proxy import _get_lazy_module

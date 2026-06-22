@@ -6,6 +6,5 @@
   "_thread": "_thread",
   "_io": "_io",
   "_collections_abc": "_collections_abc",
-  "__future__": "__future__",
-  "3d": "vedo"
+  "__future__": "__future__"
 }

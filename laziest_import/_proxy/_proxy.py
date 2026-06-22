@@ -2,8 +2,6 @@
 LazyProxy class for intelligent module recognition.
 """
 
-from typing import List
-
 from .. import _config
 from .._fuzzy import _search_module
 from ._factory import _get_lazy_module

@@ -39,7 +39,7 @@ import time
 import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 
 class AmbiguousSymbolError(ImportError):
@@ -61,18 +61,11 @@ class AmbiguousSymbolError(ImportError):
 from .. import _config
 from .._alias import _build_known_modules_cache
 from .._cache import (
-    _check_cache_size_before_save,
-    _cleanup_cache_if_needed,
     _get_cache_dir,
-    _get_cache_size,
-    _get_compressed_path,
-    _load_compressed_json,
     _load_symbol_index,
     _load_tracked_packages,
-    _save_compressed_json,
     _save_symbol_index,
     _save_tracked_packages,
-    _should_use_compression,
     _track_package,
 )
 from .._config import SearchResult, SymbolMatch
@@ -1333,8 +1326,6 @@ def is_symbol_search_enabled() -> bool:
 
 def rebuild_symbol_index() -> None:
     """Rebuild the symbol index."""
-    import laziest_import._config as config
-
     _config._SYMBOL_CACHE.clear()
     _config._STDLIB_SYMBOL_CACHE.clear()
     _config._THIRD_PARTY_SYMBOL_CACHE.clear()

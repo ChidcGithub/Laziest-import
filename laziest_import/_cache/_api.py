@@ -2,7 +2,7 @@
 Public cache API for laziest-import.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .. import _config
 from ._background import (
@@ -162,33 +162,33 @@ def enable_cache_compression(enabled: bool = True) -> None:
 
 
 __all__ = [
-    # Cache configuration
-    "set_cache_config",
-    "get_cache_config",
-    "get_cache_stats",
-    "reset_cache_stats",
-    "invalidate_package_cache",
-    "clear_symbol_cache",
-    "enable_cache_compression",
-    # Cache directory
-    "set_cache_dir",
-    "get_cache_dir",
-    "reset_cache_dir",
-    # File cache
-    "enable_file_cache",
-    "disable_file_cache",
-    "is_file_cache_enabled",
     "clear_file_cache",
-    "get_file_cache_info",
-    "force_save_cache",
+    "clear_symbol_cache",
+    "disable_file_cache",
     # Background and incremental
     "enable_background_build",
-    "get_preheat_config",
+    "enable_cache_compression",
+    # File cache
+    "enable_file_cache",
     "enable_incremental_index",
+    "force_save_cache",
+    "get_all_package_versions",
+    "get_cache_config",
+    "get_cache_dir",
+    "get_cache_stats",
+    "get_cache_version",
+    "get_file_cache_info",
     "get_incremental_config",
+    "get_laziest_import_version",
     # Version
     "get_package_version",
-    "get_all_package_versions",
-    "get_laziest_import_version",
-    "get_cache_version",
+    "get_preheat_config",
+    "invalidate_package_cache",
+    "is_file_cache_enabled",
+    "reset_cache_dir",
+    "reset_cache_stats",
+    # Cache configuration
+    "set_cache_config",
+    # Cache directory
+    "set_cache_dir",
 ]

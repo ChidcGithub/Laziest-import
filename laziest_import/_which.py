@@ -2,12 +2,12 @@
 Symbol location finder (like Unix `which` command).
 """
 
+import contextlib
 import importlib
 import inspect
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from ._config import _SYMBOL_CACHE, _SYMBOL_INDEX_BUILT
-import contextlib
 
 
 class SymbolLocation:

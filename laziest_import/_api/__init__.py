@@ -9,7 +9,7 @@ Usage:
 """
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from .. import _config as _config_module
 from .._alias import _ALIAS_MAP
@@ -240,7 +240,7 @@ class LazyImport:
         for alias, module in _ALIAS_MAP.items():
             alias_lower = alias.lower()
             module_lower = module.split(".")[0].lower()
-            if alias_lower == name_lower or module_lower == name_lower:
+            if name_lower in (alias_lower, module_lower):
                 best_match = (alias, module, 0)
                 break
             dist_a = _levenshtein_distance(name_lower, alias_lower)
@@ -306,49 +306,49 @@ _global_config = lz.config
 # ─── Re-export all namespace classes ─────────────────────────
 
 __all__ = [
-    "LazyImport",
-    "lz",
-    "ModuleNamespace",
     "AliasNamespace",
-    "SymbolNamespace",
-    "SymbolIndexNamespace",
-    "SymbolConfigNamespace",
-    "CacheNamespace",
-    "CacheSymbolsNamespace",
-    "CacheFilesNamespace",
-    "CacheStatsNamespace",
+    "AnalyzeNamespace",
+    "AsyncNamespace",
+    "AutoInstallConfig",
+    "BackgroundNamespace",
+    "CacheConfig",
     "CacheConfigNamespace",
-    "ConfigNamespace",
+    "CacheFilesNamespace",
+    "CacheNamespace",
+    "CacheStatsNamespace",
+    "CacheSymbolsNamespace",
     "ConfigContext",
+    "ConfigNamespace",
+    "ExportNamespace",
     "HookList",
     "HookNamespace",
-    "AnalyzeNamespace",
-    "ProfileNamespace",
-    "AsyncNamespace",
     "InstallNamespace",
-    "ExportNamespace",
-    "BackgroundNamespace",
-    "VersionNamespace",
-    "RCConfigNamespace",
-    "AutoInstallConfig",
-    "RetryConfig",
-    "SymbolSearchConfig",
-    "SymbolResolutionConfig",
-    "CacheConfig",
+    "LazyImport",
+    "ModuleNamespace",
     "ModuleSkipConfig",
+    "ProfileNamespace",
+    "RCConfigNamespace",
+    "RetryConfig",
+    "SymbolConfigNamespace",
+    "SymbolIndexNamespace",
+    "SymbolNamespace",
+    "SymbolResolutionConfig",
+    "SymbolSearchConfig",
+    "VersionNamespace",
+    "clear_cache",
+    "disable_auto_search",
+    "disable_debug_mode",
+    "enable_auto_search",
+    "enable_debug_mode",
+    "get_import_stats",
+    "get_module",
+    "get_version",
+    "is_auto_search_enabled",
+    "is_debug_mode",
+    "list_available",
     # Module-level functions (for backward compat via _deprecated)
     "list_loaded",
-    "list_available",
-    "get_module",
-    "clear_cache",
+    "lz",
     "reload_module",
-    "get_version",
-    "enable_debug_mode",
-    "disable_debug_mode",
-    "is_debug_mode",
-    "enable_auto_search",
-    "disable_auto_search",
-    "is_auto_search_enabled",
-    "get_import_stats",
     "reset_import_stats",
 ]

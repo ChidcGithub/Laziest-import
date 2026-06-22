@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Optional
 
 from .._config import _DEBUG_MODE
 
@@ -103,12 +103,13 @@ def show_environment() -> None:
     else:
         print("Virtual Environment: None (system Python)")
 
+    _max_display_site_packages = 5
     if env.site_packages:
         print(f"\nSite Packages ({len(env.site_packages)}):")
-        for sp in env.site_packages[:5]:
+        for sp in env.site_packages[:_max_display_site_packages]:
             print(f"  - {sp}")
-        if len(env.site_packages) > 5:
-            print(f"  ... and {len(env.site_packages) - 5} more")
+        if len(env.site_packages) > _max_display_site_packages:
+            print(f"  ... and {len(env.site_packages) - _max_display_site_packages} more")
 
     print(f"\nInstalled Packages: {len(env.installed_packages)}")
     print("=" * 60)

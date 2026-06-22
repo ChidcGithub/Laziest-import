@@ -1,6 +1,6 @@
 import importlib
 import threading
-from typing import Any, Dict
+from typing import Any
 
 _LAZY_FUNCTION_REGISTRY: dict[str, str] = {}
 _RESOLVED: dict[str, Any] = {}
