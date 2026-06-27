@@ -239,7 +239,7 @@ def _check_common_suffix_match(name: str, module: str) -> bool:
             return True
 
     patterns = [
-        lambda n, m: m == n.replace("-", "").replace("_", ""),
+        lambda n, m: m == n.replace("-", "").replace("_", "") and len(n.replace("-", "").replace("_", "")) >= 3,
         lambda n, m: n == "pillow" and m == "pil",
         lambda n, m: n == "pil" and m == "pillow",
         lambda n, m: n == "opencv" and m == "cv2",
@@ -333,12 +333,15 @@ def _search_module(name: str) -> Optional[str]:
         # Priority 0: Case-insensitive exact match
         if mod_lower == name_lower:
             candidates.append((0 + context_bonus, 0, mod_name))
-        # Priority 1: Abbreviation match
-        elif mod_lower == name_stripped or mod_stripped == name_lower:
+        # Priority 1: Abbreviation match (require minimum length to avoid
+        # false positives like "os_" -> "os")
+        elif (mod_lower == name_stripped or mod_stripped == name_lower) and len(name_stripped) >= 3:
             candidates.append((1 + context_bonus, 0, mod_name))
-        # Priority 2: Underscore/hyphen variant match
+        # Priority 2: Underscore/hyphen variant match (require minimum length
+        # to avoid false positives like "os_" -> "_os")
         elif mod_stripped == name_stripped and mod_stripped != mod_lower:
-            candidates.append((2 + context_bonus, 0, mod_name))
+            if len(name_stripped) >= 3:
+                candidates.append((2 + context_bonus, 0, mod_name))
         # Priority 3: Common suffix patterns
         elif _check_common_suffix_match(name_lower, mod_lower):
             candidates.append((3 + context_bonus, 0, mod_name))
@@ -350,8 +353,9 @@ def _search_module(name: str) -> Optional[str]:
         elif mod_lower.endswith(name_lower) and len(name_lower) >= 2:
             distance = len(mod_lower) - len(name_lower)
             candidates.append((5 + context_bonus, distance, mod_name))
-        # Priority 6: Contains match
-        elif name_lower in mod_lower and len(name_lower) >= 3:
+        # Priority 6: Contains match (require longer name to avoid
+        # false positives like "oss" -> "cross_web")
+        elif name_lower in mod_lower and len(name_lower) >= 4:
             distance = mod_lower.index(name_lower)
             candidates.append((6 + context_bonus, distance, mod_name))
         # Priority 7: Fuzzy match

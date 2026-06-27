@@ -686,7 +686,7 @@ def search_symbol(
         matches = []
         for cached_name in _config._SYMBOL_CACHE:
             cached_lower = cached_name.lower()
-            if cached_lower == name_lower or name_lower in cached_lower:
+            if cached_lower == name_lower or (name_lower in cached_lower and len(name_lower) >= 5):
                 matches.append(cached_name)
             else:
                 # Conservative fuzzy fallback: short queries must be very close to
