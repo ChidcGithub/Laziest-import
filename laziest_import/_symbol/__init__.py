@@ -244,13 +244,118 @@ def _get_signature_hint(obj: Any) -> Optional[str]:
 # ── Symbol scanning ─────────────────────────────────────────
 
 
+def _should_skip_module(module_name: str) -> bool:
+    if _config._SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
+        return True
+
+    skip_modules = {
+        "test", "tests", "testing", "conftest", "setup",
+        "examples", "docs", "doc", "scripts", "tools",
+        "vendor", "vendored", "__pycache__",
+        ".git", ".hg", ".svn",
+        "pytest", "py.test", "sphinx", "mkdocs",
+        "laziest_import", "laziest-import",
+    }
+
+    if _config._MODULE_SKIP_CONFIG.get("skip_test_modules", True):
+        skip_modules.update(["_test", "test_", "tests_", "_tests"])
+
+    module_lower = module_name.lower()
+    if any(skip in module_lower for skip in skip_modules):
+        return True
+
+    internal_patterns = ["._", ".core.", ".linalg.linalg", ".internal."]
+    if any(pattern in module_name for pattern in internal_patterns):
+        return True
+
+    if module_name.endswith("__main__"):
+        return True
+
+    return False
+
+
+def _get_public_names(module: Any) -> list[str]:
+    try:
+        public_names = getattr(module, "__all__", None)
+        if public_names is None:
+            public_names = [name for name in dir(module) if not name.startswith("_")]
+        else:
+            public_names = [n for n in public_names if isinstance(n, str)]
+    except Exception:
+        return []
+
+    large_threshold = _config._MODULE_SKIP_CONFIG.get("large_module_threshold", 100)
+    if (
+        _config._MODULE_SKIP_CONFIG.get("skip_large_modules", True)
+        and len(public_names) > large_threshold
+    ) and not hasattr(module, "__all__"):
+        public_names = [n for n in public_names if not n.startswith("_")][:large_threshold]
+
+    max_symbols_per_module = 100
+    if len(public_names) > max_symbols_per_module:
+        public_names = public_names[:max_symbols_per_module]
+
+    return public_names
+
+
+def _classify_symbol(name: str, obj: Any) -> tuple[Optional[str], Optional[str]]:
+    try:
+        if inspect.isclass(obj):
+            symbol_type = "class"
+            signature = None
+            try:
+                init = getattr(obj, "__init__", None)
+                if init and callable(init):
+                    signature = _get_signature_hint(init)
+            except Exception:
+                pass
+            return symbol_type, signature
+        elif inspect.isfunction(obj):
+            return "function", _get_signature_hint(obj)
+        elif callable(obj):
+            return "callable", _get_signature_hint(obj)
+    except Exception:
+        pass
+    return None, None
+
+
+def _scan_submodules(
+    module: Any, module_name: str, depth: int,
+    _scanned: set[str], _current_depth: int,
+) -> dict[str, list[tuple[str, str, Optional[str]]]]:
+    symbols: dict[str, list[tuple[str, str, Optional[str]]]] = {}
+    if depth <= 0 or not hasattr(module, "__path__"):
+        return symbols
+
+    try:
+        submodule_count = 0
+        max_submodules = 20
+        for finder, submod_name, ispkg in pkgutil.iter_modules(module.__path__):
+            if submodule_count >= max_submodules:
+                break
+            full_submod_name = f"{module_name}.{submod_name}"
+            try:
+                submod_symbols = _scan_module_symbols(
+                    full_submod_name, depth - 1, _scanned, _current_depth + 1
+                )
+                for sym_name, locations in submod_symbols.items():
+                    if sym_name not in symbols:
+                        symbols[sym_name] = []
+                    symbols[sym_name].extend(locations)
+                submodule_count += 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return symbols
+
+
 def _scan_module_symbols(
     module_name: str,
     depth: int = 1,
     _scanned: Optional[set[str]] = None,
     _current_depth: int = 0,
 ) -> dict[str, list[tuple[str, str, Optional[str]]]]:
-    """Scan a module for exported symbols (classes, functions, callables)."""
     if _scanned is None:
         _scanned = set()
 
@@ -264,46 +369,7 @@ def _scan_module_symbols(
 
     symbols: dict[str, list[tuple[str, str, Optional[str]]]] = {}
 
-    if _config._SYMBOL_SEARCH_CONFIG["skip_stdlib"] and _is_stdlib_module(module_name):
-        return symbols
-
-    skip_modules = {
-        "test",
-        "tests",
-        "testing",
-        "conftest",
-        "setup",
-        "examples",
-        "docs",
-        "doc",
-        "scripts",
-        "tools",
-        "vendor",
-        "vendored",
-        "__pycache__",
-        ".git",
-        ".hg",
-        ".svn",
-        "pytest",
-        "py.test",
-        "sphinx",
-        "mkdocs",
-        "laziest_import",
-        "laziest-import",
-    }
-
-    if _config._MODULE_SKIP_CONFIG.get("skip_test_modules", True):
-        skip_modules.update(["_test", "test_", "tests_", "_tests"])
-
-    module_lower = module_name.lower()
-    if any(skip in module_lower for skip in skip_modules):
-        return symbols
-
-    internal_patterns = ["._", ".core.", ".linalg.linalg", ".internal."]
-    if any(pattern in module_name for pattern in internal_patterns):
-        return symbols
-
-    if module_name.endswith("__main__"):
+    if _should_skip_module(module_name):
         return symbols
 
     with warnings.catch_warnings():
@@ -313,39 +379,13 @@ def _scan_module_symbols(
         try:
             module = importlib.import_module(module_name)
         except (
-            ImportError,
-            ModuleNotFoundError,
-            SyntaxError,
-            AttributeError,
-            TypeError,
-            ValueError,
-            OSError,
-            RecursionError,
-            SystemExit,
+            ImportError, ModuleNotFoundError, SyntaxError, AttributeError,
+            TypeError, ValueError, OSError, RecursionError, SystemExit,
         ):
             return symbols
 
         skip_private = _config._SYMBOL_SEARCH_CONFIG["skip_private"]
-
-        try:
-            public_names = getattr(module, "__all__", None)
-            if public_names is None:
-                public_names = [name for name in dir(module) if not name.startswith("_")]
-            else:
-                public_names = [n for n in public_names if isinstance(n, str)]
-        except Exception:
-            public_names = []
-
-        large_threshold = _config._MODULE_SKIP_CONFIG.get("large_module_threshold", 100)
-        if (
-            _config._MODULE_SKIP_CONFIG.get("skip_large_modules", True)
-            and len(public_names) > large_threshold
-        ) and not hasattr(module, "__all__"):
-            public_names = [n for n in public_names if not n.startswith("_")][:large_threshold]
-
-        max_symbols_per_module = 100
-        if len(public_names) > max_symbols_per_module:
-            public_names = public_names[:max_symbols_per_module]
+        public_names = _get_public_names(module)
 
         for name in public_names:
             if skip_private and name.startswith("_"):
@@ -356,53 +396,17 @@ def _scan_module_symbols(
             except (AttributeError, ImportError, TypeError, RecursionError):
                 continue
 
-            symbol_type = None
-            signature = None
-
-            try:
-                if inspect.isclass(obj):
-                    symbol_type = "class"
-                    try:
-                        init = getattr(obj, "__init__", None)
-                        if init and callable(init):
-                            signature = _get_signature_hint(init)
-                    except Exception:  # noqa: S110 — best-effort signature
-                        pass
-                elif inspect.isfunction(obj):
-                    symbol_type = "function"
-                    signature = _get_signature_hint(obj)
-                elif callable(obj):
-                    symbol_type = "callable"
-                    signature = _get_signature_hint(obj)
-            except Exception:  # noqa: S112 — skip un-inspectable symbols
-                continue
-
+            symbol_type, signature = _classify_symbol(name, obj)
             if symbol_type:
                 if name not in symbols:
                     symbols[name] = []
                 symbols[name].append((module_name, symbol_type, signature))
 
-    if depth > 0 and hasattr(module, "__path__"):
-        try:
-            submodule_count = 0
-            max_submodules = 20
-            for finder, submod_name, ispkg in pkgutil.iter_modules(module.__path__):
-                if submodule_count >= max_submodules:
-                    break
-                full_submod_name = f"{module_name}.{submod_name}"
-                try:
-                    submod_symbols = _scan_module_symbols(
-                        full_submod_name, depth - 1, _scanned, _current_depth + 1
-                    )
-                    for sym_name, locations in submod_symbols.items():
-                        if sym_name not in symbols:
-                            symbols[sym_name] = []
-                        symbols[sym_name].extend(locations)
-                    submodule_count += 1
-                except Exception:  # noqa: S112 — skip un-scannable submodules
-                    continue
-        except Exception:  # noqa: S110 — module path scanning is best-effort
-            pass
+    submod_symbols = _scan_submodules(module, module_name, depth, _scanned, _current_depth)
+    for sym_name, locations in submod_symbols.items():
+        if sym_name not in symbols:
+            symbols[sym_name] = []
+        symbols[sym_name].extend(locations)
 
     return symbols
 
@@ -410,214 +414,218 @@ def _scan_module_symbols(
 # ── Symbol index building ───────────────────────────────────
 
 
-def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: float = 60.0) -> None:
-    """Build the symbol index by scanning installed packages."""
+_PRIORITY_PACKAGES = {
+    "pandas", "numpy", "matplotlib", "seaborn", "scipy", "sklearn",
+    "torch", "tensorflow", "keras", "xgboost", "lightgbm",
+    "requests", "flask", "django", "fastapi",
+    "PIL", "cv2", "plotly", "bokeh",
+    "json", "os", "sys", "re", "datetime", "collections", "itertools",
+    "pathlib", "typing", "functools", "contextlib", "dataclasses",
+    "math", "cmath", "statistics", "random", "decimal", "fractions",
+}
+
+_SHOULD_SKIP_SCAN_MODULES = frozenset([
+    "test", "tests", "_test", "__pycache__", "conftest", "setup",
+])
+
+
+def _try_load_cached_index(
+    stdlib_cache: Any, third_party_cache: Any, existing_tracked: dict[str, Any], start_time: float
+) -> bool:
+    """Try to load symbol index from disk cache. Returns True if cache was successfully loaded."""
+    if stdlib_cache is None and third_party_cache is None:
+        return False
+
+    _config._TRACKED_PACKAGES.clear()
+    _config._TRACKED_PACKAGES.update(existing_tracked)
+
+    if stdlib_cache:
+        _config._STDLIB_SYMBOL_CACHE.clear()
+        _config._STDLIB_SYMBOL_CACHE.update(
+            {k: [tuple(loc) for loc in v] for k, v in stdlib_cache.symbols.items()}
+        )
+        _config._set_stdlib_cache_built(True)
+        if _config._DEBUG_MODE:
+            logging.info(
+                f"[laziest-import] Loaded stdlib symbol index: "
+                f"{len(_config._STDLIB_SYMBOL_CACHE)} symbols"
+            )
+
+    if third_party_cache:
+        _config._THIRD_PARTY_SYMBOL_CACHE.clear()
+        _config._THIRD_PARTY_SYMBOL_CACHE.update(
+            {k: [tuple(loc) for loc in v] for k, v in third_party_cache.symbols.items()}
+        )
+        _config._set_third_party_cache_built(True)
+        if _config._DEBUG_MODE:
+            logging.info(
+                f"[laziest-import] Loaded third-party symbol index: "
+                f"{len(_config._THIRD_PARTY_SYMBOL_CACHE)} symbols"
+            )
+
+    if _config._STDLIB_CACHE_BUILT or _config._THIRD_PARTY_CACHE_BUILT:
+        _config._SYMBOL_CACHE.clear()
+        _config._SYMBOL_CACHE.update(_config._STDLIB_SYMBOL_CACHE)
+        _config._SYMBOL_CACHE.update(_config._THIRD_PARTY_SYMBOL_CACHE)
+        _config._set_symbol_index_built(True)
+        elapsed = time.perf_counter() - start_time
+        _config._CACHE_STATS["last_build_time"] = elapsed
+        if _config._DEBUG_MODE:
+            logging.info(
+                f"[laziest-import] Symbol index loaded from cache: "
+                f"{len(_config._SYMBOL_CACHE)} symbols in {elapsed:.3f}s"
+            )
+        return True
+    return False
+
+
+def _merge_symbols_into_cache(
+    symbols: dict[str, Any], is_stdlib: bool, module_name: str,
+) -> None:
+    target_cache = (
+        _config._STDLIB_SYMBOL_CACHE if is_stdlib else _config._THIRD_PARTY_SYMBOL_CACHE
+    )
+    for sym_name, locations in symbols.items():
+        if sym_name not in _config._SYMBOL_CACHE:
+            _config._SYMBOL_CACHE[sym_name] = []
+        _config._SYMBOL_CACHE[sym_name].extend(locations)
+
+        if sym_name not in target_cache:
+            target_cache[sym_name] = []
+        target_cache[sym_name].extend(locations)
+
+    if not is_stdlib:
+        top_level = module_name.split(".")[0]
+        if top_level not in _config._TRACKED_PACKAGES:
+            _track_package(top_level)
+
+
+def _finalize_symbol_build(
+    start_time: float, scanned_stdlib: int, scanned_third_party: int, timed_out: bool,
+) -> None:
+    if scanned_stdlib > 0 or scanned_third_party > 0:
+        _config._set_symbol_index_built(True)
+        if scanned_stdlib > 0:
+            _config._set_stdlib_cache_built(True)
+        if scanned_third_party > 0:
+            _config._set_third_party_cache_built(True)
+
+        _save_symbol_index(_config._STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
+        _save_symbol_index(_config._THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party)
+        _save_tracked_packages()
+
+        elapsed = time.perf_counter() - start_time
+        _config._CACHE_STATS["last_build_time"] = elapsed
+        _config._CACHE_STATS["build_count"] += 1
+
+        if _config._DEBUG_MODE:
+            timeout_msg = " (timed out)" if timed_out else ""
+            logging.info(
+                f"[laziest-import] Symbol index built: {len(_config._SYMBOL_CACHE)} symbols "
+                f"(stdlib: {scanned_stdlib}, third-party: {scanned_third_party}) "
+                f"in {elapsed:.2f}s{timeout_msg}"
+            )
+    elif timed_out and _config._DEBUG_MODE:
+        logging.info("[laziest-import] Symbol index build timed out with no data collected")
+
+
+def _should_rebuild_index(force: bool) -> bool:
     if not _config.is_initialized() and not force:
-        return
+        return False
 
     import laziest_import._config as config
 
     if config._SYMBOL_INDEX_BUILT and not force:
-        return
+        return False
 
     if not _config._SYMBOL_SEARCH_CONFIG["cache_enabled"]:
+        return False
+
+    return True
+
+
+def _scan_index_modules(
+    sorted_modules: list[str], start_time: float, max_modules: int, timeout: float, depth: int,
+) -> tuple[int, int, bool]:
+    scanned_stdlib = 0
+    scanned_third_party = 0
+    timed_out = False
+
+    for module_name in sorted_modules:
+        if time.perf_counter() - start_time > timeout:
+            timed_out = True
+            if _config._DEBUG_MODE:
+                logging.info(f"[laziest-import] Symbol index build timed out after {timeout}s")
+            break
+
+        if scanned_stdlib + scanned_third_party >= max_modules:
+            break
+
+        if any(x in module_name.lower() for x in _SHOULD_SKIP_SCAN_MODULES):
+            continue
+
+        try:
+            symbols = _scan_module_symbols(module_name, depth)
+            is_stdlib = _is_stdlib_module(module_name)
+            _merge_symbols_into_cache(symbols, is_stdlib, module_name)
+
+            if is_stdlib:
+                scanned_stdlib += 1
+            else:
+                scanned_third_party += 1
+        except Exception:
+            continue
+
+    return scanned_stdlib, scanned_third_party, timed_out
+
+
+def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: float = 60.0) -> None:
+    if not _should_rebuild_index(force):
         return
 
     with _SYMBOL_INDEX_LOCK:
+        import laziest_import._config as config
+
         if config._SYMBOL_INDEX_BUILT and not force:
             return
 
         start_time = time.perf_counter()
         existing_tracked = _load_tracked_packages()
-
         stdlib_cache = _load_symbol_index("stdlib")
         third_party_cache = _load_symbol_index("third_party")
 
         if not force and (stdlib_cache or third_party_cache):
-            _config._TRACKED_PACKAGES.clear()
-            _config._TRACKED_PACKAGES.update(existing_tracked)
-
-            if stdlib_cache:
-                _config._STDLIB_SYMBOL_CACHE.clear()
-                _config._STDLIB_SYMBOL_CACHE.update(
-                    {k: [tuple(loc) for loc in v] for k, v in stdlib_cache.symbols.items()}  # type: ignore[misc]
-                )
-                _config._set_stdlib_cache_built(True)
-                if _config._DEBUG_MODE:
-                    logging.info(
-                        f"[laziest-import] Loaded stdlib symbol index: "
-                        f"{len(_config._STDLIB_SYMBOL_CACHE)} symbols"
-                    )
-
-            if third_party_cache:
-                _config._THIRD_PARTY_SYMBOL_CACHE.clear()
-                _config._THIRD_PARTY_SYMBOL_CACHE.update(
-                    {k: [tuple(loc) for loc in v] for k, v in third_party_cache.symbols.items()}  # type: ignore[misc]
-                )
-                _config._set_third_party_cache_built(True)
-                if _config._DEBUG_MODE:
-                    logging.info(
-                        f"[laziest-import] Loaded third-party symbol index: "
-                        f"{len(_config._THIRD_PARTY_SYMBOL_CACHE)} symbols"
-                    )
-
-            if config._STDLIB_CACHE_BUILT or config._THIRD_PARTY_CACHE_BUILT:
-                _config._SYMBOL_CACHE.clear()
-                _config._SYMBOL_CACHE.update(_config._STDLIB_SYMBOL_CACHE)
-                _config._SYMBOL_CACHE.update(_config._THIRD_PARTY_SYMBOL_CACHE)
-                _config._set_symbol_index_built(True)
-                elapsed = time.perf_counter() - start_time
-                _config._CACHE_STATS["last_build_time"] = elapsed
-                if _config._DEBUG_MODE:
-                    logging.info(
-                        f"[laziest-import] Symbol index loaded from cache: "
-                        f"{len(_config._SYMBOL_CACHE)} symbols in {elapsed:.3f}s"
-                    )
+            if _try_load_cached_index(stdlib_cache, third_party_cache, existing_tracked, start_time):
                 return
 
         _config._CACHE_STATS["symbol_misses"] += 1
         _config._SYMBOL_CACHE.clear()
         _config._STDLIB_SYMBOL_CACHE.clear()
         _config._THIRD_PARTY_SYMBOL_CACHE.clear()
+
         depth = _config._SYMBOL_SEARCH_CONFIG["search_depth"]
         known_modules = _build_known_modules_cache()
 
         if _config._DEBUG_MODE:
-            logging.info(
-                f"[laziest-import] Building symbol index for {len(known_modules)} modules..."
-            )
+            logging.info(f"[laziest-import] Building symbol index for {len(known_modules)} modules...")
 
-        priority_packages = {
-            "pandas",
-            "numpy",
-            "matplotlib",
-            "seaborn",
-            "scipy",
-            "sklearn",
-            "torch",
-            "tensorflow",
-            "keras",
-            "xgboost",
-            "lightgbm",
-            "requests",
-            "flask",
-            "django",
-            "fastapi",
-            "PIL",
-            "cv2",
-            "plotly",
-            "bokeh",
-            "json",
-            "os",
-            "sys",
-            "re",
-            "datetime",
-            "collections",
-            "itertools",
-            "pathlib",
-            "typing",
-            "functools",
-            "contextlib",
-            "dataclasses",
-            "math",
-            "cmath",
-            "statistics",
-            "random",
-            "decimal",
-            "fractions",
-        }
-
-        scanned_stdlib = 0
-        scanned_third_party = 0
-        timed_out = False
-        build_success = False
+        sorted_modules = sorted(
+            known_modules,
+            key=lambda m: (0 if m.split(".")[0] in _PRIORITY_PACKAGES else 1, m),
+        )
 
         try:
-            sorted_modules = sorted(
-                known_modules,
-                key=lambda m: (0 if m.split(".")[0] in priority_packages else 1, m),
+            scanned_stdlib, scanned_third_party, timed_out = _scan_index_modules(
+                sorted_modules, start_time, max_modules, timeout, depth,
             )
-
-            for module_name in sorted_modules:
-                if time.perf_counter() - start_time > timeout:
-                    timed_out = True
-                    if _config._DEBUG_MODE:
-                        logging.info(
-                            f"[laziest-import] Symbol index build timed out after {timeout}s"
-                        )
-                    break
-
-                if scanned_stdlib + scanned_third_party >= max_modules:
-                    break
-
-                if any(
-                    x in module_name.lower()
-                    for x in ["test", "tests", "_test", "__pycache__", "conftest", "setup"]
-                ):
-                    continue
-
-                try:
-                    symbols = _scan_module_symbols(module_name, depth)
-                    is_stdlib = _is_stdlib_module(module_name)
-                    target_cache = (
-                        _config._STDLIB_SYMBOL_CACHE
-                        if is_stdlib
-                        else _config._THIRD_PARTY_SYMBOL_CACHE
-                    )
-
-                    for sym_name, locations in symbols.items():
-                        if sym_name not in _config._SYMBOL_CACHE:
-                            _config._SYMBOL_CACHE[sym_name] = []
-                        _config._SYMBOL_CACHE[sym_name].extend(locations)
-
-                        if sym_name not in target_cache:
-                            target_cache[sym_name] = []
-                        target_cache[sym_name].extend(locations)
-
-                    if is_stdlib:
-                        scanned_stdlib += 1
-                    else:
-                        scanned_third_party += 1
-                        top_level = module_name.split(".")[0]
-                        if top_level not in _config._TRACKED_PACKAGES:
-                            _track_package(top_level)
-
-                except Exception:  # noqa: S112 — skip individual module scan failures
-                    continue
-
             build_success = True
-
         except Exception as e:
             if _config._DEBUG_MODE:
                 logging.warning(f"[laziest-import] Symbol index build failed: {e}")
             build_success = False
 
-        if build_success and (scanned_stdlib > 0 or scanned_third_party > 0):
-            _config._set_symbol_index_built(True)
-            if scanned_stdlib > 0:
-                _config._set_stdlib_cache_built(True)
-            if scanned_third_party > 0:
-                _config._set_third_party_cache_built(True)
-
-            _save_symbol_index(_config._STDLIB_SYMBOL_CACHE, "stdlib", scanned_stdlib)
-            _save_symbol_index(
-                _config._THIRD_PARTY_SYMBOL_CACHE, "third_party", scanned_third_party
-            )
-            _save_tracked_packages()
-
-            elapsed = time.perf_counter() - start_time
-            _config._CACHE_STATS["last_build_time"] = elapsed
-            _config._CACHE_STATS["build_count"] += 1
-
-            if _config._DEBUG_MODE:
-                timeout_msg = " (timed out)" if timed_out else ""
-                logging.info(
-                    f"[laziest-import] Symbol index built: {len(_config._SYMBOL_CACHE)} symbols "
-                    f"(stdlib: {scanned_stdlib}, third-party: {scanned_third_party}) "
-                    f"in {elapsed:.2f}s{timeout_msg}"
-                )
-        elif timed_out and _config._DEBUG_MODE:
-            logging.info("[laziest-import] Symbol index build timed out with no data collected")
+        if build_success:
+            _finalize_symbol_build(start_time, scanned_stdlib, scanned_third_party, timed_out)
 
 
 # ── Signature comparison ────────────────────────────────────
@@ -812,10 +820,73 @@ def _score_symbol_match(result: SearchResult, context: set[str], original_name: 
     )
 
 
+def _check_symbol_misspelling(name: str) -> Optional[str]:
+    if not _config._SYMBOL_RESOLUTION_CONFIG["symbol_misspelling"]:
+        return None
+    misspellings = _get_common_symbol_misspellings()
+    name_lower = name.lower()
+    if name_lower in misspellings:
+        corrected = misspellings[name_lower]
+        if _config._DEBUG_MODE:
+            logging.debug(
+                f"[laziest-import] Symbol misspelling corrected: '{name}' -> '{corrected}'"
+            )
+        return corrected
+    return None
+
+
+def _fuzzy_symbol_fallback(name: str, symbol_type: Optional[str] = None) -> list[SearchResult]:
+    name_lower = name.lower()
+    fuzzy_matches: list[tuple[int, str]] = []
+    for cached_name in _config._SYMBOL_CACHE:
+        cached_lower = cached_name.lower()
+        dist = _levenshtein_distance(name_lower, cached_lower)
+        min_len = min(len(name_lower), len(cached_lower))
+        if min_len <= 3:
+            max_dist = 0
+        elif min_len <= 5:
+            max_dist = 1
+        else:
+            max_dist = min(2, min_len // 3)
+        if dist <= max_dist:
+            fuzzy_matches.append((dist, cached_name))
+
+    fuzzy_matches.sort(key=lambda x: x[0])
+    results: list[SearchResult] = []
+    for dist, match_name in fuzzy_matches[:3]:
+        match_results = search_symbol(match_name, symbol_type=symbol_type)
+        results.extend(match_results)
+    return results
+
+
+def _resolve_symbol_conflict(
+    best: SymbolMatch, second: Optional[SymbolMatch], original_name: str,
+    scored_results: list[SymbolMatch], strict: bool,
+) -> Optional[SymbolMatch]:
+    threshold = _config._SYMBOL_RESOLUTION_CONFIG["auto_threshold"]
+    conflict_threshold = _config._SYMBOL_RESOLUTION_CONFIG["conflict_threshold"]
+
+    if best.confidence >= threshold:
+        if second and (best.confidence - second.confidence) < conflict_threshold:
+            if strict:
+                raise AmbiguousSymbolError(original_name, scored_results[:3])
+            if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
+                _warn_symbol_conflict(original_name, scored_results[:3])
+            if best.source in ("user_pref", "context"):
+                return best
+            return None
+        return best
+
+    if strict:
+        raise AmbiguousSymbolError(original_name, scored_results[:3])
+    if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
+        _warn_symbol_conflict(original_name, scored_results[:3])
+    return None
+
+
 def _search_symbol_enhanced(
     name: str, auto: bool = True, symbol_type: Optional[str] = None
 ) -> Optional[SymbolMatch]:
-    """Enhanced symbol search with conflict resolution and spell correction."""
     if not _config._SYMBOL_RESOLUTION_CONFIG["auto_symbol"]:
         return None
 
@@ -825,44 +896,12 @@ def _search_symbol_enhanced(
         _build_symbol_index()
 
     original_name = name
-
-    corrected_name = None
-    if _config._SYMBOL_RESOLUTION_CONFIG["symbol_misspelling"]:
-        misspellings = _get_common_symbol_misspellings()
-        name_lower = name.lower()
-        if name_lower in misspellings:
-            corrected_name = misspellings[name_lower]
-            if _config._DEBUG_MODE:
-                logging.debug(
-                    f"[laziest-import] Symbol misspelling corrected: '{name}' -> '{corrected_name}'"
-                )
-
+    corrected_name = _check_symbol_misspelling(name)
     search_name = corrected_name or name
+
     results = search_symbol(search_name, symbol_type=symbol_type)
-
     if not results and not corrected_name:
-        name_lower = search_name.lower()
-        fuzzy_matches: list[tuple[int, str]] = []
-
-        for cached_name in _config._SYMBOL_CACHE:
-            cached_lower = cached_name.lower()
-            dist = _levenshtein_distance(name_lower, cached_lower)
-            min_len = min(len(name_lower), len(cached_lower))
-            # Keep symbol fuzzy matching stricter than module matching.
-            if min_len <= 3:
-                max_dist = 0
-            elif min_len <= 5:
-                max_dist = 1
-            else:
-                max_dist = min(2, min_len // 3)
-            if dist <= max_dist:
-                fuzzy_matches.append((dist, cached_name))
-
-        fuzzy_matches.sort(key=lambda x: x[0])
-        for dist, match_name in fuzzy_matches[:3]:
-            match_results = search_symbol(match_name, symbol_type=symbol_type)
-            results.extend(match_results)
-
+        results = _fuzzy_symbol_fallback(search_name, symbol_type)
         if results and _config._DEBUG_MODE:
             logging.debug(
                 f"[laziest-import] Fuzzy symbol search found {len(results)} results for '{name}'"
@@ -881,28 +920,8 @@ def _search_symbol_enhanced(
     if not auto:
         return best
 
-    threshold = _config._SYMBOL_RESOLUTION_CONFIG["auto_threshold"]
-    conflict_threshold = _config._SYMBOL_RESOLUTION_CONFIG["conflict_threshold"]
     strict = _config._SYMBOL_RESOLUTION_CONFIG.get("strict", False)
-
-    if best.confidence >= threshold:
-        if second and (best.confidence - second.confidence) < conflict_threshold:
-            if strict:
-                raise AmbiguousSymbolError(original_name, scored_results[:3])
-            if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
-                _warn_symbol_conflict(original_name, scored_results[:3])
-            if best.source in ("user_pref", "context"):
-                return best
-            return None
-        return best
-
-    if strict:
-        raise AmbiguousSymbolError(original_name, scored_results[:3])
-
-    if _config._SYMBOL_RESOLUTION_CONFIG["warn_on_conflict"]:
-        _warn_symbol_conflict(original_name, scored_results[:3])
-
-    return None
+    return _resolve_symbol_conflict(best, second, original_name, scored_results, strict)
 
 
 def _warn_symbol_conflict(name: str, matches: list[SymbolMatch]) -> None:
@@ -949,21 +968,21 @@ def _is_interactive_terminal() -> bool:
     return True
 
 
+def _auto_select_first(results: list[SearchResult], symbol_name: str) -> Optional[str]:
+    if _config._DEBUG_MODE and not _is_interactive_terminal():
+        logging.debug(
+            f"[laziest-import] Non-interactive environment, auto-selecting "
+            f"'{results[0].module_name}' for symbol '{symbol_name}'"
+        )
+    return results[0].module_name
+
+
 def _interactive_confirm(results: list[SearchResult], symbol_name: str) -> Optional[str]:
-    """Interactively ask user to confirm which module to use."""
     if not results:
         return None
 
-    if not _config._SYMBOL_SEARCH_CONFIG["interactive"]:
-        return results[0].module_name
-
-    if not _is_interactive_terminal():
-        if _config._DEBUG_MODE:
-            logging.debug(
-                f"[laziest-import] Non-interactive environment, auto-selecting "
-                f"'{results[0].module_name}' for symbol '{symbol_name}'"
-            )
-        return results[0].module_name
+    if not _config._SYMBOL_SEARCH_CONFIG["interactive"] or not _is_interactive_terminal():
+        return _auto_select_first(results, symbol_name)
 
     print(f"\n[laziest-import] Found {len(results)} match(es) for '{symbol_name}':")
     print("-" * 60)
@@ -986,10 +1005,8 @@ def _interactive_confirm(results: list[SearchResult], symbol_name: str) -> Optio
         if 0 <= idx < len(results):
             return results[idx].module_name
         print(f"Invalid choice: {choice}")
-        return None
     except (ValueError, EOFError, KeyboardInterrupt):
         print("\nCancelled.")
-        return None
     except OSError:
         if _config._DEBUG_MODE:
             logging.debug(
@@ -997,6 +1014,8 @@ def _interactive_confirm(results: list[SearchResult], symbol_name: str) -> Optio
                 f"auto-selecting '{results[0].module_name}'"
             )
         return results[0].module_name
+
+    return None
 
 
 def _handle_symbol_not_found(name: str) -> Optional[str]:
@@ -1226,48 +1245,13 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
             logging.info("[laziest-import] Too many changes, full rebuild recommended")
         return False
 
-    start_time = time.perf_counter()
-    depth = _config._SYMBOL_SEARCH_CONFIG["search_depth"]
-    scanned_count = 0
-
     packages_to_remove = removed_packages | updated_packages
     for pkg in packages_to_remove:
         _remove_package_symbols(pkg)
 
+    start_time = time.perf_counter()
     packages_to_scan = new_packages | updated_packages
-    known_modules = _build_known_modules_cache()
-
-    for module_name in known_modules:
-        if time.perf_counter() - start_time > timeout:
-            if _config._DEBUG_MODE:
-                logging.info(f"[laziest-import] Incremental build timed out after {timeout}s")
-            break
-
-        top_level = module_name.split(".")[0]
-        if top_level not in packages_to_scan:
-            continue
-
-        try:
-            symbols = _scan_module_symbols(module_name, depth)
-
-            is_stdlib = _is_stdlib_module(module_name)
-            target_cache = (
-                _config._STDLIB_SYMBOL_CACHE if is_stdlib else _config._THIRD_PARTY_SYMBOL_CACHE
-            )
-
-            for sym_name, locations in symbols.items():
-                if sym_name not in _config._SYMBOL_CACHE:
-                    _config._SYMBOL_CACHE[sym_name] = []
-                _config._SYMBOL_CACHE[sym_name].extend(locations)
-
-                if sym_name not in target_cache:
-                    target_cache[sym_name] = []
-                target_cache[sym_name].extend(locations)
-
-            scanned_count += 1
-
-        except Exception:  # noqa: S112 — skip individual symbol merge failures
-            continue
+    scanned_count = _scan_incremental_modules(packages_to_scan, start_time, timeout)
 
     for pkg in packages_to_scan:
         _track_package(pkg)
@@ -1286,6 +1270,32 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
 
     _config._set_symbol_index_built(True)
     return True
+
+
+def _scan_incremental_modules(packages_to_scan: set[str], start_time: float, timeout: float) -> int:
+    depth = _config._SYMBOL_SEARCH_CONFIG["search_depth"]
+    scanned_count = 0
+    known_modules = _build_known_modules_cache()
+
+    for module_name in known_modules:
+        if time.perf_counter() - start_time > timeout:
+            if _config._DEBUG_MODE:
+                logging.info(f"[laziest-import] Incremental build timed out after {timeout}s")
+            break
+
+        top_level = module_name.split(".")[0]
+        if top_level not in packages_to_scan:
+            continue
+
+        try:
+            symbols = _scan_module_symbols(module_name, depth)
+            is_stdlib = _is_stdlib_module(module_name)
+            _merge_symbols_into_cache(symbols, is_stdlib, module_name)
+            scanned_count += 1
+        except Exception:
+            continue
+
+    return scanned_count
 
 
 def _remove_package_symbols(package_name: str) -> None:
