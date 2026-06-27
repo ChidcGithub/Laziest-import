@@ -37,7 +37,7 @@ class TestAutoInstallConfig:
         """Test enabling auto-install."""
         from laziest_import import lz
 
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         assert lz.install.enabled is True
 
         # Disable for safety
@@ -47,7 +47,7 @@ class TestAutoInstallConfig:
         """Test disabling auto-install."""
         from laziest_import import lz
 
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         lz.install.disable()
         assert lz.install.enabled is False
 
@@ -151,7 +151,7 @@ class TestAutoInstallSafety:
         """Test non-interactive mode."""
         from laziest_import import lz
 
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         config = lz.install.auto
         assert config["interactive"] is False
 
@@ -165,8 +165,8 @@ class TestAutoInstallEdgeCases:
         """Test enabling multiple times."""
         from laziest_import import lz
 
-        lz.install.enable(interactive=False)
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         assert lz.install.enabled is True
 
         lz.install.disable()

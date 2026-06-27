@@ -7,9 +7,42 @@ import shutil
 import subprocess
 import sys
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from . import _config
 from ._fuzzy import _get_package_rename_map
+
+
+_ALLOWED_INDEX_SCHEMES = frozenset({"https", "http"})
+
+_BLOCKED_INSTALL_ARGS: frozenset[str] = frozenset({
+    "--trusted-host",
+    "--find-links",
+    "--extra-index-url",
+    "--no-index",
+    "--require-hashes",
+    "--no-build-isolation",
+    "--no-clean",
+    "--no-deps",
+    "--no-verify",
+})
+
+
+def _validate_install_args(package_name: Optional[str], index: Optional[str], extra_args: Optional[list[str]]) -> None:
+    if package_name and package_name.startswith(("-", "git+", "http", ".")):
+        raise ValueError(f"Dangerous package name blocked: '{package_name}'")
+    if index:
+        parsed = urlparse(index)
+        if parsed.scheme not in _ALLOWED_INDEX_SCHEMES:
+            raise ValueError(
+                f"Insecure index URL scheme '{parsed.scheme}'. "
+                f"Only {_ALLOWED_INDEX_SCHEMES} allowed for auto-install."
+            )
+    if extra_args:
+        for arg in extra_args:
+            for blocked in _BLOCKED_INSTALL_ARGS:
+                if arg.startswith(blocked):
+                    raise ValueError(f"Dangerous install flag blocked: '{arg}'")
 
 
 def _get_pip_package_name(module_name: str) -> str:
@@ -39,6 +72,7 @@ def _install_package_sync(
     silent: bool = False,
 ) -> tuple[bool, str]:
     """Install a package using pip or uv."""
+    _validate_install_args(package_name, index, extra_args)
     use_uv = prefer_uv and _check_uv_available()
 
     if use_uv:
@@ -87,6 +121,13 @@ def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
     In non-interactive environments, returns False for safety.
     """
     if not _config._AUTO_INSTALL_CONFIG["interactive"]:
+        if not _config._AUTO_INSTALL_CONFIG["allow_non_interactive"]:
+            if _config._DEBUG_MODE:
+                logging.debug(
+                    f"[laziest-import] Non-interactive auto-install blocked: "
+                    f"'{package_name}' requires allow_non_interactive=True"
+                )
+            return False
         return True
 
     # Check if we're in an interactive terminal
@@ -172,15 +213,30 @@ def enable_auto_install(
     extra_args: Optional[list[str]] = None,
     prefer_uv: bool = False,
     silent: bool = False,
+    allow_non_interactive: bool = False,
 ) -> None:
     """
-        Enable automatic installation of missing packages.
+    Enable automatic installation of missing packages.
 
-    WARNING: This feature installs packages automatically. Use with caution
-        in production environments.
+    WARNING: This feature runs pip/uv install with arbitrary package names.
+    Only enable in trusted environments.
+
+    Args:
+        interactive: When True, prompt user before installing.
+        allow_non_interactive: Must be explicitly set to True when
+            interactive=False, as a safety measure against silent installs.
     """
+    if not interactive and not allow_non_interactive:
+        raise ValueError(
+            "Non-interactive auto-install is dangerous: pip/uv will be called "
+            "with arbitrary package names. Set allow_non_interactive=True to "
+            "acknowledge this risk."
+        )
+    _validate_install_args(None, index, extra_args)
+
     _config._AUTO_INSTALL_CONFIG["enabled"] = True
     _config._AUTO_INSTALL_CONFIG["interactive"] = interactive
+    _config._AUTO_INSTALL_CONFIG["allow_non_interactive"] = allow_non_interactive
     _config._AUTO_INSTALL_CONFIG["index"] = index
     _config._AUTO_INSTALL_CONFIG["extra_args"] = extra_args or []
     _config._AUTO_INSTALL_CONFIG["prefer_uv"] = prefer_uv
@@ -204,11 +260,13 @@ def get_auto_install_config() -> dict[str, Any]:
 
 def set_pip_index(url: Optional[str]) -> None:
     """Set custom PyPI mirror index URL."""
+    _validate_install_args(None, url, None)
     _config._AUTO_INSTALL_CONFIG["index"] = url
 
 
 def set_pip_extra_args(args: list[str]) -> None:
     """Set extra arguments for pip install."""
+    _validate_install_args(None, None, args)
     _config._AUTO_INSTALL_CONFIG["extra_args"] = args
 
 

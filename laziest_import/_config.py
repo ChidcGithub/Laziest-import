@@ -231,6 +231,7 @@ _RETRY_CONFIG: dict[str, Any] = {
 _AUTO_INSTALL_CONFIG: dict[str, Any] = {
     "enabled": False,
     "interactive": True,
+    "allow_non_interactive": False,
     "index": None,
     "extra_args": [],
     "prefer_uv": False,

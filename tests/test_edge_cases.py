@@ -106,7 +106,7 @@ class TestAutoInstallSafety:
         from laziest_import import lz
 
         fake_pkg = "laziest_import_fake_nonexistent_pkg_12345"
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         lz.config.auto_search = True
         try:
             with pytest.raises((AttributeError, ImportError, ModuleNotFoundError)):
@@ -129,7 +129,7 @@ class TestAutoInstallSafety:
     def test_auto_install_config_isolation(self):
         from laziest_import import lz
 
-        lz.install.enable(interactive=False, index="https://example.com/simple")
+        lz.install.enable(interactive=False, allow_non_interactive=True, index="https://example.com/simple")
         try:
             cfg = lz.install.auto
             assert cfg.get("index") == "https://example.com/simple"

@@ -968,7 +968,7 @@ class TestRealWorldScenario_AutoInstall:
         """Test toggling auto-install."""
         from laziest_import import lz
 
-        lz.install.enable(interactive=False)
+        lz.install.enable(interactive=False, allow_non_interactive=True)
         assert lz.install.enabled is True
 
         lz.install.disable()

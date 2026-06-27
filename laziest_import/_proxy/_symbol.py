@@ -192,9 +192,25 @@ class LazySymbol:
 
     # Comparison operators
     def __eq__(self, other):
+        if isinstance(other, LazySymbol):
+            return (
+                object.__getattribute__(self, "_module_name"),
+                object.__getattribute__(self, "_symbol_name"),
+            ) == (
+                object.__getattribute__(other, "_module_name"),
+                object.__getattribute__(other, "_symbol_name"),
+            )
         return self._get_object() == other
 
     def __ne__(self, other):
+        if isinstance(other, LazySymbol):
+            return (
+                object.__getattribute__(self, "_module_name"),
+                object.__getattribute__(self, "_symbol_name"),
+            ) != (
+                object.__getattribute__(other, "_module_name"),
+                object.__getattribute__(other, "_symbol_name"),
+            )
         return self._get_object() != other
 
     def __lt__(self, other):
@@ -229,7 +245,10 @@ class LazySymbol:
 
     # Hash
     def __hash__(self):
-        return hash(self._get_object())
+        return hash((
+            object.__getattribute__(self, "_module_name"),
+            object.__getattribute__(self, "_symbol_name"),
+        ))
 
     # Generic type support (PEP 560)
     @classmethod

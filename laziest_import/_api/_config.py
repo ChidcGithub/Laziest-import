@@ -20,6 +20,7 @@ from .._symbol import (
 class AutoInstallConfig:
     enabled: bool = False
     interactive: bool = True
+    allow_non_interactive: bool = False
     index: Optional[str] = None
     extra_args: list[str] = field(default_factory=list)
     prefer_uv: bool = False
@@ -190,6 +191,7 @@ class ConfigNamespace:
             self._auto_install_cache = AutoInstallConfig(
                 enabled=c["enabled"],
                 interactive=c["interactive"],
+                allow_non_interactive=c["allow_non_interactive"],
                 index=c["index"],
                 extra_args=list(c["extra_args"]),
                 prefer_uv=c["prefer_uv"],
@@ -201,6 +203,7 @@ class ConfigNamespace:
     def auto_install(self, cfg: AutoInstallConfig) -> None:
         _config._AUTO_INSTALL_CONFIG["enabled"] = cfg.enabled
         _config._AUTO_INSTALL_CONFIG["interactive"] = cfg.interactive
+        _config._AUTO_INSTALL_CONFIG["allow_non_interactive"] = cfg.allow_non_interactive
         _config._AUTO_INSTALL_CONFIG["index"] = cfg.index
         _config._AUTO_INSTALL_CONFIG["extra_args"] = list(cfg.extra_args)
         _config._AUTO_INSTALL_CONFIG["prefer_uv"] = cfg.prefer_uv

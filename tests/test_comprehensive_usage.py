@@ -526,7 +526,7 @@ section("16. AUTO INSTALL")
 
 print(f"auto_install enabled: {lz.install.enabled}")
 
-lz.install.enable(interactive=False)
+lz.install.enable(interactive=False, allow_non_interactive=True)
 print("auto_install enabled (non-interactive)")
 
 ac = lz.install.auto
@@ -535,7 +535,7 @@ print(f"auto_install_config: {ac}")
 set_pip_index("https://pypi.org/simple/")
 print("pip_index set")
 
-set_pip_extra_args(["--no-deps"])
+set_pip_extra_args(["--no-cache-dir"])
 print("pip_extra_args set")
 
 lz.install.disable()

@@ -42,8 +42,9 @@ class InstallNamespace:
         extra_args: Optional[list[str]] = None,
         prefer_uv: bool = False,
         silent: bool = False,
+        allow_non_interactive: bool = False,
     ) -> None:
-        enable_auto_install(interactive, index, extra_args, prefer_uv, silent)
+        enable_auto_install(interactive, index, extra_args, prefer_uv, silent, allow_non_interactive)
 
     def disable(self) -> None:
         disable_auto_install()
