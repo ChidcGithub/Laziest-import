@@ -28,8 +28,11 @@ section("2. Lazy Module Access (by name)")
 os_mod = lz.os
 print(f"lz.os == os: {os_mod.__name__}")
 
-np_mod = lz.module.numpy
-print(f"lz.module.numpy: {np_mod.__name__}, array: {np_mod.array([1, 2, 3])}")
+try:
+    np_mod = lz.module.numpy
+    print(f"lz.module.numpy: {np_mod.__name__}, array: {np_mod.array([1, 2, 3])}")
+except ImportError as e:
+    print(f"lz.module.numpy: skipped (optional dep not installed: {e})")
 
 try:
     lz.nonexistent_xyzzy
