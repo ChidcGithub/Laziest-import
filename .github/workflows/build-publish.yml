@@ -24,7 +24,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.9'
 
     - name: Install build tools
       run: |
@@ -216,7 +216,7 @@ jobs:
             f"| **Version** | {version} |\n"
             f"| **Commit SHA** | {sha} |\n"
             f"| **Build Date** | {build_date} |\n"
-            "| **Python** | 3.8+ |\n\n"
+            "| **Python** | 3.9+ |\n\n"
             "### Installation\n"
             "```\n"
             "pip install laziest-import\n"
