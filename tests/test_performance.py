@@ -6,6 +6,7 @@ to its limits and uncover potential bugs under extreme conditions.
 """
 
 import asyncio
+import contextlib
 import gc
 import random
 import string
@@ -16,7 +17,6 @@ import time
 from pathlib import Path
 
 import pytest
-import contextlib
 
 # Ensure laziest_import can be imported
 sys.path.insert(0, ".")
@@ -39,7 +39,7 @@ class TestHighConcurrencyStress:
                 # Access module
                 mod = getattr(lz, module_name)
                 # Access attribute
-                val = getattr(mod, attr)
+                getattr(mod, attr)
                 with lock:
                     success_count[0] += 1
             except Exception as e:
@@ -667,8 +667,8 @@ class TestFuzzySearchStress:
                 # Random typos
                 typo = list(base)
                 if len(typo) > 2:
-                    pos = random.randint(0, len(typo) - 1)  # noqa: S311 — test data, not crypto
-                    typo[pos] = random.choice(string.ascii_lowercase)  # noqa: S311 — test data, not crypto
+                    pos = random.randint(0, len(typo) - 1)
+                    typo[pos] = random.choice(string.ascii_lowercase)
                 queries.append("".join(typo))
 
         start_time = time.perf_counter()

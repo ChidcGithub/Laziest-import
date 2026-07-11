@@ -12,6 +12,8 @@ import pytest
 # Ensure laziest_import can be imported
 sys.path.insert(0, ".")
 
+import contextlib
+
 from laziest_import import (
     get_init_error,
     is_init_failed,
@@ -34,7 +36,6 @@ from laziest_import._symbol import (
     get_module_priority,
     set_module_priority,
 )
-import contextlib
 
 
 class TestBasicImport:
@@ -160,7 +161,7 @@ class TestFromImport:
         import subprocess
         import sys
 
-        r = subprocess.run(  # noqa: S603 — list form, trusted input
+        r = subprocess.run(
             [
                 sys.executable,
                 "-c",
@@ -184,7 +185,7 @@ class TestFromImport:
         import subprocess
         import sys
 
-        r = subprocess.run(  # noqa: S603 — list form, trusted input
+        r = subprocess.run(
             [
                 sys.executable,
                 "-c",
@@ -789,7 +790,7 @@ class TestAliasExport:
             temp_path = f.name
 
         try:
-            result = lz.alias.export(path=temp_path)
+            lz.alias.export(path=temp_path)
             assert os.path.exists(temp_path)
 
             # Check file is valid JSON

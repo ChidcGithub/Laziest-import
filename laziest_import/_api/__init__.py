@@ -233,13 +233,22 @@ class LazyImport:
             if found_module:
                 return _get_lazy_module(name)
 
-        # Smart error hint with nearest alias
+        self._record_negative_cache(name)
+        raise AttributeError(self._build_attr_error_msg(name))
+
+    def _record_negative_cache(self, name: str) -> None:
+        """Record a name in the negative cache to avoid repeated lookups."""
+        with _config_module._NEGATIVE_CACHE_LOCK:
+            _config_module._NEGATIVE_CACHE[name] = time.time()
+
+    def _build_attr_error_msg(self, name: str) -> str:
+        """Build a descriptive error message with suggestions for an unknown attribute."""
         msg = f"'{type(self).__name__}' object has no attribute '{name}'."
         name_lower = name.lower()
         best_match: Optional[tuple[str, str, int]] = None
         for alias, module in _ALIAS_MAP.items():
             alias_lower = alias.lower()
-            module_lower = module.split(".")[0].lower()
+            module_lower = module.split(".", 1)[0].lower()
             if name_lower in (alias_lower, module_lower):
                 best_match = (alias, module, 0)
                 break
@@ -259,10 +268,7 @@ class LazyImport:
             msg += f" Did you mean `{best_match[0]}` (-> {best_match[1]})?"
         else:
             msg += f" Try lz.module.{name} or lz.symbol.search('{name}')"
-
-        with _config_module._NEGATIVE_CACHE_LOCK:
-            _config_module._NEGATIVE_CACHE[name] = time.time()
-        raise AttributeError(msg)
+        return msg
 
     def __dir__(self) -> list[str]:
         base = [

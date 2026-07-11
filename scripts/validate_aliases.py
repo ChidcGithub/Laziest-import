@@ -43,9 +43,9 @@ def _check_single_pypi_package(name: str) -> bool | None:
     if name in _PYPI_CACHE:
         return _PYPI_CACHE[name]
     url = f"https://pypi.org/pypi/{name}/json"
-    req = urllib.request.Request(url, headers={"User-Agent": "laziest-import-validator/2.0"})  # noqa: S310 — validated PyPI HTTPS URL
+    req = urllib.request.Request(url, headers={"User-Agent": "laziest-import-validator/2.0"})
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 — validated PyPI HTTPS URL
+        with urllib.request.urlopen(req, timeout=10) as resp:
             exists = resp.status == _HTTP_OK
     except urllib.error.HTTPError as e:
         exists = e.code != _HTTP_NOT_FOUND

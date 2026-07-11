@@ -345,56 +345,26 @@ def _rebuild_global_namespace() -> None:
 _CACHE_BUILD_LOCK = threading.Lock()
 
 
-def _build_known_modules_cache(force: bool = False) -> set[str]:
-    """
-    Build cache of all known importable modules.
-
-    Args:
-        force: Force rebuild even if cache is still valid
-
-    Returns:
-        Set of installed module names
-    """
-    global _KNOWN_MODULES_CACHE, _KNOWN_MODULES_CACHE_TIME
-
-    # Quick check without lock for performance
-    if _KNOWN_MODULES_CACHE is not None and not force:
-        current_time = time.time()
-        if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
-            return _KNOWN_MODULES_CACHE
-
-    # Use lock to prevent multiple threads from rebuilding simultaneously
-    with _CACHE_BUILD_LOCK:
-        # Double-check after acquiring lock
-        if _KNOWN_MODULES_CACHE is not None and not force:
-            current_time = time.time()
-            if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
-                return _KNOWN_MODULES_CACHE
-
-        # Build modules cache inside the lock
-        modules: set[str] = set()
-
-        # Add already loaded modules
-        modules.update(sys.modules.keys())
-
-        # Lightweight directory scan (avoids pkgutil.iter_modules which
-        # triggers expensive import-time side effects in packages like OpenGL)
-        seen: set[str] = set()
-        for path in sys.path:
-            if not path or path == ".":
+def _scan_path_modules() -> set[str]:
+    """Scan sys.path for importable modules."""
+    modules: set[str] = set()
+    modules.update(sys.modules.keys())
+    seen: set[str] = set()
+    for path in sys.path:
+        if not path or path == ".":
+            continue
+        try:
+            p = Path(path)
+            if not p.is_dir():
                 continue
-            try:
-                p = Path(path)
-                if not p.is_dir():
+            for entry in p.iterdir():
+                name = entry.stem
+                if name in seen or name.startswith("_") or name.startswith("."):
                     continue
-                for entry in p.iterdir():
-                    name = entry.stem
-                    if name in seen or name.startswith("_") or name.startswith("."):
-                        continue
-                    seen.add(name)
-                    if entry.suffix == ".py" or entry.is_dir():
-                        modules.add(name)
-            except (OSError, ImportError, PermissionError):
+                seen.add(name)
+                if entry.suffix == ".py" or entry.is_dir():
+                    modules.add(name)
+        except (OSError, ImportError, PermissionError):
                 continue
 
         # Add standard library modules
@@ -536,12 +506,29 @@ def _build_known_modules_cache(force: bool = False) -> set[str]:
             }
             modules.update(stdlib_modules)
 
-        # Update global variables inside the lock
+        return modules
+
+
+def _build_known_modules_cache(force: bool = False) -> set[str]:
+    """Build cache of all known importable modules with thread-safe caching."""
+    global _KNOWN_MODULES_CACHE, _KNOWN_MODULES_CACHE_TIME
+
+    if _KNOWN_MODULES_CACHE is not None and not force:
+        current_time = time.time()
+        if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
+            return _KNOWN_MODULES_CACHE
+
+    with _CACHE_BUILD_LOCK:
+        if _KNOWN_MODULES_CACHE is not None and not force:
+            current_time = time.time()
+            if current_time - _KNOWN_MODULES_CACHE_TIME < _KNOWN_MODULES_CACHE_TTL:
+                return _KNOWN_MODULES_CACHE
+
+        modules = _scan_path_modules()
         _KNOWN_MODULES_CACHE = modules
         _KNOWN_MODULES_CACHE_TIME = time.time()
         _alias_config._KNOWN_MODULES_CACHE = modules
         _alias_config._KNOWN_MODULES_CACHE_TIME = time.time()
-
         return modules
 
 

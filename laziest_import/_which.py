@@ -319,19 +319,20 @@ def _get_location_from_object(module_name: str, symbol_name: str, obj: Any) -> S
     )
 
 
+_SYMBOL_TYPE_CHECKS: list[tuple[Any, str]] = [
+    (inspect.isclass, "class"),
+    (inspect.isfunction, "function"),
+    (inspect.ismethod, "method"),
+    (inspect.ismodule, "module"),
+    (callable, "callable"),
+]
+
+
 def _get_symbol_type(obj: Any) -> str:
     """Get the type of a symbol."""
-    if inspect.isclass(obj):
-        return "class"
-    elif inspect.isfunction(obj):
-        return "function"
-    elif inspect.ismethod(obj):
-        return "method"
-    elif inspect.ismodule(obj):
-        return "module"
-    elif callable(obj):
-        return "callable"
-    elif isinstance(obj, type):
+    for check_func, type_name in _SYMBOL_TYPE_CHECKS:
+        if check_func(obj):
+            return type_name
+    if isinstance(obj, type):
         return "type"
-    else:
-        return "object"
+    return "object"

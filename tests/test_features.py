@@ -376,8 +376,6 @@ class TestIncrementalIndex:
     def test_enable_incremental_index(self):
         """Test enabling incremental index."""
 
-        config_before = get_incremental_config()
-
         lz.background.enable(True)
         config_after = get_incremental_config()
         assert config_after["enabled"] is True

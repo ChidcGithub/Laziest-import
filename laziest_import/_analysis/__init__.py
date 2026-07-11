@@ -94,7 +94,7 @@ from ._profiler import (
     ImportProfiler,
     ModuleProfile,
     ProfileReport,
-    _profiler,  # noqa: F401 — re-export singleton profiler instance
+    _profiler,
     get_profile_report,
     print_profile_report,
     start_profiling,

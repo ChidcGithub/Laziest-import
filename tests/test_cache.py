@@ -269,7 +269,7 @@ class TestCacheInvalidation:
 
         lz.cache.symbols.clear()
         lz.symbol.index.rebuild()
-        info_before = lz.symbol.cache_info()
+        lz.symbol.cache_info()
 
         # Invalidate
         from laziest_import._cache import invalidate_package_cache
@@ -528,7 +528,6 @@ class TestCacheEdgeCases:
         """Test handling of invalid cache directory."""
         from laziest_import import lz
 
-        original = lz.cache.dir
         # Set to a path that might not exist
         lz.cache.dir = "/nonexistent/path/xyz123"
 

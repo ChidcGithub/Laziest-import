@@ -1,7 +1,7 @@
 """
 Final comprehensive test: identify exact root cause.
 """
-# ruff: noqa: S603 — all subprocess calls use list form, not shell=True
+
 
 import os
 import subprocess

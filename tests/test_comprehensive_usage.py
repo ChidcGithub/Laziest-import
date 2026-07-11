@@ -895,8 +895,8 @@ print("reset_all done (aliases reloaded, caches cleared)")
 # =============================================================================
 section("34. NEGATIVE CACHE PERFORMANCE")
 
-import time
 import contextlib
+import time
 
 lz.cache.clear()
 t0 = time.perf_counter()

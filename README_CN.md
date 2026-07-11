@@ -14,7 +14,7 @@
 [![GitHub repo size](https://img.shields.io/github/repo-size/ChidcGithub/Laziest-import.svg)](https://github.com/ChidcGithub/Laziest-import)
 [![Type hints](https://img.shields.io/badge/type_hints-mypy-blue.svg)](https://mypy-lang.org/)
 [![Code style](https://img.shields.io/badge/code_style-pep8-green.svg)](https://peps.python.org/pep-0008/)
-[![Tests](https://img.shields.io/badge/tests-1055%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
+[![Tests](https://img.shields.io/badge/tests-1065%20passed-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![Coverage](https://img.shields.io/badge/coverage-comprehensive-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import/tree/main/tests)
 [![CodeFactor](https://img.shields.io/badge/code_quality-A-brightgreen.svg)](https://www.codefactor.io/repository/github/chidcgithub/laziest-import)
 [![Maintainability](https://img.shields.io/badge/maintainability-excellent-brightgreen.svg)](https://github.com/ChidcGithub/Laziest-import)
@@ -67,7 +67,7 @@
 | 多层缓存 | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | 三层缓存系统提供高速访问 |
 | 依赖分析 | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | 分析模块依赖关系 |
 | 性能基准 | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | 基准测试导入和函数 |
-| 1055+ 测试 | ![](https://img.shields.io/badge/tests-1055%2B-brightgreen.svg) | 全面的测试覆盖 |
+| 1065+ 测试 | ![](https://img.shields.io/badge/tests-1065%2B-brightgreen.svg) | 全面的测试覆盖 |
 | 1000+ 别名 | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | 为常用包预定义的别名 |
 
 --- ## 安装方法
@@ -139,7 +139,7 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 - **修复 `_jupyter.py` `unload_ipython_extension()`**：无操作 `pass` 替换为 `unregister_magics()`
 - **修复 `_cache/_api.py` `invalidate_package_cache()`**：添加了缺失的 `_STDLIB_SYMBOL_CACHE` 清理
 - **修复 `_build_known_modules_cache()` 中的循环导入**：跳过扫描 CWD（`''`/`'.'` 路径）以防止重新导入工作目录中的脚本
-- **1055 项测试**：全部通过，全面覆盖
+- **1065 项测试**：全部通过，全面覆盖
 
 ### v0.1.0-rc2
 
@@ -158,7 +158,7 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 - **上下文感知模糊匹配**：已加载模块在自动搜索中获得优先级加成
 - **冲突检测**：`register_alias()` 在别名覆盖时发出警告
 - **Bug 修复**：修复 `__repr__` 抛 `NameError`（严重）；修复别名搜索回退时错误导入模块（严重）；修复 opencv/cv2 无限循环；修复 sage/sagemath 指向不存在模块；修复 4 个环形别名链；修复 80+ 个连字符化别名值（使用 PyPI 名而非可导入模块名）；修复 70+ 个连字符化别名键（Python 语法不可达）；修复缩进错误导致 symbol-not-found 回退被隐藏；删除 48 行死代码；修复 `_suggest_for_package()` 返回重复项错误
-- **1055+ 测试**：全面的测试覆盖
+- **1065+ 测试**：全面的测试覆盖
 
 
 --- ## 使用示例

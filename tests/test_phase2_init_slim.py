@@ -1,7 +1,7 @@
 """Tests for Phase 2: __init__.py slimming - lazy registry, hooks module, analysis moves."""
 
-from typing import Any
 import contextlib
+from typing import Any
 
 
 class TestLazyRegistry:

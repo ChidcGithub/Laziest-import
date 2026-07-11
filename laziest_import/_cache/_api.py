@@ -92,52 +92,29 @@ def reset_cache_stats() -> None:
     c._CACHE_STATS["build_count"] = 0
 
 
+def _filter_cache_symbols(cache: dict, package_name: str) -> None:
+    """Remove all symbols matching package_name from a symbol cache."""
+    to_remove = [symbol for symbol, locations in list(cache.items())
+                 if not any(not loc[0].startswith(package_name) for loc in locations)]
+    for symbol, locations in list(cache.items()):
+        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
+        if filtered:
+            cache[symbol] = filtered
+    for symbol in to_remove:
+        cache.pop(symbol, None)
+
+
 def invalidate_package_cache(package_name: str) -> bool:
     """Invalidate cache for a specific package."""
     c = _config
 
-    # Return False if package not tracked
     if package_name not in c._TRACKED_PACKAGES:
         return False
 
     del c._TRACKED_PACKAGES[package_name]
-
-    # Remove symbols from cache
-    to_remove = []
-    for symbol, locations in list(c._SYMBOL_CACHE.items()):
-        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
-        if filtered:
-            c._SYMBOL_CACHE[symbol] = filtered
-        else:
-            to_remove.append(symbol)
-
-    for symbol in to_remove:
-        c._SYMBOL_CACHE.pop(symbol, None)
-
-    # Also check third-party cache
-    to_remove = []
-    for symbol, locations in list(c._THIRD_PARTY_SYMBOL_CACHE.items()):
-        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
-        if filtered:
-            c._THIRD_PARTY_SYMBOL_CACHE[symbol] = filtered
-        else:
-            to_remove.append(symbol)
-
-    for symbol in to_remove:
-        c._THIRD_PARTY_SYMBOL_CACHE.pop(symbol, None)
-
-    # Also check stdlib cache
-    to_remove = []
-    for symbol, locations in list(c._STDLIB_SYMBOL_CACHE.items()):
-        filtered = [loc for loc in locations if not loc[0].startswith(package_name)]
-        if filtered:
-            c._STDLIB_SYMBOL_CACHE[symbol] = filtered
-        else:
-            to_remove.append(symbol)
-
-    for symbol in to_remove:
-        c._STDLIB_SYMBOL_CACHE.pop(symbol, None)
-
+    _filter_cache_symbols(c._SYMBOL_CACHE, package_name)
+    _filter_cache_symbols(c._THIRD_PARTY_SYMBOL_CACHE, package_name)
+    _filter_cache_symbols(c._STDLIB_SYMBOL_CACHE, package_name)
     _save_tracked_packages()
     return True
 

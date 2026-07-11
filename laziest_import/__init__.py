@@ -9,7 +9,7 @@ Or:
     import laziest_import as lz
     arr = lz.np.array([1, 2, 3])
 """
-# ruff: noqa: F401
+# ruff: noqa: F401  # noqa: RUF100 — legitimately suppresses 163 F401 re-export warnings
 # The imports in this file intentionally re-export the public API;
 # names are exposed via __all__ and __dir__.
 
@@ -191,7 +191,7 @@ _API_NAMESPACE_NAMES: frozenset[str] = frozenset(
 # ═══════════════════════════════════════════════════════════════
 #  Old API backward compatibility layer (deprecated, emits FutureWarning)
 # ═══════════════════════════════════════════════════════════════
-from ._deprecated import (  # noqa: F811 — deprecated wrappers intentionally shadow modern imports
+from ._deprecated import (
     analyze_directory,
     analyze_file,
     analyze_source,
@@ -325,21 +325,19 @@ from ._proxy import (
 # ============== Module-level __getattr__ ==============
 
 
-def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySymbol, Any]:
-    """Module-level attribute access hook for lazy loading."""
+def _check_init_access(name: str) -> bool:
+    """Check initialization state and raise if not ready. Returns True if initialization OK."""
     _initializing = is_initializing()
     _initialized = is_initialized()
-    _failed = is_init_failed()
-    _error = get_init_error()
 
     if _initializing and not _initialized:
         raise AttributeError(
             f"module '{__name__}' is still initializing, cannot access '{name}' yet."
         )
 
-    if _failed:
+    if is_init_failed():
         raise AttributeError(
-            f"module '{__name__}' failed to initialize: {_error}. Cannot access '{name}'."
+            f"module '{__name__}' failed to initialize: {get_init_error()}. Cannot access '{name}'."
         )
 
     if name in _RESERVED_NAMES:
@@ -352,73 +350,17 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
                 raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
             del _NEGATIVE_CACHE[name]
 
-    # 1. Check lazy function registry (symbol, which, help, config, etc.)
-    from ._lazy_registry import has as _registry_has
-    from ._lazy_registry import resolve as _registry_resolve
+    return _initialized
 
-    if _registry_has(name):
-        return _registry_resolve(name)
 
-    # 2. Check API namespaces on the global LazyImport instance
-    #    This ensures `import laziest_import as lz; lz.config.debug = True`
-    #    works even when alias/auto-search would shadow names like 'config'.
-    if name in _API_NAMESPACE_NAMES:
-        return getattr(lz, name)
-
-    # 3. Check alias map
-    if name in _ALIAS_MAP:
-        return _get_lazy_module(name)
-
-    # 4. Try module auto-search
-    if _AUTO_SEARCH_ENABLED:
-        found = _search_module(name)
-        if found:
-            _ALIAS_MAP[name] = found
-            return _get_lazy_module(name)
-
-    # 4. Try symbol auto-resolution
-    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
-        from ._symbol import _search_symbol_enhanced
-
-        symbol_match = _search_symbol_enhanced(name, auto=True)
-        if symbol_match:
-            _SYMBOL_PREFERENCES[name] = symbol_match.module_name
-
-            if _DEBUG_MODE:
-                import logging
-
-                logging.info(
-                    f"[laziest-import] Auto-resolved symbol '{name}' -> "
-                    f"{symbol_match.module_name}.{symbol_match.symbol_name}"
-                )
-
-            return LazySymbol(
-                symbol_name=symbol_match.symbol_name,
-                module_name=symbol_match.module_name,
-                symbol_type=symbol_match.symbol_type,
-            )
-
-    # 5. Fall back to interactive symbol search
-    if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
-        from ._symbol import _handle_symbol_not_found
-
-        found_module = _handle_symbol_not_found(name)
-        if found_module:
-            return _get_lazy_module(name)
-
-    # Add to negative cache so we don't search again
-    with _NEGATIVE_CACHE_LOCK:
-        _NEGATIVE_CACHE[name] = time.time()
-
-    # Not found - generate smart suggestion
+def _build_attr_error_msg(name: str) -> str:
+    """Build a descriptive error message with suggestions for an unknown attribute."""
     msg = f"module '{__name__}' has no attribute '{name}'."
-
-    # Find closest alias by Levenshtein distance
     best_match: Optional[tuple[str, str, int]] = None
     name_lower = name.lower()
     for alias, module in _ALIAS_MAP.items():
         alias_lower = alias.lower()
-        module_lower = module.split(".")[0].lower()
+        module_lower = module.split(".", 1)[0].lower()
         if name_lower in (alias_lower, module_lower):
             best_match = (alias, module, 0)
             break
@@ -443,7 +385,70 @@ def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySy
         popular = [k for k in _ALIAS_MAP if len(k) > 1][:15]
         if popular:
             msg += f" Available: {popular}..."
-    raise AttributeError(msg)
+    return msg
+
+
+def __getattr__(name: str) -> Union[LazyModule, LazySubmodule, LazyProxy, LazySymbol, Any]:
+    """Module-level attribute access hook for lazy loading."""
+    _initialized = _check_init_access(name)
+
+    # 1. Check lazy function registry (symbol, which, help, config, etc.)
+    from ._lazy_registry import has as _registry_has
+    from ._lazy_registry import resolve as _registry_resolve
+
+    if _registry_has(name):
+        return _registry_resolve(name)
+
+    # 2. Check API namespaces on the global LazyImport instance
+    if name in _API_NAMESPACE_NAMES:
+        return getattr(lz, name)
+
+    # 3. Check alias map
+    if name in _ALIAS_MAP:
+        return _get_lazy_module(name)
+
+    # 4. Try module auto-search
+    if _AUTO_SEARCH_ENABLED:
+        found = _search_module(name)
+        if found:
+            _ALIAS_MAP[name] = found
+            return _get_lazy_module(name)
+
+    # 5. Try symbol auto-resolution
+    if _SYMBOL_RESOLUTION_CONFIG["auto_symbol"] and _initialized:
+        from ._symbol import _search_symbol_enhanced
+
+        symbol_match = _search_symbol_enhanced(name, auto=True)
+        if symbol_match:
+            _SYMBOL_PREFERENCES[name] = symbol_match.module_name
+
+            if _DEBUG_MODE:
+                import logging
+
+                logging.info(
+                    f"[laziest-import] Auto-resolved symbol '{name}' -> "
+                    f"{symbol_match.module_name}.{symbol_match.symbol_name}"
+                )
+
+            return LazySymbol(
+                symbol_name=symbol_match.symbol_name,
+                module_name=symbol_match.module_name,
+                symbol_type=symbol_match.symbol_type,
+            )
+
+    # 6. Fall back to interactive symbol search
+    if _SYMBOL_SEARCH_CONFIG["enabled"] and _initialized:
+        from ._symbol import _handle_symbol_not_found
+
+        found_module = _handle_symbol_not_found(name)
+        if found_module:
+            return _get_lazy_module(name)
+
+    # Add to negative cache so we don't search again
+    with _NEGATIVE_CACHE_LOCK:
+        _NEGATIVE_CACHE[name] = time.time()
+
+    raise AttributeError(_build_attr_error_msg(name))
 
 
 # ============== __dir__ for tab completion ==============
@@ -658,10 +663,10 @@ _BASE_EXPORTS = [
     "print_benchmark_report",
 ]
 
-__all__ = sorted(_BASE_EXPORTS)  # noqa: PLE0605 — computed __all__ is intentional
+__all__ = sorted(_BASE_EXPORTS)
 
 # Keep deprecated functional API in __all__ for backward compat (will remove in v0.2)
-__all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES))  # noqa: PLE0605 — computed __all__ is intentional
+__all__ = sorted(set(_BASE_EXPORTS) | set(_OLD_API_NAMES))
 
 
 # ============== Initialization ==============
@@ -799,7 +804,7 @@ def easter_egg(name: str = "default") -> str:
 
     if name in eggs:
         messages = eggs[name]
-        return random.choice(messages) if len(messages) > 1 else messages[0]  # noqa: S311 — easter egg, not crypto
+        return random.choice(messages) if len(messages) > 1 else messages[0]
     else:
         available = ", ".join(f'"{k}"' for k in eggs)
         return f"[?] Unknown easter egg '{name}'. Try one of: {available}"

@@ -172,63 +172,72 @@ def _save_symbol_index(
         return False
 
 
+def _load_cache_data(cache_type: str) -> tuple[Any, ...]:
+    """Load raw data from compressed or uncompressed cache file."""
+    cache_path = _get_symbol_index_path(cache_type)
+    compressed_path = _get_compressed_path(cache_path)
+
+    data = None
+    if compressed_path.exists():
+        data = _load_compressed_json(compressed_path)
+        if data is None:
+            try:
+                compressed_path.unlink()
+            except Exception:
+                if _DEBUG_MODE:
+                    logging.debug(
+                        f"[laziest-import] Failed to remove corrupted cache {compressed_path}"
+                    )
+
+    if data is None and cache_path.exists():
+        with open(cache_path, encoding="utf-8") as f:
+            data = json.load(f)
+
+    return cache_path, data
+
+
+def _validate_cache(cache: SymbolIndexCache, cache_type: str) -> bool:
+    """Check if cached index is still valid (version, python, ttl)."""
+    if cache.version != _CACHE_VERSION:
+        if _DEBUG_MODE:
+            logging.info(
+                f"[laziest-import] Symbol index version mismatch: "
+                f"{cache.version} != {_CACHE_VERSION}, will rebuild"
+            )
+        return False
+
+    current_py = f"{sys.version_info.major}.{sys.version_info.minor}"
+    if cache.python_version and not cache.python_version.startswith(current_py):
+        if _DEBUG_MODE:
+            logging.info(
+                f"[laziest-import] Python version changed: "
+                f"{cache.python_version} -> {current_py}, will rebuild"
+            )
+        return False
+
+    ttl = _CACHE_CONFIG.get("symbol_index_ttl", 86400)
+    if cache_type == "stdlib":
+        ttl = _CACHE_CONFIG.get("stdlib_cache_ttl", 604800)
+    elif cache_type == "third_party":
+        ttl = _CACHE_CONFIG.get("third_party_cache_ttl", 86400)
+
+    if time.time() - cache.timestamp > ttl:
+        if _DEBUG_MODE:
+            logging.info(f"[laziest-import] {cache_type} symbol index expired (TTL: {ttl}s)")
+        return False
+
+    return True
+
+
 def _load_symbol_index(cache_type: str = "all") -> Optional[SymbolIndexCache]:
     """Load symbol index from cache file (supports both compressed and uncompressed)."""
     try:
-        cache_path = _get_symbol_index_path(cache_type)
-        compressed_path = _get_compressed_path(cache_path)
-
-        data = None
-
-        # Try compressed version first
-        if compressed_path.exists():
-            data = _load_compressed_json(compressed_path)
-            if data is None:
-                # Corrupted compressed file, try to remove and fall back
-                try:
-                    compressed_path.unlink()
-                except Exception:
-                    if _DEBUG_MODE:
-                        logging.debug(
-                            f"[laziest-import] Failed to remove corrupted cache {compressed_path}"
-                        )
-
-        # Fall back to uncompressed
-        if data is None and cache_path.exists():
-            with open(cache_path, encoding="utf-8") as f:
-                data = json.load(f)
-
+        _, data = _load_cache_data(cache_type)
         if data is None:
             return None
 
         cache = SymbolIndexCache.from_dict(data)
-
-        if cache.version != _CACHE_VERSION:
-            if _DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Symbol index version mismatch: "
-                    f"{cache.version} != {_CACHE_VERSION}, will rebuild"
-                )
-            return None
-
-        current_py = f"{sys.version_info.major}.{sys.version_info.minor}"
-        if cache.python_version and not cache.python_version.startswith(current_py):
-            if _DEBUG_MODE:
-                logging.info(
-                    f"[laziest-import] Python version changed: "
-                    f"{cache.python_version} -> {current_py}, will rebuild"
-                )
-            return None
-
-        ttl = _CACHE_CONFIG.get("symbol_index_ttl", 86400)
-        if cache_type == "stdlib":
-            ttl = _CACHE_CONFIG.get("stdlib_cache_ttl", 604800)
-        elif cache_type == "third_party":
-            ttl = _CACHE_CONFIG.get("third_party_cache_ttl", 86400)
-
-        if time.time() - cache.timestamp > ttl:
-            if _DEBUG_MODE:
-                logging.info(f"[laziest-import] {cache_type} symbol index expired (TTL: {ttl}s)")
+        if not _validate_cache(cache, cache_type):
             return None
 
         return cache

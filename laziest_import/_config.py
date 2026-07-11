@@ -35,7 +35,7 @@ def _load_version_config() -> dict[str, Any]:
 
 
 _VERSION_CONFIG = _load_version_config()
-__version__ = _VERSION_CONFIG.get("_current_version", "0.1.0-pre7")
+__version__ = _VERSION_CONFIG.get("_current_version", "0.1.0.2")
 
 
 def get_cache_version() -> str:
@@ -57,7 +57,7 @@ def _parse_version(v: str) -> tuple[tuple[int, ...], Optional[str]]:
         return (0,), m.group(2)
 
 
-def _compare_versions(v1: str, v2: str) -> int:
+def _compare_versions(v1: str, v2: str) -> int:  # noqa: PLR0911 — comparison logic requires many return points
     n1, p1 = _parse_version(v1)
     n2, p2 = _parse_version(v2)
     ml = max(len(n1), len(n2))
@@ -395,7 +395,7 @@ def get_importing_modules() -> set[str]:
 
 def _activate_state_setters() -> None:
     """Replace stub functions with real implementations."""
-    import laziest_import._config as _self  # noqa: PLW0406 — self-reference for state initialization
+    import laziest_import._config as _self
 
     from ._state_setters import (
         _load_priorities_from_file as _lpf,

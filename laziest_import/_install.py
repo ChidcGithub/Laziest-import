@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 from . import _config
 from ._fuzzy import _get_package_rename_map
 
-
 _ALLOWED_INDEX_SCHEMES = frozenset({"https", "http"})
 
 _BLOCKED_INSTALL_ARGS: frozenset[str] = frozenset({
@@ -91,7 +90,7 @@ def _install_package_sync(
         cmd.append("-q")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)  # noqa: S603 — list form, trusted input
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
 
         if result.returncode == 0:
             return True, result.stdout or f"Successfully installed {package_name}"

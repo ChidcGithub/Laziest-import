@@ -25,6 +25,7 @@ Features tested:
 18. Typo correction / fuzzy matching
 """
 
+import contextlib
 import json
 import os
 import tempfile
@@ -51,7 +52,6 @@ from laziest_import._symbol import (
     get_sharding_config,
     set_module_priority,
 )
-import contextlib
 
 
 class TestRealWorldScenario_DataScience:

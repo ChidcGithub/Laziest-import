@@ -173,7 +173,7 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 | **Conflict visualization** | Find and display symbol conflicts across modules |
 | **Persistent preferences** | Save/load user preferences to `~/.laziestrc` |
 | **1000+ aliases** | Predefined aliases for common packages |
-| **1055+ tests** | Comprehensive test coverage |
+| **1065+ tests** | Comprehensive test coverage |
 
 ## What's New
 
@@ -186,7 +186,7 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 - **Fixed `_jupyter.py` `unload_ipython_extension()`**: No-op `pass` replaced with `unregister_magics()`
 - **Fixed `_cache/_api.py` `invalidate_package_cache()`**: Added missing `_STDLIB_SYMBOL_CACHE` cleanup
 - **Fixed circular import in `_build_known_modules_cache()`**: Skip scanning CWD (`''`/`'.'` paths) to prevent re-import of scripts in working directory
-- **1055 tests**: All passing, comprehensive coverage
+- **1065 tests**: All passing, comprehensive coverage
 
 ### v0.1.0-rc2
 
@@ -205,7 +205,7 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 - **Context-Aware Fuzzy Matching**: Loaded modules get priority bonus during auto-search
 - **Conflict Detection**: `register_alias()` warns on alias overwrite
 - **Bug Fixes**: Fixed `__repr__` NameError crash (critical); fixed alias search fallback importing wrong module (critical); fixed opencv/cv2 infinite cycle; fixed sage/sagemath pointing to non-existent module; fixed 4 circular alias chains; fixed 80+ hyphenated alias values (used PyPI names instead of importable module names); fixed 70+ hyphenated alias keys (unreachable via Python syntax); fixed indentation bug hiding symbol-not-found fallback; removed 48 lines of dead code; fixed `_suggest_for_package()` duplicate return bug
-- **1055+ tests**: Comprehensive test coverage
+- **1065+ tests**: Comprehensive test coverage
 
 
 ---

@@ -264,6 +264,81 @@ def _check_common_suffix_match(name: str, module: str) -> bool:
     return False
 
 
+def _check_misspelling(name_lower: str, name: str, known_modules: set[str]) -> Optional[str]:
+    """Check if the name is a known common misspelling."""
+    misspellings = _get_common_misspellings()
+    if name_lower not in misspellings:
+        return None
+    corrected = misspellings[name_lower]
+    if corrected in known_modules:
+        if _config._DEBUG_MODE:
+            logging.debug(f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'")
+        return corrected
+    try:
+        spec = importlib.util.find_spec(corrected)
+        if spec is not None:
+            return corrected
+    except (ImportError, ModuleNotFoundError, ValueError):
+        pass
+    return None
+
+
+def _score_fuzzy(name_lower: str, mod_lower: str, context_bonus: int, mod_name: str) -> Optional[tuple[int, int, str]]:
+    """Priority 7: Levenshtein distance fuzzy match."""
+    if len(name_lower) < 2 or len(mod_lower) < 2:
+        return None
+    length_ratio = len(name_lower) / len(mod_lower) if len(mod_lower) > 0 else 0
+    if not 0.5 <= length_ratio <= 2.0:
+        return None
+    distance = _levenshtein_distance(name_lower, mod_lower)
+    min_len = min(len(name_lower), len(mod_lower))
+    if min_len <= 2:
+        max_distance = 0
+    elif min_len <= 5:
+        max_distance = 1
+    else:
+        max_distance = min(2, min_len // 3)
+    if distance <= max_distance:
+        return (7 + context_bonus, distance, mod_name)
+    return None
+
+
+def _score_candidates(
+    name_lower: str, name_stripped: str, known_modules: set[str], context_modules: set[str],
+) -> list[tuple[int, int, str]]:
+    """Score all known modules against the queried name using priority levels."""
+    candidates: list[tuple[int, int, str]] = []
+
+    for mod_name in known_modules:
+        mod_lower = mod_name.lower()
+        mod_stripped = mod_lower.replace("_", "").replace("-", "")
+
+        mod_base = mod_name.split(".", 1)[0]
+        context_bonus = -1 if mod_base in context_modules else 0
+
+        if mod_lower == name_lower:
+            candidates.append((0 + context_bonus, 0, mod_name))
+        elif (mod_lower == name_stripped or mod_stripped == name_lower) and len(name_stripped) >= 3:
+            candidates.append((1 + context_bonus, 0, mod_name))
+        elif mod_stripped == name_stripped and mod_stripped != mod_lower:
+            if len(name_stripped) >= 3:
+                candidates.append((2 + context_bonus, 0, mod_name))
+        elif _check_common_suffix_match(name_lower, mod_lower):
+            candidates.append((3 + context_bonus, 0, mod_name))
+        elif mod_lower.startswith(name_lower) and len(name_lower) >= 2:
+            candidates.append((4 + context_bonus, len(mod_lower) - len(name_lower), mod_name))
+        elif mod_lower.endswith(name_lower) and len(name_lower) >= 2:
+            candidates.append((5 + context_bonus, len(mod_lower) - len(name_lower), mod_name))
+        elif name_lower in mod_lower and len(name_lower) >= 4:
+            candidates.append((6 + context_bonus, mod_lower.index(name_lower), mod_name))
+        else:
+            fuzzy = _score_fuzzy(name_lower, mod_lower, context_bonus, mod_name)
+            if fuzzy:
+                candidates.append(fuzzy)
+
+    return candidates
+
+
 def _search_module(name: str) -> Optional[str]:
     """
     Search for a matching module name with enhanced fuzzy matching.
@@ -302,83 +377,13 @@ def _search_module(name: str) -> Optional[str]:
         pass
 
     # 3. Check common misspellings
-    misspellings = _get_common_misspellings()
-    if name_lower in misspellings:
-        corrected = misspellings[name_lower]
-        if corrected in known_modules:
-            if _config._DEBUG_MODE:
-                logging.debug(f"[laziest-import] Misspelling corrected: '{name}' -> '{corrected}'")
-            return corrected
-        try:
-            spec = importlib.util.find_spec(corrected)
-            if spec is not None:
-                return corrected
-        except (ImportError, ModuleNotFoundError, ValueError):
-            pass
+    corrected = _check_misspelling(name_lower, name, known_modules)
+    if corrected:
+        return corrected
 
-    # Determine user context: which modules are already loaded
+    # 4-10. Score and rank candidates
     context_modules = _infer_context()
-
-    # Collect candidates with priority scores
-    candidates: list[tuple[int, int, str]] = []
-
-    for mod_name in known_modules:
-        mod_lower = mod_name.lower()
-        mod_stripped = mod_lower.replace("_", "").replace("-", "")
-
-        # Check if this module is in user context (loaded previously)
-        mod_base = mod_name.split(".")[0]
-        context_bonus = -1 if mod_base in context_modules else 0
-
-        # Priority 0: Case-insensitive exact match
-        if mod_lower == name_lower:
-            candidates.append((0 + context_bonus, 0, mod_name))
-        # Priority 1: Abbreviation match (require minimum length to avoid
-        # false positives like "os_" -> "os")
-        elif (mod_lower == name_stripped or mod_stripped == name_lower) and len(name_stripped) >= 3:
-            candidates.append((1 + context_bonus, 0, mod_name))
-        # Priority 2: Underscore/hyphen variant match (require minimum length
-        # to avoid false positives like "os_" -> "_os")
-        elif mod_stripped == name_stripped and mod_stripped != mod_lower:
-            if len(name_stripped) >= 3:
-                candidates.append((2 + context_bonus, 0, mod_name))
-        # Priority 3: Common suffix patterns
-        elif _check_common_suffix_match(name_lower, mod_lower):
-            candidates.append((3 + context_bonus, 0, mod_name))
-        # Priority 4: Prefix match
-        elif mod_lower.startswith(name_lower) and len(name_lower) >= 2:
-            distance = len(mod_lower) - len(name_lower)
-            candidates.append((4 + context_bonus, distance, mod_name))
-        # Priority 5: Suffix match
-        elif mod_lower.endswith(name_lower) and len(name_lower) >= 2:
-            distance = len(mod_lower) - len(name_lower)
-            candidates.append((5 + context_bonus, distance, mod_name))
-        # Priority 6: Contains match (require longer name to avoid
-        # false positives like "oss" -> "cross_web")
-        elif name_lower in mod_lower and len(name_lower) >= 4:
-            distance = mod_lower.index(name_lower)
-            candidates.append((6 + context_bonus, distance, mod_name))
-        # Priority 7: Fuzzy match
-        elif len(name_lower) >= 2 and len(mod_lower) >= 2:
-            length_ratio = len(name_lower) / len(mod_lower) if len(mod_lower) > 0 else 0
-            if 0.5 <= length_ratio <= 2.0:
-                distance = _levenshtein_distance(name_lower, mod_lower)
-                # Be stricter for short names to avoid false positives such as
-                # "osz" silently resolving to "os".  Very short names should only
-                # match exactly (handled above); otherwise require increasingly
-                # similar strings.
-                min_len = min(len(name_lower), len(mod_lower))
-                # Length 1-2 names must match exactly to avoid false positives
-                # (e.g. "osz" -> "os").  Length 3+ allows a single typo, longer
-                # names allow proportionally more edits.
-                if min_len <= 2:
-                    max_distance = 0
-                elif min_len <= 5:
-                    max_distance = 1
-                else:
-                    max_distance = min(2, min_len // 3)
-                if distance <= max_distance:
-                    candidates.append((7 + context_bonus, distance, mod_name))
+    candidates = _score_candidates(name_lower, name_stripped, known_modules, context_modules)
 
     if candidates:
         candidates.sort(key=lambda x: (x[0], x[1], x[2]))

@@ -110,7 +110,7 @@ def _load_from_env() -> dict[str, Any]:
     return config
 
 
-def _parse_value(value: str) -> Any:
+def _parse_value(value: str) -> Any:  # noqa: PLR0911 — type-detection chain
     """Parse string value to appropriate type."""
     # Boolean
     if value.lower() in ("true", "yes", "1", "on"):

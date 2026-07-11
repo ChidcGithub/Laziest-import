@@ -268,10 +268,7 @@ def _should_skip_module(module_name: str) -> bool:
     if any(pattern in module_name for pattern in internal_patterns):
         return True
 
-    if module_name.endswith("__main__"):
-        return True
-
-    return False
+    return module_name.endswith("__main__")
 
 
 def _get_public_names(module: Any) -> list[str]:
@@ -307,14 +304,14 @@ def _classify_symbol(name: str, obj: Any) -> tuple[Optional[str], Optional[str]]
                 init = getattr(obj, "__init__", None)
                 if init and callable(init):
                     signature = _get_signature_hint(init)
-            except Exception:
+            except Exception:  # noqa: S110 — best-effort signature extraction
                 pass
             return symbol_type, signature
         elif inspect.isfunction(obj):
             return "function", _get_signature_hint(obj)
         elif callable(obj):
             return "callable", _get_signature_hint(obj)
-    except Exception:
+    except Exception:  # noqa: S110 — best-effort type classification
         pass
     return None, None
 
@@ -343,9 +340,9 @@ def _scan_submodules(
                         symbols[sym_name] = []
                     symbols[sym_name].extend(locations)
                 submodule_count += 1
-            except Exception:
+            except Exception:  # noqa: S112 — skip failing submodules
                 continue
-    except Exception:
+    except Exception:  # noqa: S110 — skip failing module scans
         pass
     return symbols
 
@@ -495,7 +492,7 @@ def _merge_symbols_into_cache(
         target_cache[sym_name].extend(locations)
 
     if not is_stdlib:
-        top_level = module_name.split(".")[0]
+        top_level = module_name.split(".", maxsplit=1)[0]
         if top_level not in _config._TRACKED_PACKAGES:
             _track_package(top_level)
 
@@ -538,10 +535,7 @@ def _should_rebuild_index(force: bool) -> bool:
     if config._SYMBOL_INDEX_BUILT and not force:
         return False
 
-    if not _config._SYMBOL_SEARCH_CONFIG["cache_enabled"]:
-        return False
-
-    return True
+    return _config._SYMBOL_SEARCH_CONFIG["cache_enabled"]
 
 
 def _scan_index_modules(
@@ -573,7 +567,7 @@ def _scan_index_modules(
                 scanned_stdlib += 1
             else:
                 scanned_third_party += 1
-        except Exception:
+        except Exception:  # noqa: S112 — skip failing module
             continue
 
     return scanned_stdlib, scanned_third_party, timed_out
@@ -594,9 +588,10 @@ def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: fl
         stdlib_cache = _load_symbol_index("stdlib")
         third_party_cache = _load_symbol_index("third_party")
 
-        if not force and (stdlib_cache or third_party_cache):
-            if _try_load_cached_index(stdlib_cache, third_party_cache, existing_tracked, start_time):
-                return
+        if not force and (stdlib_cache or third_party_cache) and _try_load_cached_index(
+            stdlib_cache, third_party_cache, existing_tracked, start_time
+        ):
+            return
 
         _config._CACHE_STATS["symbol_misses"] += 1
         _config._SYMBOL_CACHE.clear()
@@ -666,6 +661,52 @@ def _compare_signatures(sig1: Optional[str], sig2: Optional[str]) -> float:
 # ── Symbol search ───────────────────────────────────────────
 
 
+def _fuzzy_match_symbol(name_lower: str, cached_lower: str) -> bool:
+    """Check if cached_lower fuzzy-matches name_lower for symbol search."""
+    if cached_lower == name_lower or (name_lower in cached_lower and len(name_lower) >= 5):
+        return True
+    distance = _levenshtein_distance(name_lower, cached_lower)
+    min_len = min(len(name_lower), len(cached_lower))
+    if min_len <= 3:
+        max_distance = 0
+    elif min_len <= 5:
+        max_distance = 1
+    else:
+        max_distance = min(2, min_len // 3)
+    return distance <= max_distance
+
+
+def _search_symbol_fuzzy(
+    name: str, name_lower: str,
+    symbol_type: Optional[str] = None,
+    signature: Optional[str] = None,
+    max_results: Optional[int] = None,
+) -> list[SearchResult]:
+    """Fuzzy search for symbol name not in cache."""
+    matches = [
+        cached_name
+        for cached_name in _config._SYMBOL_CACHE
+        if _fuzzy_match_symbol(name_lower, cached_name.lower())
+    ]
+    if not matches:
+        return []
+
+    all_results: list[SearchResult] = []
+    for match_name in matches[:3]:
+        all_results.extend(_search_symbol_direct(match_name, symbol_type, signature))
+
+    seen: set[tuple[str, str]] = set()
+    results = []
+    for r in all_results:
+        key = (r.module_name, r.symbol_name)
+        if key not in seen:
+            seen.add(key)
+            results.append(r)
+
+    max_res = max_results or _config._SYMBOL_SEARCH_CONFIG["max_results"]
+    return sorted(results, key=lambda x: -x.score)[:max_res]
+
+
 def search_symbol(
     name: str,
     symbol_type: Optional[str] = None,
@@ -681,48 +722,10 @@ def search_symbol(
     if not config._SYMBOL_INDEX_BUILT:
         _build_symbol_index()
 
-    if name not in _config._SYMBOL_CACHE:
-        name_lower = name.lower()
-        matches = []
-        for cached_name in _config._SYMBOL_CACHE:
-            cached_lower = cached_name.lower()
-            if cached_lower == name_lower or (name_lower in cached_lower and len(name_lower) >= 5):
-                matches.append(cached_name)
-            else:
-                # Conservative fuzzy fallback: short queries must be very close to
-                # a cached symbol name to avoid spurious matches.
-                distance = _levenshtein_distance(name_lower, cached_lower)
-                min_len = min(len(name_lower), len(cached_lower))
-                # Symbol names are typically longer; be stricter than module
-                # matching to avoid spurious resolutions such as "osz" -> "HSZ".
-                if min_len <= 3:
-                    max_distance = 0
-                elif min_len <= 5:
-                    max_distance = 1
-                else:
-                    max_distance = min(2, min_len // 3)
-                if distance <= max_distance:
-                    matches.append(cached_name)
+    if name in _config._SYMBOL_CACHE:
+        return _search_symbol_direct(name, symbol_type, signature, max_results)
 
-        if not matches:
-            return []
-
-        all_results = []
-        for match_name in matches[:3]:
-            all_results.extend(_search_symbol_direct(match_name, symbol_type, signature))
-
-        seen = set()
-        results = []
-        for r in all_results:
-            key = (r.module_name, r.symbol_name)
-            if key not in seen:
-                seen.add(key)
-                results.append(r)
-
-        max_res = max_results or _config._SYMBOL_SEARCH_CONFIG["max_results"]
-        return sorted(results, key=lambda x: -x.score)[:max_res]
-
-    return _search_symbol_direct(name, symbol_type, signature, max_results)
+    return _search_symbol_fuzzy(name, name.lower(), symbol_type, signature, max_results)
 
 
 def _search_symbol_direct(
@@ -1292,7 +1295,7 @@ def _scan_incremental_modules(packages_to_scan: set[str], start_time: float, tim
             is_stdlib = _is_stdlib_module(module_name)
             _merge_symbols_into_cache(symbols, is_stdlib, module_name)
             scanned_count += 1
-        except Exception:
+        except Exception:  # noqa: S112 — skip failing module
             continue
 
     return scanned_count

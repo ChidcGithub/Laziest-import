@@ -259,6 +259,29 @@ class DependencyAnalyzer:
                 logging.warning(f"[laziest-import] Failed to get submodules for {module_name}")
         return submodules
 
+    def _determine_module_type(self, module_name: str, is_available: bool, is_stdlib: bool) -> tuple[bool, bool]:
+        """Determine whether a module is local or third-party."""
+        if not is_available or is_stdlib:
+            return False, False
+        spec = importlib.util.find_spec(module_name)
+        if spec and spec.origin:
+            is_local = not any(path in spec.origin for path in ["site-packages", "dist-packages"])
+            return is_local, not is_local
+        return False, True
+
+    def _should_skip_type(self, module_name: str, is_stdlib: bool, is_third_party: bool, is_local: bool) -> bool:
+        """Check if module should be skipped based on type configuration."""
+        if is_stdlib and not self.include_stdlib:
+            self._in_stack.discard(module_name)
+            return True
+        if is_third_party and not self.include_third_party:
+            self._in_stack.discard(module_name)
+            return True
+        if is_local and not self.include_local:
+            self._in_stack.discard(module_name)
+            return True
+        return False
+
     def _analyze_node(
         self,
         module_name: str,
@@ -290,30 +313,10 @@ class DependencyAnalyzer:
             version = self._get_version(module_name) if is_available else None
 
             # Determine module type
-            if not is_available or is_stdlib:
-                is_local = False
-                is_third_party = False
-            else:
-                # Check if it's a local module
-                spec = importlib.util.find_spec(module_name)
-                if spec and spec.origin:
-                    is_local = not any(
-                        path in spec.origin for path in ["site-packages", "dist-packages"]
-                    )
-                    is_third_party = not is_local
-                else:
-                    is_local = False
-                    is_third_party = True
+            is_local, is_third_party = self._determine_module_type(module_name, is_available, is_stdlib)
 
             # Filter based on configuration
-            if is_stdlib and not self.include_stdlib:
-                self._in_stack.discard(module_name)
-                return None
-            if is_third_party and not self.include_third_party:
-                self._in_stack.discard(module_name)
-                return None
-            if is_local and not self.include_local:
-                self._in_stack.discard(module_name)
+            if self._should_skip_type(module_name, is_stdlib, is_third_party, is_local):
                 return None
 
             node = DependencyNode(

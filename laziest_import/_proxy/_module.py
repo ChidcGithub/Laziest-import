@@ -87,7 +87,7 @@ class LazyModule:
 
             if tracemalloc.is_tracing():
                 return tracemalloc.get_traced_memory()[0]
-        except Exception:
+        except Exception:  # noqa: S110 — tracemalloc not always available
             pass
         return 0
 
@@ -109,7 +109,7 @@ class LazyModule:
     def _auto_search_fallback(self, module_name: str, alias: str, config: Any) -> Any | None:
         if not config._AUTO_SEARCH_ENABLED:
             return None
-        found_name = _search_module(module_name.split(".")[0])
+        found_name = _search_module(module_name.split(".", maxsplit=1)[0])
         if not found_name or found_name == module_name:
             return None
         try:

@@ -4,6 +4,8 @@ These tests simulate common user mistakes and ensure the library fails
 gracefully rather than silently doing the wrong thing.
 """
 
+import contextlib
+
 import pytest
 
 
@@ -35,17 +37,13 @@ class TestMissingModule:
 
         name = "negative_cache_test_module_12345"
         t0 = time.perf_counter()
-        try:
+        with contextlib.suppress(AttributeError, ImportError, ModuleNotFoundError):
             getattr(lz, name)
-        except (AttributeError, ImportError, ModuleNotFoundError):
-            pass
         first = time.perf_counter() - t0
 
         t0 = time.perf_counter()
-        try:
+        with contextlib.suppress(AttributeError, ImportError, ModuleNotFoundError):
             getattr(lz, name)
-        except (AttributeError, ImportError, ModuleNotFoundError):
-            pass
         second = time.perf_counter() - t0
 
         assert second < first / 2
@@ -77,10 +75,8 @@ class TestTypoCorrection:
         import laziest_import as lz
 
         before = set(lz._ALIAS_MAP.keys())
-        try:
+        with contextlib.suppress(AttributeError, ImportError, ModuleNotFoundError):
             _ = lz.this_module_definitely_does_not_exist_12345
-        except (AttributeError, ImportError, ModuleNotFoundError):
-            pass
         after = set(lz._ALIAS_MAP.keys())
         assert not (after - before)
 
