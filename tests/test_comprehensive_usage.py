@@ -3,12 +3,8 @@ Comprehensive usage test for laziest-import.
 Covers every public API and demonstrates real-world usage patterns.
 """
 
-import os
-import sys
 import tempfile
 from pathlib import Path
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from laziest_import import easter_egg, lz
 from laziest_import._alias import get_config_dirs, get_config_paths, validate_aliases_importable

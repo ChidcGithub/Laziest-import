@@ -114,12 +114,12 @@ def _is_interactive_terminal() -> bool:
     return sys.stdout.isatty()
 
 
-def _interactive_install_confirm(module_name: str, package_name: str) -> bool:
+def _interactive_install_confirm(module_name: str, package_name: str, interactive: bool = True) -> bool:
     """Ask user for confirmation before installing a package.
 
     In non-interactive environments, returns False for safety.
     """
-    if not _config._AUTO_INSTALL_CONFIG["interactive"]:
+    if not interactive:
         if not _config._AUTO_INSTALL_CONFIG["allow_non_interactive"]:
             if _config._DEBUG_MODE:
                 logging.debug(
@@ -184,7 +184,7 @@ def install_package(
     if interactive is None:
         interactive = _config._AUTO_INSTALL_CONFIG["interactive"]
 
-    if interactive and not _interactive_install_confirm(package_name, package_name):
+    if interactive and not _interactive_install_confirm(package_name, package_name, interactive):
         return False
 
     success, message = _install_package_sync(

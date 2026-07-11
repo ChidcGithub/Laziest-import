@@ -33,3 +33,16 @@ def has(name: str) -> bool:
 def clear_resolved() -> None:
     with _RESOLVED_LOCK:
         _RESOLVED.clear()
+
+
+def unregister(name: str) -> bool:
+    if name in _LAZY_FUNCTION_REGISTRY:
+        del _LAZY_FUNCTION_REGISTRY[name]
+        with _RESOLVED_LOCK:
+            _RESOLVED.pop(name, None)
+        return True
+    return False
+
+
+def list_registered() -> dict[str, str]:
+    return dict(_LAZY_FUNCTION_REGISTRY)

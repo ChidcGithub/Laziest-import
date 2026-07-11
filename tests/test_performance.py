@@ -10,16 +10,12 @@ import contextlib
 import gc
 import random
 import string
-import sys
 import tempfile
 import threading
 import time
 from pathlib import Path
 
 import pytest
-
-# Ensure laziest_import can be imported
-sys.path.insert(0, ".")
 
 
 class TestHighConcurrencyStress:
@@ -409,7 +405,7 @@ class TestImportStress:
             try:
                 _ = lz.math.pi
                 success_count += 1
-            except Exception:  # noqa: S110 — expected failures in stress test
+            except (ImportError, AttributeError, ModuleNotFoundError):  # noqa: S110 — expected failures in stress test
                 pass
 
         print(
@@ -635,7 +631,7 @@ class TestAsyncStress:
         async def async_import_task(alias):
             try:
                 return await lz.async_.get(alias)
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 return None
 
         tasks = [async_import_task("math") for _ in range(50)]
@@ -756,17 +752,17 @@ class TestEdgeCaseStress:
         for _ in range(100):
             try:
                 _ = lz.symbol.search("")
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
             try:
                 _ = lz.symbol.search(None)
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
             try:
                 _ = lz.symbol.search("")
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
         print(f"\n[Stress] Invalid inputs: {errors} errors handled")
@@ -783,12 +779,12 @@ class TestEdgeCaseStress:
             long_name = "a" * 1000
             try:
                 _ = lz.symbol.search(long_name)
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
             try:
                 _ = lz.symbol.search(long_name)
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
         print(f"\n[Stress] Long names: {errors} errors handled")
@@ -805,7 +801,7 @@ class TestEdgeCaseStress:
         for name in unicode_names:
             try:
                 _ = lz.symbol.search(name)
-            except Exception:
+            except (ImportError, AttributeError, ModuleNotFoundError):
                 errors += 1
 
         print(f"\n[Stress] Unicode names: {errors} errors handled")

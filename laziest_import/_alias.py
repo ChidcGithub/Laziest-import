@@ -506,7 +506,7 @@ def _scan_path_modules() -> set[str]:
             }
             modules.update(stdlib_modules)
 
-        return modules
+    return modules
 
 
 def _build_known_modules_cache(force: bool = False) -> set[str]:

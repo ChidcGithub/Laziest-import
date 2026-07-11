@@ -87,7 +87,7 @@ class LazyModule:
 
             if tracemalloc.is_tracing():
                 return tracemalloc.get_traced_memory()[0]
-        except Exception:  # noqa: S110 — tracemalloc not always available
+        except (ImportError, AttributeError):
             pass
         return 0
 
@@ -97,7 +97,9 @@ class LazyModule:
         config._IMPORT_STATS.total_imports += 1
         config._IMPORT_STATS.total_time += elapsed
         config._IMPORT_STATS.module_times[module_name] = elapsed
-        config._IMPORT_STATS.module_access_counts[alias] = 1
+        config._IMPORT_STATS.module_access_counts[alias] = (
+            config._IMPORT_STATS.module_access_counts.get(alias, 0) + 1
+        )
 
         _record_module_load(module_name)
 

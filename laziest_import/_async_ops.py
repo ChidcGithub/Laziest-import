@@ -50,6 +50,22 @@ async def import_async(alias: str) -> Any:
     return await loop.run_in_executor(None, _sync_import)
 
 
+async def _import_with_retry(import_func, alias: str, max_retries: int, retry_delay: float) -> Any:
+    """Import with retry support."""
+    last_exc: Optional[Exception] = None
+    for attempt in range(max_retries + 1):
+        try:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, import_func)
+        except (ImportError, ModuleNotFoundError, asyncio.TimeoutError) as e:
+            last_exc = e
+            if attempt < max_retries and _DEBUG_MODE:
+                logging.debug(f"[laziest-import] Retry {attempt + 1}/{max_retries} for '{alias}': {e}")
+            if attempt < max_retries:
+                await asyncio.sleep(retry_delay * (attempt + 1))
+    raise last_exc  # type: ignore[misc]
+
+
 async def import_multiple_async(aliases: list[str]) -> dict[str, Any]:
     """
     Asynchronously import multiple modules in parallel.

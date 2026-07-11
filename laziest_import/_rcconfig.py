@@ -47,10 +47,7 @@ def load_rc_config(force_reload: bool = False) -> dict[str, Any]:
 
     config: dict[str, Any] = {}
 
-    # Load from environment variables first (highest priority)
-    config.update(_load_from_env())
-
-    # Load from files (later files override earlier ones)
+    # Load from files first (lower priority)
     for path in _LAZIESTRC_PATHS:
         if path.exists():
             try:
@@ -62,6 +59,11 @@ def load_rc_config(force_reload: bool = False) -> dict[str, Any]:
                     import logging
 
                     logging.warning(f"[laziest-import] Failed to load config from {path}: {e}")
+
+    # Load from environment variables last (highest priority)
+    env_config = _load_from_env()
+    if env_config:
+        _deep_update(config, env_config)
 
     _CONFIG_CACHE = config
     return config

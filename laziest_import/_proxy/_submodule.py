@@ -73,10 +73,7 @@ class LazySubmodule:
             parent_module = parent._get_module()
             attr = getattr(parent_module, attr_name)
 
-            if isinstance(attr, ModuleType):
-                object.__setattr__(self, "_cached_module", attr)
-                return attr
-
+            object.__setattr__(self, "_cached_module", attr)
             return attr
 
     def __getattr__(self, name: str) -> Any:

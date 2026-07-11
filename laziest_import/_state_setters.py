@@ -88,8 +88,8 @@ def reset_all() -> None:
     try:
         import laziest_import as _lz_mod
 
-        _base_exports: set = getattr(c, "_BASE_EXPORTS", set())
-        _old_api_names: set = getattr(c, "_OLD_API_NAMES", set())
+        _base_exports: set = getattr(_lz_mod, "_BASE_EXPORTS", set())
+        _old_api_names: set = getattr(_lz_mod, "_OLD_API_NAMES", set())
 
         _lz_mod.__all__ = sorted(
             set(_base_exports) | set(_old_api_names) | set(c._ALIAS_MAP.keys())

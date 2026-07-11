@@ -9,9 +9,6 @@ from pathlib import Path
 
 import pytest
 
-# Ensure laziest_import can be imported
-sys.path.insert(0, ".")
-
 import contextlib
 
 from laziest_import import (

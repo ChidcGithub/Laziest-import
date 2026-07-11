@@ -280,7 +280,7 @@ class TestRealWorldScenario_Search:
         # Ensure symbol index is built (with timeout)
         info = lz.symbol.cache_info()
         if not info["built"]:
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(ImportError, ValueError, RuntimeError):
                 lz.symbol.index.rebuild()
 
         # Search for common symbols

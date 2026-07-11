@@ -201,11 +201,11 @@ class LazyImport:
         if name.startswith("_") and name != "__version__":
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-        if name in _config_module._NEGATIVE_CACHE:
-            _ts = _config_module._NEGATIVE_CACHE[name]
-            if time.time() - _ts < _config_module._NEGATIVE_CACHE_TTL:
-                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-            with _config_module._NEGATIVE_CACHE_LOCK:
+        with _config_module._NEGATIVE_CACHE_LOCK:
+            if name in _config_module._NEGATIVE_CACHE:
+                _ts = _config_module._NEGATIVE_CACHE[name]
+                if time.time() - _ts < _config_module._NEGATIVE_CACHE_TTL:
+                    raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
                 del _config_module._NEGATIVE_CACHE[name]
 
         if name in _ALIAS_MAP:
@@ -246,7 +246,8 @@ class LazyImport:
         msg = f"'{type(self).__name__}' object has no attribute '{name}'."
         name_lower = name.lower()
         best_match: Optional[tuple[str, str, int]] = None
-        for alias, module in _ALIAS_MAP.items():
+        alias_snapshot = list(_ALIAS_MAP.items())
+        for alias, module in alias_snapshot:
             alias_lower = alias.lower()
             module_lower = module.split(".", 1)[0].lower()
             if name_lower in (alias_lower, module_lower):

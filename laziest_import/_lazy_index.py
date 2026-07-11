@@ -33,6 +33,8 @@ class BackgroundIndexBuilder:
         self._stop_event = threading.Event()
         self._is_building = False
         self._progress_callback: Optional[Callable[[str, float], None]] = None
+        self._progress_state: str = "idle"
+        self._progress_value: float = 0.0
         self._initialized = True
 
     def start(
@@ -65,6 +67,8 @@ class BackgroundIndexBuilder:
 
     def _safe_progress_callback(self, state: str, value: float) -> None:
         """Safely call progress callback, catching and logging any errors."""
+        self._progress_state = state
+        self._progress_value = value
         if not self._progress_callback:
             return
         try:
@@ -100,7 +104,6 @@ class BackgroundIndexBuilder:
                 self._safe_progress_callback("failed", elapsed)
 
         except Exception as e:
-            str(e)
             if _DEBUG_MODE:
                 logging.warning(f"[laziest-import] Background index build error: {e}")
             self._safe_progress_callback("error", time.perf_counter() - start_time)
@@ -125,6 +128,21 @@ class BackgroundIndexBuilder:
             return True
 
         return self._stop_event.wait(timeout=timeout)
+
+    def get_progress(self) -> dict[str, float]:
+        """Get current build progress state.
+
+        Returns:
+            dict with keys 'state' (0=idle, 1=started, 2=in_progress, 3=completed, 4=failed, 5=error)
+            and 'value' (0.0-1.0 or elapsed seconds).
+        """
+        state_map = {"idle": 0, "started": 1, "in_progress": 1.5, "completed": 3, "failed": 4, "error": 5}
+        return {
+            "state_code": state_map.get(self._progress_state, 0),
+            "state": self._progress_state,
+            "value": self._progress_value,
+            "is_building": self._is_building,
+        }
 
 
 def _build_index_background() -> bool:

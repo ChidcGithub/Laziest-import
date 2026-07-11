@@ -86,145 +86,150 @@ _THIRD_PARTY_SYMBOL_CACHE = _config._THIRD_PARTY_SYMBOL_CACHE
 # ── Standard library detection ─────────────────────────────
 
 
+_STDLIB_PREFIXES = {
+    "abc",
+    "argparse",
+    "array",
+    "ast",
+    "asyncio",
+    "atexit",
+    "base64",
+    "bisect",
+    "builtins",
+    "bz2",
+    "calendar",
+    "cgi",
+    "cmath",
+    "cmd",
+    "code",
+    "codecs",
+    "collections",
+    "configparser",
+    "contextlib",
+    "copy",
+    "csv",
+    "ctypes",
+    "dataclasses",
+    "datetime",
+    "dbm",
+    "decimal",
+    "difflib",
+    "dis",
+    "email",
+    "enum",
+    "errno",
+    "fcntl",
+    "filecmp",
+    "fileinput",
+    "fnmatch",
+    "fractions",
+    "ftplib",
+    "functools",
+    "gc",
+    "getopt",
+    "getpass",
+    "gettext",
+    "glob",
+    "gzip",
+    "hashlib",
+    "heapq",
+    "hmac",
+    "html",
+    "http",
+    "imaplib",
+    "importlib",
+    "inspect",
+    "io",
+    "itertools",
+    "json",
+    "keyword",
+    "linecache",
+    "locale",
+    "logging",
+    "lzma",
+    "mailbox",
+    "marshal",
+    "math",
+    "mimetypes",
+    "mmap",
+    "multiprocessing",
+    "netrc",
+    "numbers",
+    "operator",
+    "optparse",
+    "os",
+    "pathlib",
+    "pickle",
+    "platform",
+    "plistlib",
+    "poplib",
+    "pprint",
+    "profile",
+    "queue",
+    "random",
+    "re",
+    "reprlib",
+    "sched",
+    "secrets",
+    "select",
+    "shelve",
+    "shlex",
+    "shutil",
+    "signal",
+    "site",
+    "smtplib",
+    "socket",
+    "socketserver",
+    "sqlite3",
+    "ssl",
+    "stat",
+    "statistics",
+    "string",
+    "struct",
+    "subprocess",
+    "sys",
+    "sysconfig",
+    "tarfile",
+    "tempfile",
+    "termios",
+    "textwrap",
+    "threading",
+    "time",
+    "timeit",
+    "tkinter",
+    "token",
+    "tokenize",
+    "trace",
+    "traceback",
+    "types",
+    "typing",
+    "unicodedata",
+    "unittest",
+    "urllib",
+    "uuid",
+    "warnings",
+    "wave",
+    "weakref",
+    "webbrowser",
+    "wsgiref",
+    "xml",
+    "xmlrpc",
+    "zipfile",
+    "zipimport",
+    "zlib",
+    "zoneinfo",
+}
+
+_STDLIB_MODULES = (
+    frozenset(sys.stdlib_module_names)
+    if hasattr(sys, "stdlib_module_names")
+    else _STDLIB_PREFIXES
+)
+
+
 def _is_stdlib_module(module_name: str) -> bool:
     """Check if a module is part of the standard library."""
-    if hasattr(sys, "stdlib_module_names"):
-        return module_name.split(".", maxsplit=1)[0] in sys.stdlib_module_names
-
-    stdlib_prefixes = {
-        "abc",
-        "argparse",
-        "array",
-        "ast",
-        "asyncio",
-        "atexit",
-        "base64",
-        "bisect",
-        "builtins",
-        "bz2",
-        "calendar",
-        "cgi",
-        "cmath",
-        "cmd",
-        "code",
-        "codecs",
-        "collections",
-        "configparser",
-        "contextlib",
-        "copy",
-        "csv",
-        "ctypes",
-        "dataclasses",
-        "datetime",
-        "dbm",
-        "decimal",
-        "difflib",
-        "dis",
-        "email",
-        "enum",
-        "errno",
-        "fcntl",
-        "filecmp",
-        "fileinput",
-        "fnmatch",
-        "fractions",
-        "ftplib",
-        "functools",
-        "gc",
-        "getopt",
-        "getpass",
-        "gettext",
-        "glob",
-        "gzip",
-        "hashlib",
-        "heapq",
-        "hmac",
-        "html",
-        "http",
-        "imaplib",
-        "importlib",
-        "inspect",
-        "io",
-        "itertools",
-        "json",
-        "keyword",
-        "linecache",
-        "locale",
-        "logging",
-        "lzma",
-        "mailbox",
-        "marshal",
-        "math",
-        "mimetypes",
-        "mmap",
-        "multiprocessing",
-        "netrc",
-        "numbers",
-        "operator",
-        "optparse",
-        "os",
-        "pathlib",
-        "pickle",
-        "platform",
-        "plistlib",
-        "poplib",
-        "pprint",
-        "profile",
-        "queue",
-        "random",
-        "re",
-        "reprlib",
-        "sched",
-        "secrets",
-        "select",
-        "shelve",
-        "shlex",
-        "shutil",
-        "signal",
-        "site",
-        "smtplib",
-        "socket",
-        "socketserver",
-        "sqlite3",
-        "ssl",
-        "stat",
-        "statistics",
-        "string",
-        "struct",
-        "subprocess",
-        "sys",
-        "sysconfig",
-        "tarfile",
-        "tempfile",
-        "termios",
-        "textwrap",
-        "threading",
-        "time",
-        "timeit",
-        "tkinter",
-        "token",
-        "tokenize",
-        "trace",
-        "traceback",
-        "types",
-        "typing",
-        "unicodedata",
-        "unittest",
-        "urllib",
-        "uuid",
-        "warnings",
-        "wave",
-        "weakref",
-        "webbrowser",
-        "wsgiref",
-        "xml",
-        "xmlrpc",
-        "zipfile",
-        "zipimport",
-        "zlib",
-        "zoneinfo",
-    }
-    return module_name.split(".", maxsplit=1)[0] in stdlib_prefixes
+    return module_name.split(".", maxsplit=1)[0] in _STDLIB_MODULES
 
 
 # ── Signature helper ───────────────────────────────────────
@@ -399,7 +404,8 @@ def _scan_module_symbols(
                     symbols[name] = []
                 symbols[name].append((module_name, symbol_type, signature))
 
-    submod_symbols = _scan_submodules(module, module_name, depth, _scanned, _current_depth)
+        submod_symbols = _scan_submodules(module, module_name, depth, _scanned, _current_depth)
+
     for sym_name, locations in submod_symbols.items():
         if sym_name not in symbols:
             symbols[sym_name] = []
@@ -460,7 +466,7 @@ def _try_load_cached_index(
                 f"{len(_config._THIRD_PARTY_SYMBOL_CACHE)} symbols"
             )
 
-    if _config._STDLIB_CACHE_BUILT or _config._THIRD_PARTY_CACHE_BUILT:
+    if _config._STDLIB_CACHE_BUILT and _config._THIRD_PARTY_CACHE_BUILT:
         _config._SYMBOL_CACHE.clear()
         _config._SYMBOL_CACHE.update(_config._STDLIB_SYMBOL_CACHE)
         _config._SYMBOL_CACHE.update(_config._THIRD_PARTY_SYMBOL_CACHE)
@@ -1499,6 +1505,28 @@ def set_module_skip_config(
         _config._MODULE_SKIP_CONFIG["large_module_threshold"] = large_module_threshold
 
 
+def symbol_autocomplete(prefix: str, max_results: int = 20) -> list[str]:
+    """Get symbol name suggestions matching a prefix.
+
+    Args:
+        prefix: Prefix string to match (case-insensitive)
+        max_results: Maximum number of results to return
+
+    Returns:
+        List of symbol names starting with the prefix
+    """
+    if not _config._SYMBOL_INDEX_BUILT:
+        _build_symbol_index()
+
+    prefix_lower = prefix.lower()
+    matches = sorted(
+        [name for name in _config._SYMBOL_CACHE if name.lower().startswith(prefix_lower)],
+        key=lambda n: len(_config._SYMBOL_CACHE[n]),
+        reverse=True,
+    )
+    return matches[:max_results]
+
+
 # ── Cache path helpers (localized from _cache subpackage) ────
 
 
@@ -1515,30 +1543,4 @@ def _get_symbol_index_path(cache_type: str = "all") -> Path:
 
 # ── Dataclass re-exports ────────────────────────────────────
 
-
-@dataclass
-class SymbolIndexCache:
-    """Symbol index cache with metadata."""
-
-    version: str
-    cache_type: str
-    timestamp: float
-    symbol_count: int
-    module_count: int
-    symbols: dict[str, list[tuple[str, str, Optional[str]]]]
-    python_version: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SymbolIndexCache":
-        return cls(
-            version=data.get("version", "0.0"),
-            cache_type=data.get("cache_type", "all"),
-            timestamp=data.get("timestamp", 0.0),
-            symbol_count=data.get("symbol_count", 0),
-            module_count=data.get("module_count", 0),
-            symbols=data.get("symbols", {}),
-            python_version=data.get("python_version", ""),
-        )
+from .._cache._symbol_index import SymbolIndexCache

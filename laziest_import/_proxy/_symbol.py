@@ -25,11 +25,13 @@ class LazySymbol:
         "_symbol_type",
     )
 
+    _SENTINEL = object()
+
     def __init__(self, symbol_name: str, module_name: str, symbol_type: str = "class"):
         object.__setattr__(self, "_symbol_name", symbol_name)
         object.__setattr__(self, "_module_name", module_name)
         object.__setattr__(self, "_symbol_type", symbol_type)
-        object.__setattr__(self, "_cached_obj", None)
+        object.__setattr__(self, "_cached_obj", self._SENTINEL)
         object.__setattr__(self, "_loaded", False)
 
     def _get_object(self) -> Any:
@@ -37,7 +39,7 @@ class LazySymbol:
         c = _config
 
         cached = object.__getattribute__(self, "_cached_obj")
-        if cached is not None:
+        if cached is not self._SENTINEL:
             return cached
 
         symbol_name = object.__getattribute__(self, "_symbol_name")
@@ -50,9 +52,10 @@ class LazySymbol:
                 f"Cannot import module '{module_name}' for symbol '{symbol_name}': {e}"
             ) from e
 
-        obj = getattr(module, symbol_name, None)
-        if obj is None:
+        if not hasattr(module, symbol_name):
             raise AttributeError(f"Module '{module_name}' has no attribute '{symbol_name}'")
+
+        obj = getattr(module, symbol_name)
 
         object.__setattr__(self, "_cached_obj", obj)
         object.__setattr__(self, "_loaded", True)
@@ -190,6 +193,42 @@ class LazySymbol:
     def __matmul__(self, other):
         return self._get_object() @ other
 
+    def __radd__(self, other):
+        return other + self._get_object()
+
+    def __rsub__(self, other):
+        return other - self._get_object()
+
+    def __rmul__(self, other):
+        return other * self._get_object()
+
+    def __rtruediv__(self, other):
+        return other / self._get_object()
+
+    def __rfloordiv__(self, other):
+        return other // self._get_object()
+
+    def __rmod__(self, other):
+        return other % self._get_object()
+
+    def __rpow__(self, other):
+        return other ** self._get_object()
+
+    def __rmatmul__(self, other):
+        return other @ self._get_object()
+
+    def __neg__(self):
+        return -self._get_object()
+
+    def __pos__(self):
+        return +self._get_object()
+
+    def __abs__(self):
+        return abs(self._get_object())
+
+    def __invert__(self):
+        return ~self._get_object()
+
     # Comparison operators
     def __eq__(self, other):
         if isinstance(other, LazySymbol):
@@ -200,7 +239,7 @@ class LazySymbol:
                 object.__getattribute__(other, "_module_name"),
                 object.__getattribute__(other, "_symbol_name"),
             )
-        return self._get_object() == other
+        return NotImplemented
 
     def __ne__(self, other):
         if isinstance(other, LazySymbol):
@@ -211,7 +250,7 @@ class LazySymbol:
                 object.__getattribute__(other, "_module_name"),
                 object.__getattribute__(other, "_symbol_name"),
             )
-        return self._get_object() != other
+        return NotImplemented
 
     def __lt__(self, other):
         return self._get_object() < other

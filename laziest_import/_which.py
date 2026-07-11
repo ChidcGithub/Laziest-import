@@ -129,19 +129,17 @@ def which(symbol_name: str, module_hint: Optional[str] = None) -> Optional[Symbo
 
         # If module_hint provided (or parsed from dotted path), try to find in that module first
         if actual_module_hint:
+            hint_parts = actual_module_hint.split(".")
             for loc in locations:
-                if loc[0].startswith(actual_module_hint):
-                    return _create_location_from_tuple(symbol_name, loc)
-
-            # Also try submodule match
-            for loc in locations:
-                if actual_module_hint.split(".")[0] in loc[0].split(".")[0]:
+                if loc[0] == actual_module_hint or loc[0].startswith(actual_module_hint + "."):
                     return _create_location_from_tuple(symbol_name, loc)
 
             # Module hint didn't match in cache, try live search
             live_result = _find_symbol_live(symbol_name, actual_module_hint)
             if live_result:
                 return live_result
+
+            return None
 
         # Return first match (no hint or hint didn't match)
         if locations:
@@ -169,11 +167,10 @@ def which_all(symbol_name: str) -> list[SymbolLocation]:
             if location:
                 locations.append(location)
 
-    # Also try live search for new modules
-    if not _SYMBOL_INDEX_BUILT:
-        location = _find_symbol_live(symbol_name, None)
-        if location and not any(loc.module_name == location.module_name for loc in locations):
-            locations.append(location)
+    # Also try live search for new modules (always, even after index built)
+    live_location = _find_symbol_live(symbol_name, None)
+    if live_location and not any(loc.module_name == live_location.module_name for loc in locations):
+        locations.append(live_location)
 
     return locations
 

@@ -12,17 +12,19 @@ def add_post_import_hook(hook: Callable) -> None:
 
 
 def remove_pre_import_hook(hook: Callable) -> bool:
-    if hook in _PRE_IMPORT_HOOKS:
+    try:
         _PRE_IMPORT_HOOKS.remove(hook)
         return True
-    return False
+    except ValueError:
+        return False
 
 
 def remove_post_import_hook(hook: Callable) -> bool:
-    if hook in _POST_IMPORT_HOOKS:
+    try:
         _POST_IMPORT_HOOKS.remove(hook)
         return True
-    return False
+    except ValueError:
+        return False
 
 
 def clear_import_hooks() -> None:

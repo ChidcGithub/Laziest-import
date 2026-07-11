@@ -8,6 +8,7 @@ import json
 import logging
 import sys
 import threading
+import time
 import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -239,9 +240,6 @@ def _save_current_cache() -> None:
 # Register exit handler
 atexit.register(_save_current_cache)
 
-
-# Need to import time for _save_file_cache
-import time
 
 # ============== File Cache API ==============
 

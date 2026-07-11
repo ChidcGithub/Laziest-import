@@ -2,10 +2,14 @@
 LazyProxy class for intelligent module recognition.
 """
 
+from threading import Lock
+
 from .. import _config
 from .._fuzzy import _search_module
 from ._factory import _get_lazy_module
 from ._module import LazyModule
+
+_ALIAS_WRITE_LOCK = Lock()
 
 
 class LazyProxy:
@@ -36,7 +40,8 @@ class LazyProxy:
         if _config._AUTO_SEARCH_ENABLED:
             found = _search_module(name)
             if found:
-                _config._ALIAS_MAP[name] = found
+                with _ALIAS_WRITE_LOCK:
+                    _config._ALIAS_MAP[name] = found
                 return _get_lazy_module(name)
 
         available = list(_config._ALIAS_MAP.keys())[:10]

@@ -35,7 +35,7 @@ def _load_version_config() -> dict[str, Any]:
 
 
 _VERSION_CONFIG = _load_version_config()
-__version__ = _VERSION_CONFIG.get("_current_version", "0.1.0.2")
+__version__ = _VERSION_CONFIG.get("_current_version", "1.0.0.6")
 
 
 def get_cache_version() -> str:
@@ -72,10 +72,26 @@ def _compare_versions(v1: str, v2: str) -> int:  # noqa: PLR0911 — comparison 
         return 1
     if p2 is None:
         return -1
-    if p1 < p2:
-        return -1
-    elif p1 > p2:
-        return 1
+    _PREORDER = {"a": 0, "alpha": 0, "b": 1, "beta": 1, "rc": 2, "c": 2, "pre": 2, "preview": 2}
+    p1_parts = re.split(r"(\d+)", p1)
+    p2_parts = re.split(r"(\d+)", p2)
+    for part1, part2 in zip(p1_parts, p2_parts):
+        if p1_parts == p2_parts:
+            continue
+        is_num1, is_num2 = part1.isdigit(), part2.isdigit()
+        if is_num1 and is_num2:
+            n1n, n2n = int(part1), int(part2)
+            if n1n < n2n: return -1
+            if n1n > n2n: return 1
+            continue
+        if is_num1: return -1
+        if is_num2: return 1
+        r1 = _PREORDER.get(part1.lower(), 3)
+        r2 = _PREORDER.get(part2.lower(), 3)
+        if r1 < r2: return -1
+        if r1 > r2: return 1
+    if len(p1_parts) < len(p2_parts): return -1
+    if len(p1_parts) > len(p2_parts): return 1
     return 0
 
 
@@ -430,5 +446,7 @@ def _activate_state_setters() -> None:
 
 from contextlib import suppress
 
-with suppress(ImportError):
-    _activate_state_setters()  # deferred activation in build/editable install environments
+try:
+    _activate_state_setters()
+except ImportError:
+    pass

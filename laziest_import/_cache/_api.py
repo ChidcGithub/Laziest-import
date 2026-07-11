@@ -112,9 +112,10 @@ def invalidate_package_cache(package_name: str) -> bool:
         return False
 
     del c._TRACKED_PACKAGES[package_name]
-    _filter_cache_symbols(c._SYMBOL_CACHE, package_name)
-    _filter_cache_symbols(c._THIRD_PARTY_SYMBOL_CACHE, package_name)
-    _filter_cache_symbols(c._STDLIB_SYMBOL_CACHE, package_name)
+    with c._SYMBOL_CACHE_LOCK:
+        _filter_cache_symbols(c._SYMBOL_CACHE, package_name)
+        _filter_cache_symbols(c._THIRD_PARTY_SYMBOL_CACHE, package_name)
+        _filter_cache_symbols(c._STDLIB_SYMBOL_CACHE, package_name)
     _save_tracked_packages()
     return True
 

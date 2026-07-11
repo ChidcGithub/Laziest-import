@@ -29,7 +29,7 @@ def _get_cache_size() -> int:
     cache_dir = _get_cache_dir()
     total_size = 0
     try:
-        for cache_file in cache_dir.glob("*.json"):
+        for cache_file in cache_dir.glob("laziest_*.json"):
             total_size += cache_file.stat().st_size
     except OSError:
         pass
@@ -39,7 +39,10 @@ def _get_cache_size() -> int:
 def _cleanup_cache_if_needed() -> None:
     """Clean up old cache files if cache size exceeds limit."""
     c = _config
-    max_size_bytes = c._CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    max_size_mb = c._CACHE_CONFIG.get("max_cache_size_mb", 100)
+    if max_size_mb <= 0:
+        return
+    max_size_bytes = max_size_mb * 1024 * 1024
     current_size = _get_cache_size()
 
     if current_size <= max_size_bytes:
@@ -48,7 +51,7 @@ def _cleanup_cache_if_needed() -> None:
     cache_dir = _get_cache_dir()
     cache_files = []
     try:
-        for cache_file in cache_dir.glob("*.json"):
+        for cache_file in cache_dir.glob("laziest_*.json"):
             cache_files.append((cache_file, cache_file.stat().st_mtime))
     except OSError:
         return
@@ -71,7 +74,10 @@ def _cleanup_cache_if_needed() -> None:
 def _check_cache_size_before_save() -> bool:
     """Check if we should save cache based on size limit."""
     c = _config
-    max_size_bytes = c._CACHE_CONFIG.get("max_cache_size_mb", 100) * 1024 * 1024
+    max_size_mb = c._CACHE_CONFIG.get("max_cache_size_mb", 100)
+    if max_size_mb <= 0:
+        return True
+    max_size_bytes = max_size_mb * 1024 * 1024
     current_size = _get_cache_size()
     return current_size < max_size_bytes * 0.9
 

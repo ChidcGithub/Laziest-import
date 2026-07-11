@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0.6] - 2026-07-11
+
+### Fixed
+- Critical: `module_access_counts` reset bug causing lost access history
+- Critical: `LazySymbol` infinite re-import loop when underlying symbol value is `None`
+- Critical: `__hash__`/`__eq__` hash contract violation causing dict/set corruption
+- Critical: `_scan_path_modules` returning after only first `sys.path` entry
+- Critical: `reset_all()` reading `_BASE_EXPORTS` from wrong module
+- Critical: `get_symbol_help()` accessing non-existent attributes on `SearchResult`
+- Critical: `obj is None` conflating missing attribute with `None`-valued attribute
+- High: `_compare_versions` prerelease comparison now correctly handles numeric suffixes
+- High: `_rcconfig.py` environment variables now have highest priority
+- High: `_install.py` interactive override parameter now respected
+- High: Cache cleanup limited to `laziest_*.json` files; `max_cache_size_mb=0` treated as unlimited
+- High: Distribution name to import name mapping (e.g., `beautifulsoup4` → `bs4`)
+- High: Partial cache load no longer prevents full rebuild (`or` → `and`)
+- High: `catch_warnings` scope now covers submodule scanning
+- High: AST scanner supports chained attribute access (`lz.np.array()`)
+- Medium: `LazySubmodule` fallback path now caches all attribute types
+- Medium: Thread lock on `_ALIAS_MAP` writes in `LazyProxy`
+- Medium: TOCTOU fixed in negative cache, alias iteration, and hook removal
+- Medium: `which()` returns `None` on module hint mismatch instead of silent fallback
+- Medium: `invalidate_package_cache` now holds `_SYMBOL_CACHE_LOCK`
+- Broad `except Exception` narrowed to specific exceptions in 10+ locations
+- `sys.path.insert(0, ".")` removed from 3 test files
+- Trivially-true test assertions (`is True or is False`) replaced with `isinstance(bool)`
+- Redundant `x as x` imports removed from `_symbol/` redirect files
+- `import time` moved to top of `_cache/_file_cache.py`
+- Duplicated `SymbolIndexCache` eliminated (consolidated to `_cache/_symbol_index.py`)
+- `_is_stdlib_module` set promoted to module-level constant
+
+### Added
+- Reflected operators on `LazySymbol`: `__radd__`, `__rsub__`, `__rmul__`, `__rtruediv__`, `__rfloordiv__`, `__rmod__`, `__rpow__`, `__rmatmul__`, `__neg__`, `__pos__`, `__abs__`, `__invert__`
+- Retry logic in `_async_ops.py` based on `_RETRY_CONFIG`
+- `fix` CLI command generating standard `import` statements from lazy alias usage
+- `which_all` now performs live search even after index built
+- `unregister()` and `list_registered()` in `_lazy_registry.py`
+- `get_progress()` public API in `BackgroundIndexBuilder`
+- `symbol_autocomplete(prefix)` for symbol name prefix completion
+- Test count and version unified across READMEs
+
 ## [0.1.0.2] - 2026-06-21
 
 ### Fixed

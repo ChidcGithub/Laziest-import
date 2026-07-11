@@ -514,7 +514,7 @@ class TestBackgroundNamespace:
     def test_is_building_property(self):
         ns = BackgroundNamespace()
         result = ns.is_building
-        assert result is False or result is True
+        assert isinstance(result, bool)
 
     def test_timeout_property(self):
         ns = BackgroundNamespace()
@@ -526,7 +526,7 @@ class TestBackgroundNamespace:
     def test_enable(self):
         ns = BackgroundNamespace()
         ns.enable(True)
-        assert ns.is_building is True or ns.is_building is False
+        assert isinstance(ns.is_building, bool)
 
     def test_repr(self):
         ns = BackgroundNamespace()
@@ -542,7 +542,7 @@ class TestInstallNamespace:
 
     def test_enabled_property(self):
         ns = InstallNamespace()
-        assert ns.enabled is False or ns.enabled is True
+        assert isinstance(ns.enabled, bool)
 
     def test_repr(self):
         ns = InstallNamespace()

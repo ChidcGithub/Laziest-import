@@ -5,6 +5,7 @@ import contextlib
 import json
 import sys
 import time
+import socket
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -49,7 +50,7 @@ def _check_single_pypi_package(name: str) -> bool | None:
             exists = resp.status == _HTTP_OK
     except urllib.error.HTTPError as e:
         exists = e.code != _HTTP_NOT_FOUND
-    except Exception:
+    except (urllib.error.URLError, socket.timeout, Exception):
         exists = False
     _PYPI_CACHE[name] = exists
     time.sleep(0.05)

@@ -24,11 +24,21 @@ def get_package_version(package_name: str) -> Optional[str]:
         None
     """
     try:
-        from importlib.metadata import PackageNotFoundError, version
+        from importlib.metadata import PackageNotFoundError, distributions, version
 
-        # Normalize package name (handle both my-package and my_package)
         normalized = package_name.lower().replace("_", "-")
-        return version(normalized)
+        try:
+            return version(normalized)
+        except PackageNotFoundError:
+            pass
+
+        from laziest_import._fuzzy import _get_package_rename_map
+
+        rename_map = _get_package_rename_map()
+        for pip_name, import_name in rename_map.items():
+            if import_name == package_name:
+                return version(pip_name)
+        return None
     except PackageNotFoundError:
         return None
     except Exception:

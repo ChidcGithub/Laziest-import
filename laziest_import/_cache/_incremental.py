@@ -13,17 +13,20 @@ from ._symbol_index import (
 
 
 def _get_installed_packages() -> set[str]:
-    """Get set of installed top-level packages."""
+    """Get set of installed top-level packages (as import names)."""
     try:
         from importlib.metadata import distributions
 
+        from .._fuzzy import _get_package_rename_map
+
+        rename_map = _get_package_rename_map()
         packages = set()
         for dist in distributions():
-            # Get top-level package names
             name = dist.metadata.get("Name", "")
             if name:
-                # Convert package name to import name (e.g., my-package -> my_package)
-                import_name = name.lower().replace("-", "_")
+                name_lower = name.lower()
+                import_name = name_lower.replace("-", "_")
+                import_name = rename_map.get(name_lower, import_name)
                 packages.add(import_name)
         return packages
     except Exception:

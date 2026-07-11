@@ -66,7 +66,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode with all dependencies
-pip install -e ".[dev,test]"
+pip install -e ".[dev]"
 ```
 
 #### Branch Naming
