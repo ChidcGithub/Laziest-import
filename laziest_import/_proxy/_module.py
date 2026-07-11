@@ -108,7 +108,7 @@ class LazyModule:
         if _profiler.is_active():
             _profiler.record_load(module_name, elapsed, mem_delta)
 
-    def _auto_search_fallback(self, module_name: str, alias: str, config: Any) -> Any | None:
+    def _auto_search_fallback(self, module_name: str, alias: str, config: Any) -> Optional[Any]:
         if not config._AUTO_SEARCH_ENABLED:
             return None
         found_name = _search_module(module_name.split(".", maxsplit=1)[0])
