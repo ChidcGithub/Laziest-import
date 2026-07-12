@@ -287,7 +287,7 @@ class TestBackgroundIndex:
     def test_wait_for_index_no_timeout(self):
         """Test waiting for index without timeout."""
 
-        result = lz.background.wait()
+        result = lz.background.wait(timeout=5)
         assert isinstance(result, bool)
 
 

@@ -76,7 +76,7 @@ def _compare_versions(v1: str, v2: str) -> int:  # noqa: PLR0911 — comparison 
     p1_parts = re.split(r"(\d+)", p1)
     p2_parts = re.split(r"(\d+)", p2)
     for part1, part2 in zip(p1_parts, p2_parts):
-        if p1_parts == p2_parts:
+        if part1 == part2:
             continue
         is_num1, is_num2 = part1.isdigit(), part2.isdigit()
         if is_num1 and is_num2:

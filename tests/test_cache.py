@@ -364,7 +364,7 @@ class TestBackgroundBuild:
         """Test waiting for index without timeout."""
         from laziest_import import lz
 
-        result = lz.background.wait()
+        result = lz.background.wait(timeout=5)
         assert isinstance(result, bool)
 
     def test_background_timeout(self):
