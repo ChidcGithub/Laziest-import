@@ -175,26 +175,6 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 - **修复 `_build_known_modules_cache()` 中的循环导入**：跳过扫描 CWD（`''`/`'.'` 路径）以防止重新导入工作目录中的脚本
 - **1065 项测试**：全部通过，全面覆盖
 
-### v0.1.0-rc2
-
-- **OOP API 迁移**：23 个测试文件从模块级 API 迁移到 `lz` 单例
-- **修复 `LazyImport.__getattr__`**：在昂贵查找之前进行负缓存检查
-- **修复 `reset_all()`**：现在重新加载别名、更新 `__all__` 并重建符号索引
-- **提高 `_build_symbol_index` 默认值**：`max_modules=500`，`timeout=60.0` 以实现完整的索引覆盖
-
-### v0.1.0-rc1
-
-- **阶段四 — 别名系统升级**：数据统一、JSON 格式升级、智能建议、过滤搜索、智能错误提示、上下文感知模糊匹配、冲突检测
-- **数据统一**：108 个别名从 `mappings/abbreviations.json` 合并到 `aliases/*.json`；删除 `abbreviations.json` 和 `submodules.json`
-- **JSON 格式升级**：所有 27 个别名字母文件增加 `_meta` 元数据（类别、描述）
-- **AliasNamespace API**：`lz.alias.list(category=)`、`lz.alias.search(pattern, by_module=)`、`lz.alias.suggest(package=/installed=/pattern=)`
-- **智能错误提示**：基于 Levenshtein 距离的拼写检测 — `lz.nummpy` 提示 `Did you mean numpy?`
-- **上下文感知模糊匹配**：已加载模块在自动搜索中获得优先级加成
-- **冲突检测**：`register_alias()` 在别名覆盖时发出警告
-- **Bug 修复**：修复 `__repr__` 抛 `NameError`（严重）；修复别名搜索回退时错误导入模块（严重）；修复 opencv/cv2 无限循环；修复 sage/sagemath 指向不存在模块；修复 4 个环形别名链；修复 80+ 个连字符化别名值（使用 PyPI 名而非可导入模块名）；修复 70+ 个连字符化别名键（Python 语法不可达）；修复缩进错误导致 symbol-not-found 回退被隐藏；删除 48 行死代码；修复 `_suggest_for_package()` 返回重复项错误
-- **1065+ 测试**：全面的测试覆盖
-
-
 --- ## 终端演示
 
 运行交互式终端演示，观看 laziest-import 的动画效果：

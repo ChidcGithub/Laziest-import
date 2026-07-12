@@ -224,26 +224,6 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 - **Fixed circular import in `_build_known_modules_cache()`**: Skip scanning CWD (`''`/`'.'` paths) to prevent re-import of scripts in working directory
 - **1065 tests**: All passing, comprehensive coverage
 
-### v0.1.0-rc2
-
-- **OOP API Migration**: 23 test files migrated from module-level API to `lz` singleton
-- **Fixed `LazyImport.__getattr__`**: Negative cache check before expensive lookups
-- **Fixed `reset_all()`**: Now reloads aliases, updates `__all__`, AND rebuilds symbol index
-- **Raised `_build_symbol_index` defaults**: `max_modules=500`, `timeout=60.0` for complete index coverage
-
-### v0.1.0-rc1
-
-- **Phase 4 — Alias System Upgrade**: Data unification, JSON format upgrade, smart suggestions, filtered search, smart error hints, context-aware fuzzy matching, and conflict resolution
-- **Data Unification**: 108 aliases merged from `mappings/abbreviations.json` into `aliases/*.json`; `abbreviations.json` and `submodules.json` removed
-- **JSON Format Upgrade**: `_meta` metadata (category, description) added to all 27 alias letter files
-- **AliasNamespace API**: `lz.alias.list(category=)`, `lz.alias.search(pattern, by_module=)`, `lz.alias.suggest(package=/installed=/pattern=)`
-- **Smart Error Hints**: Typo detection with Levenshtein distance — `lz.nummpy` suggests `Did you mean numpy?`
-- **Context-Aware Fuzzy Matching**: Loaded modules get priority bonus during auto-search
-- **Conflict Detection**: `register_alias()` warns on alias overwrite
-- **Bug Fixes**: Fixed `__repr__` NameError crash (critical); fixed alias search fallback importing wrong module (critical); fixed opencv/cv2 infinite cycle; fixed sage/sagemath pointing to non-existent module; fixed 4 circular alias chains; fixed 80+ hyphenated alias values (used PyPI names instead of importable module names); fixed 70+ hyphenated alias keys (unreachable via Python syntax); fixed indentation bug hiding symbol-not-found fallback; removed 48 lines of dead code; fixed `_suggest_for_package()` duplicate return bug
-- **1065+ tests**: Comprehensive test coverage
-
-
 ---
 
 ## Terminal Demo
@@ -512,55 +492,54 @@ print(f"Cache size: {info['cache_size_mb']:.2f} MB")
 ```
 AttributeError: module 'laziest_import' has no attribute 'mymodule'
 ```
-Solution: The module is not registered. Use `lz.enable_auto_search()` to enable auto-discovery, or register it manually:
+Solution: The module is not registered. Use `lz.config.auto_search = True` to enable auto-discovery, or register it manually:
 ```python
-lz.register_alias('mymodule', 'mypackage.mymodule')
+lz.alias.register('mymodule', 'mypackage.mymodule')
 ```
 
 **Q: Slow first import**
 The symbol index may be building. Check status with:
 ```python
-lz.is_index_building() # True if building
-lz.wait_for_index(30) # Wait up to 30 seconds
+lz.background.is_building  # True if building
+lz.background.wait(timeout=30)  # Wait up to 30 seconds
 ```
 
 **Q: Typo correction not working**
 Ensure the module is in the alias list:
 ```python
-lz.register_alias('nump', 'numpy') # Add misspelling
-arr = lz.nump.array([1, 2, 3]) # Now works
+lz.alias.register('nump', 'numpy')  # Add misspelling
+arr = lz.nump.array([1, 2, 3])  # Now works
 ```
 
 **Q: Symbol conflicts (same name in multiple modules)**
 Use module hints or preferences:
 ```python
-lz.set_symbol_preference('DataFrame', 'pandas') # Prefer pandas
-result = lz.DataFrame # Gets pandas.DataFrame
+lz.symbol.prefer('DataFrame', 'pandas')  # Prefer pandas
+result = lz.DataFrame  # Gets pandas.DataFrame
 ```
 
 ### Debug Mode
 
 Enable detailed logging:
 ```python
-lz.enable_debug_mode()
-import laziest_import as lz
-arr = lz.np.array([1, 2, 3]) # See import details in logs
+lz.config.debug = True
+arr = lz.np.array([1, 2, 3])  # See import details in logs
 ```
 
 ### Cache Issues
 
 Clear caches if experiencing stale data:
 ```python
-lz.clear_cache() # Clear memory cache
-lz.clear_file_cache() # Clear disk cache
-lz.rebuild_symbol_index() # Rebuild symbol index
+lz.cache.clear()            # Clear memory cache
+lz.cache.files.clear()       # Clear disk cache
+lz.symbol.index.rebuild()    # Rebuild symbol index
 ```
 
 ### Performance Tips
 
 1. **First run**: ~2s to build index
 2. **Cached run**: ~0.003s (700x faster!)
-3. Use `lz.enable_background_build()` to avoid blocking on first import
+3. Use `lz.background.enable(True)` to avoid blocking on first import
 4. For CI/CD, set `LAZY_BG_BUILD=1` to pre-build cache
 
 ---
