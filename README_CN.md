@@ -48,6 +48,7 @@
 - [功能特性](#-核心功能)
 - [快速开始](#-快速开始)
 - [安装方法](#-安装方法)
+- [终端演示](#-终端演示)
 - [使用示例](#-使用示例)
 - [配置说明](#-配置说明)
 - [API 参考](#-api-参考)
@@ -67,6 +68,8 @@
 | 多层缓存 | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | 三层缓存系统提供高速访问 |
 | 依赖分析 | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | 分析模块依赖关系 |
 | 性能基准 | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | 基准测试导入和函数 |
+| CLI 接口 | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` / `fix` 命令 |
+| 符号自动补全 | ![](https://img.shields.io/badge/feature-autocomplete-blue.svg) | 基于前缀的符号名补全 |
 | 1065+ 测试 | ![](https://img.shields.io/badge/tests-1065%2B-brightgreen.svg) | 全面的测试覆盖 |
 | 1000+ 别名 | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | 为常用包预定义的别名 |
 
@@ -130,7 +133,38 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 
 --- ## 最新更新
 
-### v0.1.0（当前）
+### v1.0.0.6（当前）
+
+- **全面的 Bug 修复**：修复 8 个关键 bug，包括 `module_access_counts` 重置、`LazySymbol` None 值无限重导入、hash/eq 契约违反、`_scan_path_modules` 仅返回第一个路径、`reset_all()` 错误模块引用、`get_symbol_help()` 损坏的属性访问等
+- **线程安全**：为 `_ALIAS_MAP` 写入、负缓存、`invalidate_package_cache` 和 hook 移除添加了锁保护
+- **Python 3.9 兼容性**：`Any | None` 联合语法替换为 `Optional[Any]`
+- **版本比较修复**：预发布版本字符串现在正确比较数字后缀（如 `alpha10` vs `alpha2`）
+- **配置系统修复**：环境变量现在具有最高优先级；`interactive` 覆盖参数在自动安装中被正确尊重
+- **缓存修复**：清理限定为 `laziest_*.json` 前缀；`max_cache_size_mb=0` 视为无限制；部分缓存加载不再阻止完整重建
+- **`which()` 改进**：模块提示不匹配时返回 `None` 而非静默错误回退
+- **CI 修复**：GitHub Actions 工作流添加 `timeout-minutes` 防止 6 小时挂起
+
+### 新功能
+
+- **反射运算符**：`LazySymbol` 现支持 `__radd__`、`__rsub__`、`__rmul__`、`__rtruediv__` 等 12 个运算符
+- **异步重试逻辑**：基于 `_RETRY_CONFIG` 实现实际重试
+- **CLI `fix` 命令**：`laziest-import fix` 从检测到的别名使用生成标准 `import` 语句
+- **符号自动补全**：`symbol_autocomplete(prefix)` 前缀补全
+- **构建进度 API**：`get_progress()` 查询当前构建状态
+- **`which_all` 实时搜索**：索引构建后仍执行实时搜索
+- **终端演示**：`examples/terminal_demo.py` 交互式动画演示
+
+### 代码质量
+
+- 10+ 处宽泛的 `except Exception` 缩小为具体异常
+- 测试文件中删除 `sys.path.insert(0, '.')`
+- `is True or is False` 断言替换为 `isinstance(bool)`
+- `_symbol/` 重定向文件中删除冗余 `x as x` 导入
+- 重复的 `SymbolIndexCache` 数据类合并为单一定义
+- `_is_stdlib_module` 提升为模块级常量集合
+- README 统一版本号和测试计数
+
+### v0.1.0
 
 - **阶段五 — 假代码审计与修复**：所有占位符/假代码替换为真正的逻辑
 - **修复 `assert True` 测试**：4 个测试替换为真正的断言
@@ -160,6 +194,32 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 - **Bug 修复**：修复 `__repr__` 抛 `NameError`（严重）；修复别名搜索回退时错误导入模块（严重）；修复 opencv/cv2 无限循环；修复 sage/sagemath 指向不存在模块；修复 4 个环形别名链；修复 80+ 个连字符化别名值（使用 PyPI 名而非可导入模块名）；修复 70+ 个连字符化别名键（Python 语法不可达）；修复缩进错误导致 symbol-not-found 回退被隐藏；删除 48 行死代码；修复 `_suggest_for_package()` 返回重复项错误
 - **1065+ 测试**：全面的测试覆盖
 
+
+--- ## 终端演示
+
+运行交互式终端演示，观看 laziest-import 的动画效果：
+
+```bash
+python examples/terminal_demo.py
+```
+
+<div align="center">
+  <pre>
+  /=======================================\
+  |   laziest-import  Terminal Demo        |
+  \=======================================/
+  [1] 一行代码导入所有模块
+     -> np.array([1,2,3])     = [1 2 3]
+     -> math.sqrt(144)        = 12.0
+     -> os.getcwd()           = /home/user
+  [2] 子模块自动加载
+     -> os.path.join('a','b') = a/b
+  [3] 跨模块符号搜索
+     -> math.sqrt  (function)
+     -> numpy.sqrt (function)
+  ...
+  </pre>
+</div>
 
 --- ## 使用示例
 

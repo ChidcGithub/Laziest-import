@@ -52,6 +52,7 @@
 - [Key Features](#key-features)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
+- [Terminal Demo](#terminal-demo)
 - [Examples](#examples)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
@@ -74,7 +75,8 @@
 | Multi-Level Cache | ![](https://img.shields.io/badge/feature-multi_level_cache-green.svg) | Three-tier caching for speed |
 | Dependency Analysis | ![](https://img.shields.io/badge/feature-dependency_analysis-blue.svg) | Analyze module dependencies |
 | Performance Benchmark | ![](https://img.shields.io/badge/feature-benchmarking-purple.svg) | Benchmark imports and functions |
-| CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` commands |
+| CLI Interface | ![](https://img.shields.io/badge/feature-cli-lightgrey.svg) | `laziest-import freeze` / `init` / `fix` commands |
+| Symbol Autocomplete | ![](https://img.shields.io/badge/feature-autocomplete-blue.svg) | Prefix-based symbol name completion |
 | 1065+ Tests | ![](https://img.shields.io/badge/tests-1065%2B-brightgreen.svg) | Comprehensive test coverage |
 | 1000+ Aliases | ![](https://img.shields.io/badge/aliases-1000%2B-orange.svg) | Predefined for common packages |
 
@@ -177,7 +179,41 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ## What's New
 
-### v0.1.0 (Current)
+### v1.0.0.6 (Current)
+
+- **Comprehensive Bug Fixes**: 8 critical bugs fixed including `module_access_counts` reset, `LazySymbol` None-value infinite re-import, hash/eq contract violation, `_scan_path_modules` returning after first `sys.path` entry, `reset_all()` wrong module reference, and `get_symbol_help()` broken attribute access
+- **Thread Safety**: Lock protection added to `_ALIAS_MAP` writes, negative cache, `invalidate_package_cache`, and hook removal
+- **Python 3.9 Compatibility**: `Any | None` union syntax replaced with `Optional[Any]` for older Python support
+- **Version Comparison Fix**: Prerelease version strings now correctly compare numeric suffixes (e.g. `alpha10` vs `alpha2`)
+- **Config System Fix**: Environment variables now have highest priority; `interactive` override parameter respected in auto-install
+- **Cache Fixes**: Cleanup limited to `laziest_*.json` prefix; `max_cache_size_mb=0` treated as unlimited; partial cache load no longer prevents full rebuild
+- **`which()` Improvement**: Returns `None` on module hint mismatch instead of silent wrong fallback
+- **License/CI**: `timeout-minutes` added to GitHub Actions workflows preventing 6-hour CI hangs
+- **Environmental Cleanup**: Removed outdated migration guide, orphaned debug scripts, and unused binary artifacts
+
+### New Features
+
+- **Reflected Operators**: `LazySymbol` now supports `__radd__`, `__rsub__`, `__rmul__`, `__rtruediv__`, `__rfloordiv__`, `__rmod__`, `__rpow__`, `__rmatmul__`, `__neg__`, `__pos__`, `__abs__`, `__invert__`
+- **Async Retry Logic**: `_async_ops.py` now implements actual retry based on `_RETRY_CONFIG`
+- **CLI `fix` Command**: `laziest-import fix` generates standard `import` statements from lazy alias usage
+- **Symbol Autocomplete**: `symbol_autocomplete(prefix)` for prefix-based symbol name completion
+- **Build Progress API**: `BackgroundIndexBuilder.get_progress()` for querying current build state
+- **`which_all` Live Search**: Now performs live search even after index is built, catching newly installed modules
+- **Lazy Registry Management**: Added `unregister()` and `list_registered()` to `_lazy_registry.py`
+- **Terminal Demo**: Interactive animated demo at `examples/terminal_demo.py`
+
+### Code Quality
+
+- 10+ broad `except Exception` narrowed to specific exceptions
+- `sys.path.insert(0, '.')` removed from test files
+- Trivially-true `is True or is False` assertions replaced with `isinstance(bool)`
+- Redundant `x as x` imports removed from `_symbol/` redirect files
+- Duplicated `SymbolIndexCache` dataclass consolidated to single definition
+- `_is_stdlib_module` performance improved via module-level constant set
+- `import time` relocated to top of `_cache/_file_cache.py`
+- Test count and version unified across READMEs
+
+### v0.1.0
 
 - **Phase 5 — Fake Code Audit & Fix**: All placeholder/fake code replaced with real logic
 - **Fixed `assert True` tests**: 4 tests replaced with real assertions
@@ -210,7 +246,33 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ---
 
-## Examples
+## Terminal Demo
+
+Run the interactive terminal demo to see laziest-import in action with animated visuals:
+
+```bash
+python examples/terminal_demo.py
+```
+
+<div align="center">
+  <pre>
+  /=======================================\
+  |   laziest-import  Terminal Demo        |
+  \=======================================/
+  [1] Import everything with one line
+     -> np.array([1,2,3])     = [1 2 3]
+     -> math.sqrt(144)        = 12.0
+     -> os.getcwd()           = /home/user
+  [2] Submodules auto-load
+     -> os.path.join('a','b') = a/b
+  [3] Symbol search across all modules
+     -> math.sqrt  (function)
+     -> numpy.sqrt (function)
+  ...
+  </pre>
+</div>
+
+---
 
 ### Symbol Search & Location
 
@@ -283,17 +345,22 @@ lz.symbol.prefer("sqrt", "numpy")
 result = lz.sqrt(16)  # Now resolves to numpy.sqrt
 ```
 
-### CLI: Freeze & Init
+### CLI: Freeze, Fix & Init
 
 ```bash
 # Scan project and freeze alias usage
 laziest-import freeze
+
+# Generate standard import statements from lazy alias usage
+laziest-import fix
 
 # Generate .laziestrc config file
 laziest-import init
 ```
 
 The `freeze` command produces `imports.laziest.json` — a manifest of all lazy imports used across your project, ideal for CI validation.
+
+The `fix` command generates standard Python `import X as Y` statements from detected lazy alias usage — useful when migrating from lazy imports to explicit imports.
 
 ### Auto-Install (Optional)
 
