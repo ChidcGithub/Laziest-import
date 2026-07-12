@@ -52,6 +52,7 @@ jobs:
           pip install radon coverage
 
       - name: Test with coverage
+        timeout-minutes: 20
         run: |
           python -m pytest tests/ \
             --cov=laziest_import \

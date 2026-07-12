@@ -32,6 +32,7 @@ jobs:
         pip install build pytest pytest-asyncio
 
     - name: Run tests
+      timeout-minutes: 30
       run: |
         pip install -e .[dev]
         python -m pytest tests/ -v
