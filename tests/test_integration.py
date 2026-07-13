@@ -734,9 +734,11 @@ class TestRealWorldScenario_BackgroundIndex:
         """Test starting background index build."""
         from laziest_import import lz
 
+        if not lz.symbol.cache_info()["built"]:
+            lz.symbol.index.rebuild()
+
         result = lz.background.start()
         assert isinstance(result, bool)
-        lz.background.wait(timeout=30)
 
     def test_is_index_building(self):
         """Test checking if index is building."""
