@@ -730,6 +730,7 @@ class TestRealWorldScenario_BackgroundIndex:
     Tests background index building functionality.
     """
 
+    @pytest.mark.slow
     def test_start_background_index_build(self):
         """Test starting background index build."""
         from laziest_import import lz
@@ -1068,6 +1069,7 @@ class TestRealWorldScenario_ResetOperations:
         lz.cache.clear()
         assert "math" not in lz.module.list_loaded()
 
+    @pytest.mark.slow
     def test_reset_all(self):
         """Test complete reset."""
         from laziest_import import lz

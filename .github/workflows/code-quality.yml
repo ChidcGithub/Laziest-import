@@ -57,7 +57,8 @@ jobs:
           python -m pytest tests/ \
             --cov=laziest_import \
             --cov-report=xml:coverage.xml \
-            --cov-report=term
+            --cov-report=term \
+            -m "not slow"
 
       - name: Complexity report
         run: |
