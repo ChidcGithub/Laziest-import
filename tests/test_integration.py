@@ -736,6 +736,7 @@ class TestRealWorldScenario_BackgroundIndex:
 
         result = lz.background.start()
         assert isinstance(result, bool)
+        lz.background.wait(timeout=30)
 
     def test_is_index_building(self):
         """Test checking if index is building."""
