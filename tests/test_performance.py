@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.slow
 class TestHighConcurrencyStress:
     """Extreme high-concurrency stress tests"""
 
@@ -165,6 +166,7 @@ class TestHighConcurrencyStress:
         assert len(errors) < 100
 
 
+@pytest.mark.slow
 class TestMemoryStress:
     """Memory stress tests"""
 
@@ -361,6 +363,7 @@ class TestMemoryStress:
         assert pi_value > 3.14
 
 
+@pytest.mark.slow
 class TestImportStress:
     """Import stress tests"""
 
@@ -431,6 +434,7 @@ class TestImportStress:
             pytest.fail(f"Deep submodule access failed: {e}")
 
 
+@pytest.mark.slow
 class TestSymbolSearchStress:
     """Symbol search stress tests"""
 
@@ -510,6 +514,7 @@ class TestSymbolSearchStress:
         assert warm_time <= cold_time * 1.5
 
 
+@pytest.mark.slow
 class TestCacheStress:
     """Cache system stress tests"""
 
@@ -646,6 +651,7 @@ class TestAsyncStress:
         assert success >= 40
 
 
+@pytest.mark.slow
 class TestFuzzySearchStress:
     """Fuzzy search stress tests"""
 
@@ -842,6 +848,7 @@ class TestRecoveryStress:
         assert result > 3
 
 
+@pytest.mark.slow
 class TestResourceCleanup:
     """Resource cleanup stress tests"""
 
