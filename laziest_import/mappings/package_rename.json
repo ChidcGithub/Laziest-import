@@ -220,7 +220,7 @@
     "exasol": "exasol",
     "qdrant": "qdrant-client",
     "dolfinx": "dolfinx",
-    "sphinxcontrib": "sphinxcontrib"
+    "sphinxcontrib": "sphinx"
   },
   "auto_sync": {
     "google.protobuf": "protobuf",
