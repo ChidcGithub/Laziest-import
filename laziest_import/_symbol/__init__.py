@@ -76,6 +76,7 @@ from .._fuzzy import (
 
 # ── Symbol index lock ──────────────────────────────────────
 _SYMBOL_INDEX_LOCK = threading.Lock()
+_SYMBOL_INDEX_BUILDING = False
 
 # Backward-compatible re-exports of config state (previously direct imports)
 _SYMBOL_CACHE = _config._SYMBOL_CACHE
@@ -260,6 +261,7 @@ def _should_skip_module(module_name: str) -> bool:
         ".git", ".hg", ".svn",
         "pytest", "py.test", "sphinx", "mkdocs",
         "laziest_import", "laziest-import",
+        "demo",
     }
 
     if _config._MODULE_SKIP_CONFIG.get("skip_test_modules", True):
@@ -580,53 +582,62 @@ def _scan_index_modules(
 
 
 def _build_symbol_index(force: bool = False, max_modules: int = 500, timeout: float = 60.0) -> None:
+    global _SYMBOL_INDEX_BUILDING
+
     if not _should_rebuild_index(force):
         return
 
+    if _SYMBOL_INDEX_BUILDING:
+        return
+
     with _SYMBOL_INDEX_LOCK:
-        import laziest_import._config as config
-
-        if config._SYMBOL_INDEX_BUILT and not force:
-            return
-
-        start_time = time.perf_counter()
-        existing_tracked = _load_tracked_packages()
-        stdlib_cache = _load_symbol_index("stdlib")
-        third_party_cache = _load_symbol_index("third_party")
-
-        if not force and (stdlib_cache or third_party_cache) and _try_load_cached_index(
-            stdlib_cache, third_party_cache, existing_tracked, start_time
-        ):
-            return
-
-        _config._CACHE_STATS["symbol_misses"] += 1
-        _config._SYMBOL_CACHE.clear()
-        _config._STDLIB_SYMBOL_CACHE.clear()
-        _config._THIRD_PARTY_SYMBOL_CACHE.clear()
-
-        depth = _config._SYMBOL_SEARCH_CONFIG["search_depth"]
-        known_modules = _build_known_modules_cache()
-
-        if _config._DEBUG_MODE:
-            logging.info(f"[laziest-import] Building symbol index for {len(known_modules)} modules...")
-
-        sorted_modules = sorted(
-            known_modules,
-            key=lambda m: (0 if m.split(".")[0] in _PRIORITY_PACKAGES else 1, m),
-        )
-
+        _SYMBOL_INDEX_BUILDING = True
         try:
-            scanned_stdlib, scanned_third_party, timed_out = _scan_index_modules(
-                sorted_modules, start_time, max_modules, timeout, depth,
-            )
-            build_success = True
-        except Exception as e:
-            if _config._DEBUG_MODE:
-                logging.warning(f"[laziest-import] Symbol index build failed: {e}")
-            build_success = False
+            import laziest_import._config as config
 
-        if build_success:
-            _finalize_symbol_build(start_time, scanned_stdlib, scanned_third_party, timed_out)
+            if config._SYMBOL_INDEX_BUILT and not force:
+                return
+
+            start_time = time.perf_counter()
+            existing_tracked = _load_tracked_packages()
+            stdlib_cache = _load_symbol_index("stdlib")
+            third_party_cache = _load_symbol_index("third_party")
+
+            if not force and (stdlib_cache or third_party_cache) and _try_load_cached_index(
+                stdlib_cache, third_party_cache, existing_tracked, start_time
+            ):
+                return
+
+            _config._CACHE_STATS["symbol_misses"] += 1
+            _config._SYMBOL_CACHE.clear()
+            _config._STDLIB_SYMBOL_CACHE.clear()
+            _config._THIRD_PARTY_SYMBOL_CACHE.clear()
+
+            depth = _config._SYMBOL_SEARCH_CONFIG["search_depth"]
+            known_modules = _build_known_modules_cache()
+
+            if _config._DEBUG_MODE:
+                logging.info(f"[laziest-import] Building symbol index for {len(known_modules)} modules...")
+
+            sorted_modules = sorted(
+                known_modules,
+                key=lambda m: (0 if m.split(".")[0] in _PRIORITY_PACKAGES else 1, m),
+            )
+
+            try:
+                scanned_stdlib, scanned_third_party, timed_out = _scan_index_modules(
+                    sorted_modules, start_time, max_modules, timeout, depth,
+                )
+                build_success = True
+            except Exception as e:
+                if _config._DEBUG_MODE:
+                    logging.warning(f"[laziest-import] Symbol index build failed: {e}")
+                build_success = False
+
+            if build_success:
+                _finalize_symbol_build(start_time, scanned_stdlib, scanned_third_party, timed_out)
+        finally:
+            _SYMBOL_INDEX_BUILDING = False
 
 
 # ── Signature comparison ────────────────────────────────────
@@ -671,6 +682,9 @@ def _fuzzy_match_symbol(name_lower: str, cached_lower: str) -> bool:
     """Check if cached_lower fuzzy-matches name_lower for symbol search."""
     if cached_lower == name_lower or (name_lower in cached_lower and len(name_lower) >= 5):
         return True
+    # Skip expensive Levenshtein for very long names
+    if len(name_lower) > 100 or len(cached_lower) > 100:
+        return False
     distance = _levenshtein_distance(name_lower, cached_lower)
     min_len = min(len(name_lower), len(cached_lower))
     if min_len <= 3:
@@ -689,11 +703,23 @@ def _search_symbol_fuzzy(
     max_results: Optional[int] = None,
 ) -> list[SearchResult]:
     """Fuzzy search for symbol name not in cache."""
-    matches = [
-        cached_name
-        for cached_name in _config._SYMBOL_CACHE
-        if _fuzzy_match_symbol(name_lower, cached_name.lower())
-    ]
+    name_len = len(name_lower)
+    matches = []
+    for cached_name in _config._SYMBOL_CACHE:
+        cached_lower = cached_name.lower()
+        # Quick length pre-filter before expensive fuzzy match
+        cached_len = len(cached_lower)
+        min_len = min(name_len, cached_len)
+        if min_len <= 3:
+            max_dist = 0
+        elif min_len <= 5:
+            max_dist = 1
+        else:
+            max_dist = min(2, min_len // 3)
+        if abs(name_len - cached_len) > max_dist:
+            continue
+        if _fuzzy_match_symbol(name_lower, cached_lower):
+            matches.append(cached_name)
     if not matches:
         return []
 
@@ -730,6 +756,43 @@ def search_symbol(
 
     if name in _config._SYMBOL_CACHE:
         return _search_symbol_direct(name, symbol_type, signature, max_results)
+
+    # Fallback: check if the name matches a known module
+    known_modules = _build_known_modules_cache()
+    results: list[SearchResult] = []
+    if name in known_modules:
+        results.append(SearchResult(
+            module_name=name,
+            symbol_name=name,
+            symbol_type="module",
+            signature=None,
+            score=1.0,
+        ))
+    else:
+        # Fuzzy match module names
+        name_lower = name.lower()
+        for mod_name in known_modules:
+            mod_lower = mod_name.lower()
+            if name_lower == mod_lower:
+                results.append(SearchResult(
+                    module_name=mod_name,
+                    symbol_name=mod_name,
+                    symbol_type="module",
+                    signature=None,
+                    score=0.9,
+                ))
+            elif name_lower in mod_lower or _fuzzy_match_symbol(name_lower, mod_lower):
+                results.append(SearchResult(
+                    module_name=mod_name,
+                    symbol_name=mod_name,
+                    symbol_type="module",
+                    signature=None,
+                    score=0.7,
+                ))
+
+    if results:
+        max_res = max_results or _config._SYMBOL_SEARCH_CONFIG["max_results"]
+        return sorted(results, key=lambda x: -x.score)[:max_res]
 
     return _search_symbol_fuzzy(name, name.lower(), symbol_type, signature, max_results)
 
@@ -846,17 +909,22 @@ def _check_symbol_misspelling(name: str) -> Optional[str]:
 
 def _fuzzy_symbol_fallback(name: str, symbol_type: Optional[str] = None) -> list[SearchResult]:
     name_lower = name.lower()
+    name_len = len(name_lower)
     fuzzy_matches: list[tuple[int, str]] = []
     for cached_name in _config._SYMBOL_CACHE:
         cached_lower = cached_name.lower()
-        dist = _levenshtein_distance(name_lower, cached_lower)
-        min_len = min(len(name_lower), len(cached_lower))
+        cached_len = len(cached_lower)
+        min_len = min(name_len, cached_len)
         if min_len <= 3:
             max_dist = 0
         elif min_len <= 5:
             max_dist = 1
         else:
             max_dist = min(2, min_len // 3)
+        # Skip if length difference exceeds max allowed distance
+        if abs(name_len - cached_len) > max_dist:
+            continue
+        dist = _levenshtein_distance(name_lower, cached_lower)
         if dist <= max_dist:
             fuzzy_matches.append((dist, cached_name))
 
