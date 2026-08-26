@@ -534,6 +534,30 @@ def _finalize_symbol_build(
         logging.info("[laziest-import] Symbol index build timed out with no data collected")
 
 
+def _scan_module_symbols_auto(
+    module_name: str,
+    depth: int = 1,
+    _scanned: Optional[set[str]] = None,
+    _current_depth: int = 0,
+) -> dict[str, list[tuple[str, str, Optional[str]]]]:
+    """Scan module symbols, preferring zero-side-effect .pyi stub parsing.
+
+    Falls back to import-based scanning when no usable stub exists.
+    """
+    if _config._STUB_INDEX_CONFIG.get("enabled", True):
+        try:
+            from .._stub_index import _scan_stub_symbols
+
+            stub_symbols = _scan_stub_symbols(module_name)
+            if stub_symbols:
+                _config._CACHE_STATS["stub_scanned_modules"] += 1
+                return stub_symbols
+        except Exception as e:  # noqa: BLE001 — stub path must never break the build
+            if _config._DEBUG_MODE:
+                logging.debug(f"[laziest-import] Stub scan failed for {module_name}: {e}")
+    return _scan_module_symbols(module_name, depth, _scanned, _current_depth)
+
+
 def _should_rebuild_index(force: bool) -> bool:
     if not _config.is_initialized() and not force:
         return False
@@ -567,7 +591,7 @@ def _scan_index_modules(
             continue
 
         try:
-            symbols = _scan_module_symbols(module_name, depth)
+            symbols = _scan_module_symbols_auto(module_name, depth)
             is_stdlib = _is_stdlib_module(module_name)
             _merge_symbols_into_cache(symbols, is_stdlib, module_name)
 
@@ -1416,7 +1440,7 @@ def _scan_incremental_modules(packages_to_scan: set[str], start_time: float, tim
             continue
 
         try:
-            symbols = _scan_module_symbols(module_name, depth)
+            symbols = _scan_module_symbols_auto(module_name, depth)
             is_stdlib = _is_stdlib_module(module_name)
             _merge_symbols_into_cache(symbols, is_stdlib, module_name)
             scanned_count += 1
@@ -1519,6 +1543,7 @@ def get_symbol_cache_info() -> dict[str, Any]:
         "symbol_count": len(_config._SYMBOL_CACHE),
         "stdlib_symbols": len(_config._STDLIB_SYMBOL_CACHE),
         "third_party_symbols": len(_config._THIRD_PARTY_SYMBOL_CACHE),
+        "stub_scanned_modules": _config._CACHE_STATS.get("stub_scanned_modules", 0),
         "stdlib_built": config._STDLIB_CACHE_BUILT,
         "third_party_built": config._THIRD_PARTY_CACHE_BUILT,
         "confirmed_mappings": len(_config._CONFIRMED_MAPPINGS),

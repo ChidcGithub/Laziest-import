@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1.0] - 2026-08-26
+
+### Added
+- **Type-stub (.pyi) symbol indexing**: the index builder now parses `.pyi` stub files first and only falls back to import-and-inspect scanning when no usable stub exists
+  - Zero import side effects — modules are never executed during index building (safe against hostile code, works even when `__init__.py` would crash)
+  - Order-of-magnitude faster on heavy packages (e.g. matplotlib: ~4ms stub parse vs ~160ms import scan)
+  - Precise type signatures extracted for free (`(host: str, port: int = 5432) -> bool`)
+  - Handles conditional guards (`if sys.version_info ...`, `try/except`) and overload deduplication
+  - Toggle via `_config._STUB_INDEX_CONFIG["enabled"]`; stats exposed as `stub_scanned_modules` in `get_symbol_cache_info()`
+
 ## [1.0.0.7] - 2026-08-26
 
 ### Fixed

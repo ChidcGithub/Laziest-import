@@ -69,6 +69,7 @@ def reset_all() -> None:
     c._CACHE_STATS["module_misses"] = 0
     c._CACHE_STATS["last_build_time"] = 0.0
     c._CACHE_STATS["build_count"] = 0
+    c._CACHE_STATS["stub_scanned_modules"] = 0
 
     # Rebuild symbol index after clearing cache
     try:

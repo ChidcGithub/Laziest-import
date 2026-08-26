@@ -179,7 +179,15 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ## What's New
 
-### v1.0.0.7 (Current)
+### v1.0.1.0 (Current)
+
+- **Type-stub (.pyi) symbol indexing** — the index builder now parses `.pyi` stub files first, falling back to import-based scanning only when no stub exists:
+  - Zero import side effects: modules are never executed during index building
+  - Much faster on heavy packages (matplotlib: ~4ms vs ~160ms)
+  - Precise type signatures extracted for free
+  - Toggle: `_config._STUB_INDEX_CONFIG["enabled"]`; stats: `get_symbol_cache_info()["stub_scanned_modules"]`
+
+### v1.0.0.7
 
 - **Safety**: auto-install fallback now respects the `enabled` switch (default off) — no unexpected pip prompts or subprocesses on import failure
 - **Correctness**: module priorities now loaded from `mappings/priorities.json`; incremental symbol builds no longer overwrite a complete index with partial data; single exact-match symbols resolve reliably

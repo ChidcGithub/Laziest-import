@@ -81,17 +81,25 @@ def _compare_versions(v1: str, v2: str) -> int:  # noqa: PLR0911 — comparison 
         is_num1, is_num2 = part1.isdigit(), part2.isdigit()
         if is_num1 and is_num2:
             n1n, n2n = int(part1), int(part2)
-            if n1n < n2n: return -1
-            if n1n > n2n: return 1
+            if n1n < n2n:
+                return -1
+            if n1n > n2n:
+                return 1
             continue
-        if is_num1: return -1
-        if is_num2: return 1
+        if is_num1:
+            return -1
+        if is_num2:
+            return 1
         r1 = _PREORDER.get(part1.lower(), 3)
         r2 = _PREORDER.get(part2.lower(), 3)
-        if r1 < r2: return -1
-        if r1 > r2: return 1
-    if len(p1_parts) < len(p2_parts): return -1
-    if len(p1_parts) > len(p2_parts): return 1
+        if r1 < r2:
+            return -1
+        if r1 > r2:
+            return 1
+    if len(p1_parts) < len(p2_parts):
+        return -1
+    if len(p1_parts) > len(p2_parts):
+        return 1
     return 0
 
 
@@ -230,6 +238,7 @@ _CACHE_STATS: dict[str, Any] = {
     "module_misses": 0,
     "last_build_time": 0.0,
     "build_count": 0,
+    "stub_scanned_modules": 0,
 }
 
 # Hooks
@@ -274,6 +283,13 @@ _THIRD_PARTY_SYMBOL_CACHE: dict[str, list[tuple[str, str, Optional[str]]]] = {}
 _SYMBOL_INDEX_BUILT: bool = False
 _STDLIB_CACHE_BUILT: bool = False
 _THIRD_PARTY_CACHE_BUILT: bool = False
+
+# Type-stub (.pyi) based index scanning
+_STUB_INDEX_CONFIG: dict[str, Any] = {
+    "enabled": True,
+    "max_file_size_mb": 4,
+    "max_symbols_per_module": 1000,
+}
 
 # Confirmed mappings
 _CONFIRMED_MAPPINGS: dict[str, str] = {}

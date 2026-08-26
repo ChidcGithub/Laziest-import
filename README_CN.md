@@ -133,7 +133,15 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 
 --- ## 最新更新
 
-### v1.0.0.7（当前）
+### v1.0.1.0（当前）
+
+- **Type-stub (.pyi) 符号索引**——索引构建器现在优先解析 `.pyi` 存根文件，无存根时才回退到导入扫描：
+  - 零导入副作用：构建索引期间模块代码绝不执行
+  - 大型包速度大幅提升（matplotlib：约 4ms 对比约 160ms）
+  - 免费获得精确类型签名
+  - 开关：`_config._STUB_INDEX_CONFIG["enabled"]`；统计：`get_symbol_cache_info()["stub_scanned_modules"]`
+
+### v1.0.0.7
 
 - **安全性**：自动安装回退现在遵守 `enabled` 开关（默认关闭）——导入失败不再意外弹出 pip 提示或启动子进程
 - **正确性**：模块优先级现在从 `mappings/priorities.json` 加载；增量符号构建不再用残缺数据覆盖完整索引；单一精确匹配符号可稳定解析
