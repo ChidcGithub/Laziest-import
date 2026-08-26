@@ -129,6 +129,7 @@ class BenchmarkRunner:
                 logging.debug(f"Benchmark warmup iteration failed: {e}")
 
         # Actual measurements
+        failed = 0
         for _ in range(iterations):
             if self.use_gc:
                 gc.collect()
@@ -137,9 +138,16 @@ class BenchmarkRunner:
             try:
                 func()
             except Exception as e:
-                logging.debug(f"Benchmark measurement iteration failed: {e}")
+                # A failing call measures exception overhead, not the workload —
+                # exclude it from samples instead of skewing the average.
+                failed += 1
+                logging.warning(f"Benchmark iteration failed ({e}); sample excluded")
+                continue
             elapsed = time.perf_counter() - start
             times.append(elapsed)
+
+        if failed == iterations:
+            logging.warning(f"All {iterations} benchmark iterations failed")
 
         return times
 
@@ -215,13 +223,14 @@ class BenchmarkRunner:
         Returns:
             BenchmarkResult with timing data
         """
-        # Remove module from cache if present
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-
         def do_import():
-            if module_name in sys.modules:
-                del sys.modules[module_name]
+            # Remove the module AND all its submodules from sys.modules;
+            # otherwise pkg.sub entries from the first import stay cached and
+            # later iterations measure warm-cache hits, understating cold cost.
+            for mod_key in [
+                k for k in sys.modules if k == module_name or k.startswith(module_name + ".")
+            ]:
+                del sys.modules[mod_key]
             importlib.import_module(module_name)
 
         return self.benchmark_function(
@@ -333,7 +342,7 @@ class BenchmarkRunner:
                 comparison[f"{r1.name} vs {r2.name}"] = speedup
 
                 if speedup < 0.9:
-                    recommendations.append(f"{r2.name} is {1 / speedup:.2f}x faster than {r1.name}")
+                    recommendations.append(f"{r1.name} is {1 / speedup:.2f}x faster than {r2.name}")
 
         # Check for slow benchmarks
         for r in results:

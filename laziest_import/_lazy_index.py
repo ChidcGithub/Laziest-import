@@ -7,7 +7,9 @@ import threading
 import time
 from typing import Callable, Optional
 
-from ._config import _DEBUG_MODE, _SYMBOL_INDEX_BUILT
+# Access flags via the module at call time: `from ._config import X` copies
+# values at import time, so a rebuilt flag would never be observed here.
+from . import _config
 
 _BACKGROUND_TIMEOUT: float = 60.0
 
@@ -30,8 +32,11 @@ class BackgroundIndexBuilder:
         if self._initialized:  # type: ignore[has-type]
             return
         self._thread: Optional[threading.Thread] = None
-        self._stop_event = threading.Event()
+        self._state_lock = threading.Lock()
+        self._done_event = threading.Event()
+        self._stop_requested = threading.Event()
         self._is_building = False
+        self._watchdog: Optional[threading.Timer] = None
         self._progress_callback: Optional[Callable[[str, float], None]] = None
         self._progress_state: str = "idle"
         self._progress_value: float = 0.0
@@ -44,26 +49,47 @@ class BackgroundIndexBuilder:
         progress_callback: Optional[Callable[[str, float], None]] = None,
     ) -> None:
         """Start background index building."""
-        if self._is_building:
-            return
+        with self._state_lock:
+            if self._is_building:
+                return
 
-        if _SYMBOL_INDEX_BUILT:
-            return
+            if _config._SYMBOL_INDEX_BUILT:
+                return
 
-        self._stop_event.clear()
-        self._is_building = True
+            self._is_building = True
+
+        self._done_event.clear()
+        self._stop_requested.clear()
         self._progress_callback = progress_callback
+
+        # Watchdog: threads cannot be killed, so on timeout we release the
+        # building flag so future builds can proceed; the abandoned daemon
+        # thread finishes harmlessly (index writes are serialized by locks).
+        if timeout and timeout > 0:
+            self._watchdog = threading.Timer(timeout, self._on_timeout)
+            self._watchdog.daemon = True
+            self._watchdog.start()
 
         self._thread = threading.Thread(
             target=self._build_worker,
-            args=(build_func, timeout),
+            args=(build_func,),
             daemon=True,
             name="laziest-import-index-builder",
         )
         self._thread.start()
 
-        if _DEBUG_MODE:
+        if _config._DEBUG_MODE:
             logging.info("[laziest-import] Background index building started")
+
+    def _on_timeout(self) -> None:
+        with self._state_lock:
+            still_building = self._is_building
+            self._is_building = False
+        if still_building:
+            if _config._DEBUG_MODE:
+                logging.warning("[laziest-import] Background index build timed out")
+            self._safe_progress_callback("error", -1.0)
+            self._done_event.set()
 
     def _safe_progress_callback(self, state: str, value: float) -> None:
         """Safely call progress callback, catching and logging any errors."""
@@ -74,60 +100,72 @@ class BackgroundIndexBuilder:
         try:
             self._progress_callback(state, value)
         except Exception as e:
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.warning(f"[laziest-import] Progress callback error: {e}")
 
-    def _build_worker(self, build_func: Callable[[], bool], timeout: float) -> None:
+    def _build_worker(self, build_func: Callable[[], bool]) -> None:
         """Worker thread for building index."""
         start_time = time.perf_counter()
         success = False
 
         try:
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.info("[laziest-import] Starting index build in background...")
 
             self._safe_progress_callback("started", 0.0)
+
+            if self._stop_requested.is_set():
+                self._safe_progress_callback("failed", 0.0)
+                return
+
             success = build_func()
             elapsed = time.perf_counter() - start_time
 
             if success:
-                if _DEBUG_MODE:
+                if _config._DEBUG_MODE:
                     logging.info(
                         f"[laziest-import] Background index build completed in {elapsed:.2f}s"
                     )
                 self._safe_progress_callback("completed", elapsed)
             else:
-                if _DEBUG_MODE:
+                if _config._DEBUG_MODE:
                     logging.info(
                         "[laziest-import] Background index build failed, will retry on demand"
                     )
                 self._safe_progress_callback("failed", elapsed)
 
         except Exception as e:
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.warning(f"[laziest-import] Background index build error: {e}")
             self._safe_progress_callback("error", time.perf_counter() - start_time)
         finally:
-            self._is_building = False
-            self._stop_event.set()
+            with self._state_lock:
+                self._is_building = False
+            if self._watchdog is not None:
+                self._watchdog.cancel()
+            self._done_event.set()
 
     def stop(self) -> None:
-        """Stop background building."""
-        self._stop_event.set()
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=1.0)
-        self._is_building = False
+        """Stop background building (cooperative — the current build_func call
+        finishes; no new work starts). State cleanup belongs to the worker,
+        never to stop(), to avoid double builds racing on a stale flag."""
+        self._stop_requested.set()
+        thread = self._thread
+        if thread and thread.is_alive():
+            thread.join(timeout=1.0)
 
     def is_building(self) -> bool:
         """Check if background building is in progress."""
-        return self._is_building
+        with self._state_lock:
+            return self._is_building
 
     def wait_for_completion(self, timeout: Optional[float] = None) -> bool:
-        """Wait for background building to complete."""
-        if not self._is_building:
+        """Wait for background building to complete (or time out)."""
+        if not self.is_building():
             return True
 
-        return self._stop_event.wait(timeout=timeout)
+        self._done_event.wait(timeout=timeout)
+        return not self.is_building()
 
     def get_progress(self) -> dict[str, float]:
         """Get current build progress state.
@@ -186,7 +224,7 @@ def start_background_index_build(
     if builder.is_building():
         return False
 
-    if _SYMBOL_INDEX_BUILT:
+    if _config._SYMBOL_INDEX_BUILT:
         return False
 
     builder.start(

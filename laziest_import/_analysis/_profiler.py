@@ -83,11 +83,12 @@ class ImportProfiler:
             self._active = False
 
     def _get_current_memory(self) -> int:
-        """Get current memory usage in bytes via tracemalloc."""
+        """Get current traced memory in bytes via tracemalloc."""
         try:
             if tracemalloc.is_tracing():
-                _snapshot = tracemalloc.take_snapshot()
-                return _snapshot.statistics("lineno")[0].size if _snapshot else 0
+                # get_traced_memory() returns (current, peak) totals —
+                # take_snapshot().statistics()[0].size is a single allocation site.
+                return tracemalloc.get_traced_memory()[0]
         except Exception:
             if _DEBUG_MODE:
                 logging.warning("[laziest-import] Failed to get current memory via tracemalloc")

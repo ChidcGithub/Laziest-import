@@ -133,7 +133,17 @@ relu = lazy.F.relu(tensor)          # F -> torch.nn.functional
 
 --- ## 最新更新
 
-### v1.0.0.6（当前）
+### v1.0.0.7（当前）
+
+- **安全性**：自动安装回退现在遵守 `enabled` 开关（默认关闭）——导入失败不再意外弹出 pip 提示或启动子进程
+- **正确性**：模块优先级现在从 `mappings/priorities.json` 加载；增量符号构建不再用残缺数据覆盖完整索引；单一精确匹配符号可稳定解析
+- **并发**：共享缓存快照迭代消除后台构建期间的 `RuntimeError`；`BackgroundIndexBuilder` 的竞态/停止/超时语义修复
+- **持久化**：JSON 缓存原子写入（临时文件 + 替换）；损坏容忍的缓存加载；缓存大小统计与清理真正生效
+- **Windows/中文环境**：pip 输出强制 UTF-8 解码；缓存文件被其他进程占用时的删除保护
+- **基准测试与剖析器**：失败的迭代不计入计时、运行间清除子模块缓存、内存剖析改用 `tracemalloc.get_traced_memory()`
+- 另有 10+ 项小修复：代理下划线探测防护、别名重映射/重载一致性、异步重试接线、钩子错误日志记录、依赖树准确性
+
+### v1.0.0.6
 
 - **全面的 Bug 修复**：修复 8 个关键 bug，包括 `module_access_counts` 重置、`LazySymbol` None 值无限重导入、hash/eq 契约违反、`_scan_path_modules` 仅返回第一个路径、`reset_all()` 错误模块引用、`get_symbol_help()` 损坏的属性访问等
 - **线程安全**：为 `_ALIAS_MAP` 写入、负缓存、`invalidate_package_cache` 和 hook 移除添加了锁保护

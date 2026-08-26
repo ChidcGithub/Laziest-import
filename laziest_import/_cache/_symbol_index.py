@@ -5,6 +5,7 @@ Symbol index persistence for laziest-import.
 import gzip
 import json
 import logging
+import os
 import sys
 import time
 from dataclasses import dataclass
@@ -152,8 +153,11 @@ def _save_symbol_index(
                 return True
             # Fall back to uncompressed if compression fails
 
-        with open(cache_path, "w", encoding="utf-8") as f:
+        # Atomic write (tmp + os.replace) so a crash can't leave a half-written index
+        tmp_path = cache_path.with_suffix(".json.tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(cache.to_dict(), f, indent=2)
+        os.replace(tmp_path, cache_path)
 
         # Remove compressed version if exists (switching from compressed to uncompressed)
         compressed_path = _get_compressed_path(cache_path)
@@ -207,13 +211,21 @@ def _validate_cache(cache: SymbolIndexCache, cache_type: str) -> bool:
         return False
 
     current_py = f"{sys.version_info.major}.{sys.version_info.minor}"
-    if cache.python_version and not cache.python_version.startswith(current_py):
-        if _DEBUG_MODE:
-            logging.info(
-                f"[laziest-import] Python version changed: "
-                f"{cache.python_version} -> {current_py}, will rebuild"
-            )
-        return False
+    if cache.python_version:
+        # Compare (major, minor) tuples — string startswith would wrongly match
+        # e.g. cache "3.1" against runtime "3.11".
+        try:
+            cached_py = tuple(int(p) for p in cache.python_version.split(".")[:2])
+            current_tuple = (sys.version_info.major, sys.version_info.minor)
+        except ValueError:
+            cached_py, current_tuple = None, None
+        if cached_py != current_tuple:
+            if _DEBUG_MODE:
+                logging.info(
+                    f"[laziest-import] Python version changed: "
+                    f"{cache.python_version} -> {current_py}, will rebuild"
+                )
+            return False
 
     ttl = _CACHE_CONFIG.get("symbol_index_ttl", 86400)
     if cache_type == "stdlib":
@@ -251,8 +263,10 @@ def _save_tracked_packages() -> bool:
     """Save tracked packages information."""
     try:
         path = _get_tracked_packages_path()
-        with open(path, "w", encoding="utf-8") as f:
+        tmp_path = path.with_suffix(".json.tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(_TRACKED_PACKAGES, f, indent=2)
+        os.replace(tmp_path, path)
         return True
     except Exception as e:
         if _DEBUG_MODE:

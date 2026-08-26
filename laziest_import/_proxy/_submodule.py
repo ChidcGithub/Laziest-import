@@ -78,8 +78,11 @@ class LazySubmodule:
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
+            # Answer from slot metadata without triggering a real import
+            if name == "__name__":
+                return object.__getattribute__(self, "_full_name")
+
             allowed_dunder = {
-                "__name__",
                 "__file__",
                 "__path__",
                 "__package__",

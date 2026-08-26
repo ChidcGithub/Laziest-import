@@ -179,7 +179,17 @@ relu = lazy.F.relu(tensor) # F -> torch.nn.functional
 
 ## What's New
 
-### v1.0.0.6 (Current)
+### v1.0.0.7 (Current)
+
+- **Safety**: auto-install fallback now respects the `enabled` switch (default off) — no unexpected pip prompts or subprocesses on import failure
+- **Correctness**: module priorities now loaded from `mappings/priorities.json`; incremental symbol builds no longer overwrite a complete index with partial data; single exact-match symbols resolve reliably
+- **Concurrency**: snapshot iteration over shared caches eliminates `RuntimeError` during background index builds; `BackgroundIndexBuilder` race/stop/timeout semantics fixed
+- **Persistence**: atomic (tmp + replace) JSON cache writes; corrupt-tolerant cache loading; cache size accounting and cleanup actually work
+- **Windows/CJK**: pip output forced to UTF-8 decoding; file-unlink protection when caches are held by other processes
+- **Benchmarks & Profiler**: failed iterations excluded from timings, submodule caches cleared between runs, memory profiling uses `tracemalloc.get_traced_memory()`
+- Plus 10+ smaller fixes: underscore-probe guards on proxies, alias remap/reload consistency, async retry wiring, hook error logging, dependency-tree accuracy
+
+### v1.0.0.6
 
 - **Comprehensive Bug Fixes**: 8 critical bugs fixed including `module_access_counts` reset, `LazySymbol` None-value infinite re-import, hash/eq contract violation, `_scan_path_modules` returning after first `sys.path` entry, `reset_all()` wrong module reference, and `get_symbol_help()` broken attribute access
 - **Thread Safety**: Lock protection added to `_ALIAS_MAP` writes, negative cache, `invalidate_package_cache`, and hook removal

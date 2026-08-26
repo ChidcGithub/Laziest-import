@@ -2,14 +2,10 @@
 LazyProxy class for intelligent module recognition.
 """
 
-from threading import Lock
-
 from .. import _config
 from .._fuzzy import _search_module
 from ._factory import _get_lazy_module
 from ._module import LazyModule
-
-_ALIAS_WRITE_LOCK = Lock()
 
 
 class LazyProxy:
@@ -34,13 +30,17 @@ class LazyProxy:
 
     def __getattr__(self, name: str) -> LazyModule:
         """Intercept attribute access and return a LazyModule with auto-correction."""
+        # IPython/copy/pickle probe private names on instances; never search for them
+        if name.startswith("_"):
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
         if name in _config._ALIAS_MAP:
             return _get_lazy_module(name)
 
         if _config._AUTO_SEARCH_ENABLED:
             found = _search_module(name)
             if found:
-                with _ALIAS_WRITE_LOCK:
+                with _config._ALIASES_WRITE_LOCK:
                     _config._ALIAS_MAP[name] = found
                 return _get_lazy_module(name)
 

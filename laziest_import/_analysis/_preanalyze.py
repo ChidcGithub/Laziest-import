@@ -214,7 +214,9 @@ class _NameVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        if node.module:
+        # Relative imports (level > 0) resolve inside the local package —
+        # their names must not be predicted as top-level third-party modules.
+        if node.module and node.level == 0:
             self.imported_modules.add(node.module.split(".")[0])
         for alias in node.names:
             name = alias.asname or alias.name

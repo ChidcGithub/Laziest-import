@@ -114,23 +114,31 @@ class LazyModule:
         found_name = _search_module(module_name.split(".", maxsplit=1)[0])
         if not found_name or found_name == module_name:
             return None
+        # If the found module is a strict prefix of what was requested (e.g. asked
+        # for 'foo.bar', search resolved 'foo'), the top-level package exists but
+        # the submodule does not. Substituting a different module silently would
+        # be wrong — let the ImportError propagate.
+        if module_name.startswith(found_name + "."):
+            return None
         try:
             start_time = time.perf_counter()
             module = LazyModule._do_import_with_retry(found_name, config)
             object.__setattr__(self, "_module_name", found_name)
             object.__setattr__(self, "_cached_module", module)
             object.__setattr__(self, "_auto_searched", True)
-            config._ALIAS_MAP[alias] = found_name
+            with _config._ALIASES_WRITE_LOCK:
+                config._ALIAS_MAP[alias] = found_name
 
             elapsed = time.perf_counter() - start_time
-            config._IMPORT_STATS.total_imports += 1
-            config._IMPORT_STATS.total_time += elapsed
-            config._IMPORT_STATS.module_times[found_name] = elapsed
+            self._record_import_stats(found_name, alias, elapsed, 0, config)
             return module
         except ImportError:
             return None
 
     def _auto_install_fallback(self, module_name: str, alias: str, config: Any, start_time: float) -> Any:
+        if not config._AUTO_INSTALL_CONFIG.get("enabled", False):
+            return None
+
         from .._install import (
             _get_pip_package_name,
             _install_package_sync,
@@ -171,15 +179,20 @@ class LazyModule:
 
     @staticmethod
     def _run_hooks(hooks: list, module_name: str, config: Any, module: Any = None) -> None:
-        for hook in hooks:
+        # Iterate a snapshot: a hook may add/remove hooks (or another thread may).
+        for hook in list(hooks):
             try:
                 if module is None:
                     hook(module_name)
                 else:
                     hook(module_name, module)
             except Exception as e:
-                if config._DEBUG_MODE:
-                    logging.warning(f"Import hook failed for {module_name}: {e}")
+                # Never let a user callback break the import pipeline,
+                # but don't swallow it silently either.
+                logging.warning(
+                    f"[laziest-import] Import hook failed for {module_name}: {e}",
+                    exc_info=True,
+                )
 
     def _get_module(self) -> Any:
         c = _config
@@ -241,8 +254,12 @@ class LazyModule:
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
+            # Answer from slot metadata without triggering a real import —
+            # traceback formatting, logging and pytest probe this constantly.
+            if name == "__name__":
+                return object.__getattribute__(self, "_module_name")
+
             allowed_dunder = {
-                "__name__",
                 "__file__",
                 "__path__",
                 "__package__",

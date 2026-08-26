@@ -60,10 +60,6 @@ class LazySymbol:
         object.__setattr__(self, "_cached_obj", obj)
         object.__setattr__(self, "_loaded", True)
 
-        with c._SYMBOL_CACHE_LOCK:
-            if symbol_name not in c._SYMBOL_CACHE:
-                c._SYMBOL_CACHE[symbol_name] = []
-
         c._IMPORT_STATS.total_imports += 1
         c._IMPORT_STATS.module_access_counts[module_name] = (
             c._IMPORT_STATS.module_access_counts.get(module_name, 0) + 1
@@ -75,6 +71,10 @@ class LazySymbol:
         return obj
 
     def __getattr__(self, name: str) -> Any:
+        # Private/dunder probes (copy, pickle, IPython, inspect, functools.wraps)
+        # must not force a real module import — fail fast instead.
+        if name.startswith("_"):
+            raise AttributeError(f"{type(self).__name__} object has no attribute '{name}'")
         obj = self._get_object()
         return getattr(obj, name)
 

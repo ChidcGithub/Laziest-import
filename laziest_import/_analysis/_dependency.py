@@ -250,10 +250,17 @@ class DependencyAnalyzer:
                 if name.startswith("_"):
                     continue
                 attr = getattr(mod, name)
-                if hasattr(attr, "__module__") and attr.__module__:
-                    full_name = f"{module_name}.{name}"
-                    if full_name not in self._visited:
-                        submodules.append(name)
+                # Only attributes actually defined in this module are its
+                # submodules — otherwise every re-exported class/function
+                # (ndarray, DataFrame, ...) becomes a bogus child node.
+                attr_module = getattr(attr, "__module__", None)
+                if not attr_module:
+                    continue
+                if attr_module != module_name and not attr_module.startswith(module_name + "."):
+                    continue
+                full_name = f"{module_name}.{name}"
+                if full_name not in self._visited:
+                    submodules.append(name)
         except Exception:
             if _DEBUG_MODE:
                 logging.warning(f"[laziest-import] Failed to get submodules for {module_name}")

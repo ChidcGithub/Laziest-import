@@ -26,9 +26,18 @@ _BLOCKED_INSTALL_ARGS: frozenset[str] = frozenset({
     "--no-verify",
 })
 
+# Short forms of the blocked long options (pip accepts both).
+_BLOCKED_INSTALL_SHORT_ARGS: frozenset[str] = frozenset({
+    "-f",  # --find-links
+    "-i",  # --index-url
+    "-c",  # --constraint
+    "-r",  # --requirement
+    "-e",  # --editable
+})
+
 
 def _validate_install_args(package_name: Optional[str], index: Optional[str], extra_args: Optional[list[str]]) -> None:
-    if package_name and package_name.startswith(("-", "git+", "http", ".")):
+    if package_name and package_name.casefold().startswith(("-", "git+", "http", ".")):
         raise ValueError(f"Dangerous package name blocked: '{package_name}'")
     if index:
         parsed = urlparse(index)
@@ -42,6 +51,10 @@ def _validate_install_args(package_name: Optional[str], index: Optional[str], ex
             for blocked in _BLOCKED_INSTALL_ARGS:
                 if arg.startswith(blocked):
                     raise ValueError(f"Dangerous install flag blocked: '{arg}'")
+            if arg in _BLOCKED_INSTALL_SHORT_ARGS or arg.split("=", 1)[0] in (
+                _BLOCKED_INSTALL_SHORT_ARGS
+            ):
+                raise ValueError(f"Dangerous install flag blocked: '{arg}'")
 
 
 def _get_pip_package_name(module_name: str) -> str:
@@ -90,7 +103,18 @@ def _install_package_sync(
         cmd.append("-q")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
+        # Explicit UTF-8: pip output is UTF-8 while locale.getpreferredencoding()
+        # may be GBK/cp936 etc. (e.g. Chinese Windows), which would raise
+        # UnicodeDecodeError inside communicate() and misreport success as failure.
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300,
+            check=False,
+        )
 
         if result.returncode == 0:
             return True, result.stdout or f"Successfully installed {package_name}"

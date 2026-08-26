@@ -705,7 +705,8 @@ def _search_symbol_fuzzy(
     """Fuzzy search for symbol name not in cache."""
     name_len = len(name_lower)
     matches = []
-    for cached_name in _config._SYMBOL_CACHE:
+    # Snapshot: background build thread may mutate the shared cache concurrently
+    for cached_name in list(_config._SYMBOL_CACHE):
         cached_lower = cached_name.lower()
         # Quick length pre-filter before expensive fuzzy match
         cached_len = len(cached_lower)
@@ -866,7 +867,7 @@ def _score_symbol_match(result: SearchResult, context: set[str], original_name: 
         confidence *= 1.5
         source = "context"
 
-    priority = _config._MODULE_PRIORITY.get(module, 50)
+    priority = _config._MODULE_PRIORITY.get(module, 80)
     confidence *= priority / 100
 
     if result.symbol_name != original_name:
@@ -911,7 +912,8 @@ def _fuzzy_symbol_fallback(name: str, symbol_type: Optional[str] = None) -> list
     name_lower = name.lower()
     name_len = len(name_lower)
     fuzzy_matches: list[tuple[int, str]] = []
-    for cached_name in _config._SYMBOL_CACHE:
+    # Snapshot: background build thread may mutate the shared cache concurrently
+    for cached_name in list(_config._SYMBOL_CACHE):
         cached_lower = cached_name.lower()
         cached_len = len(cached_lower)
         min_len = min(name_len, cached_len)
@@ -952,6 +954,11 @@ def _resolve_symbol_conflict(
             if best.source in ("user_pref", "context"):
                 return best
             return None
+        return best
+
+    # A single exact match is unambiguous — absolute threshold should not reject it
+    # (e.g. when the module has no explicit priority entry).
+    if second is None and best.source == "exact":
         return best
 
     if strict:
@@ -1126,7 +1133,8 @@ def _infer_context() -> set[str]:
     """Infer the current context by examining loaded modules."""
     loaded = set()
 
-    for alias, lazy_mod in _config._LAZY_MODULES.items():
+    # Snapshots: other threads may import modules / mutate proxies concurrently
+    for alias, lazy_mod in list(_config._LAZY_MODULES.items()):
         try:
             cached = object.__getattribute__(lazy_mod, "_cached_module")
             if cached is not None:
@@ -1136,7 +1144,7 @@ def _infer_context() -> set[str]:
         except (AttributeError, TypeError):
             continue
 
-    for mod_name in sys.modules:
+    for mod_name in list(sys.modules):
         if mod_name and not mod_name.startswith("_"):
             base_module = mod_name.split(".")[0]
             if (
@@ -1286,6 +1294,60 @@ def clear_shard_cache() -> None:
 # ── Incremental build ───────────────────────────────────────
 
 
+def _ensure_disk_index_loaded() -> bool:
+    """Load the on-disk index into memory caches if not already present.
+
+    Must happen BEFORE an incremental merge: saving afterwards would otherwise
+    overwrite the complete index with partial in-memory data.
+    """
+    if _config._STDLIB_CACHE_BUILT and _config._THIRD_PARTY_CACHE_BUILT:
+        return True
+    try:
+        from .._cache._symbol_index import _load_symbol_index
+
+        loaded = _try_load_cached_index(
+            None if _config._STDLIB_CACHE_BUILT else _load_symbol_index("stdlib"),
+            None if _config._THIRD_PARTY_CACHE_BUILT else _load_symbol_index("third_party"),
+            dict(_config._TRACKED_PACKAGES),
+            time.perf_counter(),
+        )
+    except Exception as e:
+        if _config._DEBUG_MODE:
+            logging.warning(f"[laziest-import] Failed to load existing index for incremental build: {e}")
+        return False
+    return bool(loaded or (_config._STDLIB_SYMBOL_CACHE or _config._THIRD_PARTY_SYMBOL_CACHE))
+
+
+def _detect_incremental_changes() -> Optional[tuple[set[str], set[str], set[str]]]:
+    """Detect changed packages and decide whether an incremental build is viable.
+
+    Returns (new, updated, removed) sets, or None when a full rebuild is needed.
+    An empty triple means "no changes" (nothing to do).
+    """
+    from .._cache._incremental import _detect_changed_packages
+
+    new_packages, updated_packages, removed_packages = _detect_changed_packages()
+
+    if not new_packages and not updated_packages and not removed_packages:
+        if _config._DEBUG_MODE:
+            logging.info("[laziest-import] No package changes detected, skip incremental build")
+        return ([], [], [])
+
+    if _config._DEBUG_MODE:
+        logging.info(
+            f"[laziest-import] Incremental update: "
+            f"{len(new_packages)} new, {len(updated_packages)} updated, {len(removed_packages)} removed"
+        )
+
+    total_changes = len(new_packages) + len(updated_packages) + len(removed_packages)
+    if total_changes > len(_config._TRACKED_PACKAGES) * 0.5:
+        if _config._DEBUG_MODE:
+            logging.info("[laziest-import] Too many changes, full rebuild recommended")
+        return None
+
+    return (new_packages, updated_packages, removed_packages)
+
+
 def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
     """Build symbol index incrementally, only scanning changed packages."""
     if not _config._INCREMENTAL_INDEX_CONFIG.get("enabled", True):
@@ -1301,26 +1363,15 @@ def _build_incremental_symbol_index(timeout: float = 30.0) -> bool:
             logging.info("[laziest-import] No existing cache, need full rebuild")
         return False
 
-    from .._cache._incremental import _detect_changed_packages
-
-    new_packages, updated_packages, removed_packages = _detect_changed_packages()
-
-    if not new_packages and not updated_packages and not removed_packages:
-        if _config._DEBUG_MODE:
-            logging.info("[laziest-import] No package changes detected, skip incremental build")
-        return True
-
-    if _config._DEBUG_MODE:
-        logging.info(
-            f"[laziest-import] Incremental update: "
-            f"{len(new_packages)} new, {len(updated_packages)} updated, {len(removed_packages)} removed"
-        )
-
-    total_changes = len(new_packages) + len(updated_packages) + len(removed_packages)
-    if total_changes > len(_config._TRACKED_PACKAGES) * 0.5:
-        if _config._DEBUG_MODE:
-            logging.info("[laziest-import] Too many changes, full rebuild recommended")
+    if not _ensure_disk_index_loaded():
         return False
+
+    changes = _detect_incremental_changes()
+    if changes is None:
+        return False
+    new_packages, updated_packages, removed_packages = changes
+    if not new_packages and not updated_packages and not removed_packages:
+        return True
 
     packages_to_remove = removed_packages | updated_packages
     for pkg in packages_to_remove:
@@ -1443,7 +1494,13 @@ def rebuild_symbol_index() -> None:
     for cache_type in ["stdlib", "third_party", "all"]:
         cache_path = _get_symbol_index_path(cache_type)
         if cache_path.exists():
-            cache_path.unlink()
+            try:
+                cache_path.unlink()
+            except OSError as e:
+                # Windows: another process may hold the file open —
+                # proceed with the rebuild anyway.
+                if _config._DEBUG_MODE:
+                    logging.warning(f"[laziest-import] Could not remove {cache_path.name}: {e}")
 
     _build_symbol_index(force=True)
 
@@ -1587,9 +1644,10 @@ def symbol_autocomplete(prefix: str, max_results: int = 20) -> list[str]:
         _build_symbol_index()
 
     prefix_lower = prefix.lower()
+    cache_snapshot = list(_config._SYMBOL_CACHE.items())
     matches = sorted(
-        [name for name in _config._SYMBOL_CACHE if name.lower().startswith(prefix_lower)],
-        key=lambda n: len(_config._SYMBOL_CACHE[n]),
+        [name for name, _locs in cache_snapshot if name.lower().startswith(prefix_lower)],
+        key=lambda n: len(_config._SYMBOL_CACHE.get(n, ())),
         reverse=True,
     )
     return matches[:max_results]

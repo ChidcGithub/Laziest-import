@@ -6,6 +6,7 @@ import atexit
 import hashlib
 import json
 import logging
+import os
 import sys
 import threading
 import time
@@ -80,7 +81,15 @@ class FileCache:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "FileCache":
-        return cls(**data)
+        # Whitelist extraction: unknown fields (newer format, hand-edited) must not
+        # raise TypeError — that escapes _load_file_cache's filtering and can break
+        # the whole package import.
+        return cls(
+            file_path=data.get("file_path", ""),
+            file_sha=data.get("file_sha", ""),
+            loaded_modules=list(data.get("loaded_modules", [])),
+            timestamp=float(data.get("timestamp", 0.0)),
+        )
 
 
 def _load_file_cache(file_path: str) -> Optional[FileCache]:
@@ -109,9 +118,12 @@ def _save_file_cache(file_path: str, file_sha: str, modules: set[str]) -> bool:
             timestamp=time.time(),
         )
 
+        # Atomic write (tmp + os.replace) so a crash can't leave a half-written JSON
         cache_file = _get_cache_file_path(file_path)
-        with open(cache_file, "w", encoding="utf-8") as f:
+        tmp_file = cache_file.with_suffix(".json.tmp")
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(cache.to_dict(), f, indent=2)
+        os.replace(tmp_file, cache_file)
 
         if _config._DEBUG_MODE:
             logging.info(f"[laziest-import] Saved cache for {file_path}: {len(modules)} modules")
@@ -265,18 +277,27 @@ def clear_file_cache(file_path: Optional[str] = None) -> int:
     if file_path:
         cache_file = _get_cache_file_path(file_path)
         if cache_file.exists():
-            cache_file.unlink()
+            try:
+                cache_file.unlink()
+            except OSError as e:
+                logging.warning(f"[laziest-import] Could not remove {cache_file.name}: {e}")
+                return 0
             return 1
         return 0
     else:
-        # Clear all file caches
+        # Clear all file caches owned by this library
+        from ._dir import _is_owned_cache_file
+
         cache_dir = _get_cache_dir()
         count = 0
         for cache_file in cache_dir.glob("*.json"):
-            # Skip symbol index files
-            if "symbol_index" not in cache_file.name and "tracked_packages" not in cache_file.name:
+            if not _is_owned_cache_file(cache_file):
+                continue
+            try:
                 cache_file.unlink()
                 count += 1
+            except OSError as e:
+                logging.warning(f"[laziest-import] Could not remove {cache_file.name}: {e}")
         _CALLER_LOADED_MODULES.clear()
         return count
 

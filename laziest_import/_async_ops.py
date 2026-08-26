@@ -7,12 +7,7 @@ import importlib
 import logging
 from typing import Any, Optional
 
-from ._config import (
-    _ALIAS_MAP,
-    _DEBUG_MODE,
-    _LAZY_MODULES,
-    _RETRY_CONFIG,
-)
+from . import _config
 from ._fuzzy import _search_module
 
 
@@ -30,10 +25,10 @@ async def import_async(alias: str) -> Any:
     """
 
     def _sync_import():
-        if alias in _LAZY_MODULES:
-            return _LAZY_MODULES[alias]._get_module()
+        if alias in _config._LAZY_MODULES:
+            return _config._LAZY_MODULES[alias]._get_module()
 
-        module_name = _ALIAS_MAP.get(alias, alias)
+        module_name = _config._ALIAS_MAP.get(alias, alias)
         try:
             return importlib.import_module(module_name)
         except ImportError:
@@ -47,6 +42,15 @@ async def import_async(alias: str) -> Any:
     except RuntimeError:
         return _sync_import()
 
+    # Honor the retry config in async context too (sync path uses its own retry).
+    if _config._RETRY_CONFIG["enabled"]:
+        return await _import_with_retry(
+            _sync_import,
+            alias,
+            int(_config._RETRY_CONFIG["max_retries"]),
+            float(_config._RETRY_CONFIG["retry_delay"]),
+        )
+
     return await loop.run_in_executor(None, _sync_import)
 
 
@@ -57,11 +61,11 @@ async def _import_with_retry(import_func, alias: str, max_retries: int, retry_de
         try:
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(None, import_func)
-        except (ImportError, ModuleNotFoundError, asyncio.TimeoutError) as e:
+        except (ImportError, asyncio.TimeoutError) as e:
             last_exc = e
-            if attempt < max_retries and _DEBUG_MODE:
-                logging.debug(f"[laziest-import] Retry {attempt + 1}/{max_retries} for '{alias}': {e}")
             if attempt < max_retries:
+                if _config._DEBUG_MODE:
+                    logging.debug(f"[laziest-import] Retry {attempt + 1}/{max_retries} for '{alias}': {e}")
                 await asyncio.sleep(retry_delay * (attempt + 1))
     raise last_exc  # type: ignore[misc]
 
@@ -82,7 +86,7 @@ async def import_multiple_async(aliases: list[str]) -> dict[str, Any]:
     modules = {}
     for alias, result in zip(aliases, results):
         if isinstance(result, Exception):
-            if _DEBUG_MODE:
+            if _config._DEBUG_MODE:
                 logging.warning(f"Failed to import {alias}: {result}")
         else:
             modules[alias] = result
@@ -96,22 +100,25 @@ def enable_retry(
     """
     Enable automatic retry for module imports.
 
+    Applies to both sync and async imports (async path uses non-blocking
+    backoff via asyncio.sleep).
+
     Args:
         max_retries: Maximum number of retry attempts
         retry_delay: Delay between retries in seconds
         modules: Set of module names to retry. If None, retry all modules.
     """
-    _RETRY_CONFIG["enabled"] = True
-    _RETRY_CONFIG["max_retries"] = max_retries
-    _RETRY_CONFIG["retry_delay"] = retry_delay
-    _RETRY_CONFIG["retry_modules"] = modules if modules else set()
+    _config._RETRY_CONFIG["enabled"] = True
+    _config._RETRY_CONFIG["max_retries"] = max_retries
+    _config._RETRY_CONFIG["retry_delay"] = retry_delay
+    _config._RETRY_CONFIG["retry_modules"] = modules if modules else set()
 
 
 def disable_retry() -> None:
     """Disable automatic retry for module imports."""
-    _RETRY_CONFIG["enabled"] = False
+    _config._RETRY_CONFIG["enabled"] = False
 
 
 def is_retry_enabled() -> bool:
     """Check if retry is enabled."""
-    return _RETRY_CONFIG["enabled"]
+    return _config._RETRY_CONFIG["enabled"]

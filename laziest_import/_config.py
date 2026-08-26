@@ -214,6 +214,7 @@ _NEGATIVE_CACHE_LOCK: threading.Lock = threading.Lock()
 
 # Alias & module proxies
 _ALIAS_MAP: dict[str, str] = {}
+_ALIASES_WRITE_LOCK: threading.Lock = threading.Lock()
 _LAZY_MODULES: dict[str, Any] = {}
 
 # Thread-local import context
@@ -442,6 +443,16 @@ def _activate_state_setters() -> None:
     _self.reset_all = _r
     _self._load_priorities_from_file = _lpf
     _self.get_importing_modules = _gim
+
+    # Populate module priorities from bundled mappings/priorities.json so that
+    # symbol confidence scoring has real data (empty table halves every score).
+    try:
+        _self._MODULE_PRIORITY.update(_lpf())
+    except Exception as exc:
+        if _self._DEBUG_MODE:
+            import logging
+
+            logging.warning(f"[laziest-import] Failed to load module priorities: {exc}")
 
 
 from contextlib import suppress

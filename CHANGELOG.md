@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0.7] - 2026-08-26
+
+### Fixed
+- Critical: auto-install fallback now respects `_AUTO_INSTALL_CONFIG["enabled"]` (default off) — import failures no longer trigger unexpected pip prompts or subprocesses
+- Critical: module priorities loaded from bundled `mappings/priorities.json` at init; unlisted modules default to 80; single exact-match candidates no longer rejected by conflict logic
+- Critical: incremental symbol build loads the complete on-disk index before merging, no longer overwriting the full index with partial data
+- Critical: `FileCache.from_dict` whitelists fields so unknown JSON keys can no longer break `import laziest_import`
+- High: snapshot iteration over shared symbol caches / `sys.modules` / lazy proxies eliminates `RuntimeError: dictionary changed size during iteration` during concurrent background builds
+- High: cache size accounting and cleanup now match actual cache file names (`symbol_index_*`, `tracked_packages`, sha256 file caches)
+- High: atomic tmp + `os.replace()` writes for all JSON caches (crash-safe persistence)
+- Medium: `LazyProxy`/`LazySymbol` underscore guards prevent IPython/copy/pickle probes from triggering searches or imports and polluting `_ALIAS_MAP`
+- Medium: auto-search fallback refuses to substitute a parent module for a missing submodule; `_ALIAS_MAP` writes unified under a shared lock
+- Medium: `register_alias` remapping rebuilds stale proxies; `reload_aliases` swaps atomically and rebuilds outdated proxies
+- Medium: pip subprocess forced UTF-8 decoding (CJK Windows locales misreported successful installs as failures)
+- Medium: short-option install flags (`-r`, `-c`, `-f`, `-i`, `-e`) blocked; package name URL check casefolded
+- Medium: profiler memory via `tracemalloc.get_traced_memory()` (was single-allocation-site size); benchmark excludes failed iterations, clears submodule caches, corrected speedup wording
+- Medium: async imports honor retry config via non-blocking backoff (`asyncio.sleep`)
+- Medium: `BackgroundIndexBuilder` start race fixed with state lock; `stop()` is cooperative (no premature flag reset causing double builds); timeout implemented via watchdog timer
+- Low: state visibility unified between `_cache/_background.py` and `_lazy_index.BackgroundIndexBuilder`; event-based wait replaces busy polling
+- Low: hook iteration snapshot; callback failures always logged with traceback instead of silently swallowed
+- Low: dependency tree submodule ownership check (`attr.__module__`) stops re-exported attributes becoming bogus child nodes
+- Low: relative imports excluded from third-party prediction in pre-analysis
+- Low: `__name__` answered from slot metadata without importing the real module
+- Low: Python version compatibility compares `(major, minor)` tuples instead of string prefixes
+- Low: Windows `unlink()` protection when cache files are held by other processes
+- Low: stale value-bound flags (`_DEBUG_MODE`, `_SYMBOL_INDEX_BUILT`) replaced with runtime attribute access
+
+### Changed
+- Cache version bumped so potentially corrupt partial indexes from 1.0.0.6 rebuild cleanly
+
 ## [1.0.0.6] - 2026-07-11
 
 ### Fixed

@@ -15,7 +15,6 @@ from typing import Any, Optional
 from . import _config as _alias_config
 from ._config import (
     _ALIAS_MAP,
-    _DEBUG_MODE,
     _KNOWN_MODULES_CACHE,
     _KNOWN_MODULES_CACHE_TIME,
     _KNOWN_MODULES_CACHE_TTL,
@@ -132,7 +131,7 @@ def _load_aliases_from_letter_file(
                     if alias not in _ALIAS_META:
                         _ALIAS_META[alias] = dict(file_meta)
     except (json.JSONDecodeError, OSError) as e:
-        if _DEBUG_MODE:
+        if _alias_config._DEBUG_MODE:
             logging.warning(f"Failed to load aliases from {file_path}: {e}")
 
     return aliases
@@ -337,7 +336,8 @@ def _rebuild_global_namespace() -> None:
     from ._proxy import LazyModule
 
     for alias, module_name in _ALIAS_MAP.items():
-        if alias not in _LAZY_MODULES:
+        existing = _LAZY_MODULES.get(alias)
+        if existing is None or getattr(existing, "_module_name", None) != module_name:
             _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 
@@ -560,15 +560,30 @@ def get_alias_meta(alias: str) -> dict[str, str]:
 
 def reload_aliases() -> None:
     """Reload aliases from all configuration sources."""
-    global _ALIAS_MAP, _ALIAS_META, _ALIASES_VERSION_CHECKED
+    global _ALIAS_META, _ALIASES_VERSION_CHECKED
 
     # Reset version check flag so it will be re-checked on reload
     _ALIASES_VERSION_CHECKED = False
 
-    _ALIAS_MAP.clear()
-    _ALIAS_META.clear()
-    _ALIAS_MAP.update(_load_all_aliases(check_duplicates=True))
-    _rebuild_global_namespace()
+    # Build the complete new mapping FIRST, then swap contents in one
+    # critical section — clearing early would expose an empty map to
+    # concurrent readers (they'd misclassify valid aliases as unknown).
+    new_map = _load_all_aliases(check_duplicates=True)
+
+    # Import here to avoid circular import
+    from ._proxy import LazyModule
+
+    with _alias_config._ALIASES_WRITE_LOCK:
+        _ALIAS_META.clear()
+        _ALIAS_MAP.clear()
+        _ALIAS_MAP.update(new_map)
+    for alias in list(_LAZY_MODULES.keys()):
+        if alias not in _ALIAS_MAP:
+            del _LAZY_MODULES[alias]
+    for alias, module_name in new_map.items():
+        existing = _LAZY_MODULES.get(alias)
+        if existing is None or getattr(existing, "_module_name", None) != module_name:
+            _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 
 def export_aliases(
@@ -678,10 +693,11 @@ def register_alias(
             _ALIAS_META[alias] = {}
         _ALIAS_META[alias]["category"] = category
 
-    # Create lazy module proxy
+    # Create lazy module proxy (replace stale proxy if the target changed)
     from ._proxy import LazyModule
 
-    if alias not in _LAZY_MODULES:
+    existing = _LAZY_MODULES.get(alias)
+    if existing is None or getattr(existing, "_module_name", None) != module_name:
         _LAZY_MODULES[alias] = LazyModule(alias, module_name)
 
 

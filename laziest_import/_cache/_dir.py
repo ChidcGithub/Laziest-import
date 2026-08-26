@@ -3,6 +3,7 @@ Cache directory management for laziest-import.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import Optional, Union
 
@@ -10,6 +11,31 @@ from .. import _config
 
 # Cache directory (can be customized)
 _CACHE_DIR: Optional[Path] = None
+
+# Files owned by this library inside the cache dir:
+# - symbol_index_stdlib.json / symbol_index_third_party.json (+ .gz)
+# - tracked_packages.json
+# - <sha256>.json per-caller file caches
+_OWNED_PATTERNS = ("symbol_index_*.json*", "tracked_packages.json*")
+_SHA256_NAME_RE = re.compile(r"^[0-9a-f]{64}\.json$")
+
+
+def _is_owned_cache_file(path: Path) -> bool:
+    """Check whether a file inside the cache dir was created by this library."""
+    name = path.name
+    if any(path.match(pat) for pat in _OWNED_PATTERNS):
+        return True
+    return _SHA256_NAME_RE.match(name) is not None
+
+
+def _iter_cache_files(cache_dir: Path):
+    """Yield cache files owned by this library."""
+    try:
+        for entry in cache_dir.iterdir():
+            if entry.is_file() and _is_owned_cache_file(entry):
+                yield entry
+    except OSError:
+        return
 
 
 def _get_default_cache_dir() -> Path:
@@ -25,11 +51,11 @@ def _get_cache_dir() -> Path:
 
 
 def _get_cache_size() -> int:
-    """Get total cache size in bytes."""
+    """Get total size of cache files owned by this library, in bytes."""
     cache_dir = _get_cache_dir()
     total_size = 0
     try:
-        for cache_file in cache_dir.glob("laziest_*.json"):
+        for cache_file in _iter_cache_files(cache_dir):
             total_size += cache_file.stat().st_size
     except OSError:
         pass
@@ -51,7 +77,7 @@ def _cleanup_cache_if_needed() -> None:
     cache_dir = _get_cache_dir()
     cache_files = []
     try:
-        for cache_file in cache_dir.glob("laziest_*.json"):
+        for cache_file in _iter_cache_files(cache_dir):
             cache_files.append((cache_file, cache_file.stat().st_mtime))
     except OSError:
         return
